@@ -1,0 +1,88 @@
+# ─── Dependencies ───────────────────────────────────────────────────────────
+node_modules/
+.pnp
+.pnp.js
+
+# ─── Build outputs ──────────────────────────────────────────────────────────
+app/dist/
+app/dist-ssr/
+app/build/
+*.local
+
+# ─── Tauri / Rust ───────────────────────────────────────────────────────────
+app/src-tauri/target/
+app/src-tauri/gen/
+# NOTE: Cargo.lock IS committed for binary apps (Tauri = binary). Do NOT ignore.
+
+# ─── Test / coverage ────────────────────────────────────────────────────────
+app/coverage/
+app/test-results/
+app/playwright-report/
+*.lcov
+
+# ─── Env / secrets ──────────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# Tauri code-signing keys (NEVER commit private keys)
+*.tauri-signing.key
+tauri-private-key.txt
+
+# ─── IDE ────────────────────────────────────────────────────────────────────
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ─── OS ─────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── Logs ───────────────────────────────────────────────────────────────────
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# ─── Generated / scratch ────────────────────────────────────────────────────
+*.swp
+*.tmp
+.cache/
+
+# ─── Maintainer-local research / reference (do NOT commit) ──────────────────
+# Third-party reference material kept locally for clean-room analysis.
+# These directories contain copyrighted competitor / upstream code and must
+# not appear in the public repo.
+
+# OpenLifter (AGPL) — reference only
+_research/
+
+# PowerGage (proprietary) — reference only
+Power Gage/
+
+# PowerTable (proprietary) — reference only
+PowerTable/
+
+# Windows-Sandbox configs for competitor analysis
+sandbox/
+
+# Maintainer research scripts at repo root (NOT app/scripts/)
+/scripts/
+
+# ISF copyrighted rules text — kept local
+ISF_Rules_ver.*.docx
+
+# Claude Code session state (local IDE only)
+.claude/
+

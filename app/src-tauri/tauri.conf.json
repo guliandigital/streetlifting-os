@@ -1,0 +1,80 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Streetlifting OS",
+  "version": "0.1.0",
+  "identifier": "app.streetlifting.os",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Streetlifting OS",
+        "width": 1400,
+        "height": 900,
+        "minWidth": 1024,
+        "minHeight": 700,
+        "resizable": true,
+        "fullscreen": false,
+        "decorations": true,
+        "transparent": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["msi", "nsis", "app", "dmg", "appimage", "deb"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "category": "Utility",
+    "publisher": "Gulyan Digital",
+    "copyright": "© 2026 Gulyan Digital LLC",
+    "homepage": "https://github.com/GulianDigital/streetlifting-os",
+    "shortDescription": "Offline-first ISF Streetlifting & Calisthenics meet client",
+    "longDescription": "Streetlifting OS — the operating system for streetlifting and weighted-calisthenics federations. Offline-first on tournament day. ISF v5.1 compliant with correct Masters M5/M6 split (70+ → 1.150).",
+    "windows": {
+      "nsis": {
+        "installMode": "perUser",
+        "installerIcon": "icons/icon.ico",
+        "languages": ["English", "Russian"]
+      },
+      "wix": {
+        "language": ["en-US", "ru-RU"]
+      }
+    },
+    "macOS": {
+      "minimumSystemVersion": "10.13",
+      "frameworks": []
+    },
+    "linux": {
+      "deb": {
+        "depends": [
+          "libwebkit2gtk-4.1-0",
+          "libgtk-3-0",
+          "libayatana-appindicator3-1"
+        ]
+      },
+      "appimage": {
+        "bundleMediaFramework": false
+      }
+    }
+  },
+  "plugins": {
+    "fs": {
+      "scope": ["$APPDATA/*", "$DOCUMENT/*", "$DOWNLOAD/*", "$DESKTOP/*"]
+    },
+    "dialog": {}
+  }
+}

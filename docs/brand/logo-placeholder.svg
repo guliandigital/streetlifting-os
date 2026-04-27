@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!--
+  Streetlifting OS — placeholder logo
+  Дата: апрель 2026, версия v0.1.0
+  Использование: исходный SVG для генерации иконок всех размеров через `npm run icons:generate`
+  Финальный логотип появится в v0.2.0+; этот файл — placeholder.
+-->
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 1024 1024"
+  width="1024"
+  height="1024"
+  shape-rendering="crispEdges"
+>
+  <!-- Background: ISF Red square with subtle rounded corners -->
+  <rect
+    x="0"
+    y="0"
+    width="1024"
+    height="1024"
+    rx="160"
+    ry="160"
+    fill="#C8102E"
+  />
+
+  <!-- Inner darker shadow for depth -->
+  <rect
+    x="0"
+    y="0"
+    width="1024"
+    height="1024"
+    rx="160"
+    ry="160"
+    fill="url(#shadow)"
+  />
+
+  <!-- Wordmark: "SL" big, "OS" smaller below -->
+  <g transform="translate(512, 460)" text-anchor="middle">
+    <text
+      font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
+      font-size="380"
+      font-weight="900"
+      fill="#FFFFFF"
+      letter-spacing="-20"
+    >SL</text>
+  </g>
+
+  <g transform="translate(512, 770)" text-anchor="middle">
+    <text
+      font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
+      font-size="180"
+      font-weight="700"
+      fill="#FFFFFF"
+      letter-spacing="6"
+    >OS</text>
+  </g>
+
+  <!-- Small horizontal accent line under SL — evokes a barbell -->
+  <rect x="312" y="510" width="400" height="14" fill="#FFFFFF" opacity="0.45" />
+
+  <!-- Subtle radial shadow gradient for visual depth -->
+  <defs>
+    <radialGradient id="shadow" cx="50%" cy="120%" r="80%">
+      <stop offset="0%" stop-color="#000000" stop-opacity="0.18" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+</svg>
