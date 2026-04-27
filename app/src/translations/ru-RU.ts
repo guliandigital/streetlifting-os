@@ -39,6 +39,7 @@ export const ruRU = {
     edit: "Редактировать спортсмена",
     importCsv: "Импорт CSV",
     exportCsv: "Экспорт CSV",
+    searchPlaceholder: "Поиск по ФИО, команде, стране…",
     drawLots: "Жеребьёвка",
     drawLotsConfirm:
       "Перераспределить порядковые номера среди всех спортсменов?",
@@ -136,6 +137,7 @@ export const ruRU = {
     reweigh: "Контрольное взвешивание (кг)",
     confirm: "Подтвердить",
     confirmAll: "Подтвердить всех",
+    statusColumn: "Статус",
     statusPending: "Ожидание",
     statusConfirmed: "Подтверждено",
     statusReweigh: "Контр. взвешивание",
