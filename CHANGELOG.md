@@ -10,10 +10,89 @@ release will be 1.0.0 once V1 reaches production-ready quality.
 
 ## [Unreleased]
 
-### Planned for 0.2.0 (Sprint 2)
-- Judging UI (3-judge panel, attempt timer, vote capture) — blueprint v2 §11.6
-- Auto-updater wired with real Ed25519 keypair (deferred from 0.1.0)
-- Final logo replacing the placeholder
+### Planned for 0.3.0 (Sprint 3)
+- Results screen (by category / by ISF points / absolute) — blueprint v2 §11.7
+- Classic protocol CSV export (UTF-8)
+- Multirep module — preset config, 120 s timer, reps/no-rep entry, placing — blueprint v2 §15
+
+---
+
+## [0.2.0] — 2026-04-27
+
+Sprint 2 of the V1 client — Classic judging screen.
+
+### Added
+- **`/judging` route** (guarded by `RequireMeet`). Full Classic judging
+  screen per blueprint v2 §11.6:
+  - PU / DI exercise tabs. Only disciplines enabled in the meet config
+    are shown; tab defaults to the first available exercise.
+  - **Queue panel** (left) — next 5 athletes in round-system order.
+  - **Active-attempt panel** (right) — athlete name, category, bodyweight,
+    current round badge, declared load.
+  - **60-second countdown timer** — Mantine `RingProgress` circular display
+    + large digit readout. Colour states: green (>20 s), orange (10–20 s),
+    red (<10 s). Web Audio API beep at 0 s. Start / Stop buttons.
+  - **3 judge vote cards** — Left / Center / Right. Green ✓ (Good Lift) and
+    red ✗ (No Lift) buttons per card; Reset link to clear an erroneous vote.
+  - **Aggregate override buttons** — «Зачёт всем / All Good» and
+    «Не зачёт всем / All No» for solo officiating.
+  - **Live status badge** — PENDING / GOOD LIFT / NO LIFT, derived
+    client-side via `attemptStatusFromVotes()`. Split-decision «2-1» badge
+    when all three votes are in and the result is contested.
+  - **Confirm attempt** — commits pending votes to `entry.exercises[exercise]
+    .attempts[seq]` and advances the queue pointer.
+  - **Skip / No-show** — advances without writing votes (athlete absent).
+- **`attempt-queue` logic** (`src/logic/isf/attempt-queue.ts`) — pure,
+  zero-dependency module. Exports `getCurrentRound`, `buildAttemptQueue`,
+  `getActiveItem`. Implements the ISF §7.4.3 round-system sort:
+  declared load ASC → bodyweight ASC (`lowerBodyweightFirstTiebreak`) →
+  entry-index ASC (lot-order surrogate).
+- **`judging-slice`** (`src/store/judging-slice.ts`) — transient Redux slice.
+  Timer state and pending votes are held here and are intentionally **not**
+  persisted to the save-file (timer state dies on reload by design).
+- **`JudgeVoteCard`** component — two-button vote card with highlight state
+  and inline reset.
+- **`TimerDisplay`** component — reusable circular countdown with prop-driven
+  colour theming.
+- **`commitAttemptVotes`** action on `meet-slice` — writes judgeVotes (and
+  optionally `declaredLoadKg` + `lastDeclarationAt`) to the correct attempt
+  slot; creates the attempt record if not yet declared. Sets `dirty = true`.
+- **`updateJudgingState`** action on `meet-slice` — persists the active
+  entry/sequence pointer so the judging position survives save/load.
+- Nav link `Судейство / Judging` added to `AppShell` header.
+- Full `judging.*` + `nav.judging` i18n keys in **both** `ru-RU` and `en-US`.
+- **ESLint flat config** — migrated from `.eslintrc.cjs` to `eslint.config.js`
+  (ESLint 9 flat config). Type-aware rules scoped to `src/**` and `tests/**`
+  via `FlatCompat.config().map()`. 10 pre-existing lint errors fixed:
+  unnecessary type assertions, useless `try/catch`, `async` event handlers
+  (`no-misused-promises`), `useMemo` exhaustive-deps.
+
+### Tests
+- **243 unit tests** (up from 167 in 0.1.0 → +55 in hotfixes → +64 Sprint 2).
+- `tests/attempt-queue.test.ts` (34) — queue logic: round detection,
+  round-system sort, lowerBodyweightFirst toggle, per-entry state machine,
+  queue exhaustion.
+- `tests/judging-slice.test.ts` (30) — timer state machine (start/stop/tick/
+  auto-stop at 0) and vote management (cast/reset/clear).
+- `tests/entry-form-schema.test.ts` (+12 from hotfix sprint).
+
+### Changed
+- App version badge updated to `v0.2.0-dev` in the `AppShell` header.
+- `ci.yml`: lint step enabled (previously commented out).
+- All CI workflows: Node 20 → Node 24 (deprecation pre-empted).
+
+### Fixed
+- `0.1 kg` precision bug in weigh-in (hotfix after 0.1.0 — landed in `8d80e24`).
+- i18n polish pass (hotfix — `8d80e24`).
+- Pages workflow: disabled auto-trigger while repo is private; re-enable in
+  Settings → Pages when repo is made public.
+
+### Known limitations (carried forward from 0.1.0, updated)
+- **No Results screen.** Sprint 3 — coming in 0.3.0.
+- **No Classic export.** Sprint 3 — CSV protocol export in 0.3.0.
+- **No Multirep.** Sprint 3 — full Multirep workflow in 0.3.0.
+- **No code-signing.** Same as 0.1.0 — SmartScreen / Gatekeeper dialogs expected.
+- **No auto-updater.** Same as 0.1.0.
 
 ---
 
@@ -140,5 +219,6 @@ First public release. Sprint 1 of the V1 client (registration + weigh-in).
 - Save-file format is versioned independently via `stateVersion`; a major
   app-version bump does not necessarily change `stateVersion`.
 
-[Unreleased]: https://github.com/GulianDigital/streetlifting-os/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/GulianDigital/streetlifting-os/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/GulianDigital/streetlifting-os/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/GulianDigital/streetlifting-os/releases/tag/v0.1.0
