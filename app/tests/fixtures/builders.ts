@@ -8,7 +8,6 @@ import type {
   Entry,
   ExerciseResult,
   JudgeVotes,
-  Sex,
 } from "@domain/models";
 import { PENDING_VOTES } from "@domain/models";
 
@@ -76,7 +75,7 @@ export function buildClassicEntry(
     platform: 1,
     flight: "A",
     name,
-    sex: "M" as Sex,
+    sex: "M",
     birthDate: null,
     ageOverride: null,
     division: "amateur",

@@ -16,7 +16,7 @@ const publicBase = process.env["VITE_PUBLIC_BASE"] ??
   (isTauriBuild ? "/" : "/streetlifting-os/");
 
 // https://vitejs.dev/config/
-export default defineConfig(async () => ({
+export default defineConfig(() => ({
   base: publicBase,
   plugins: [
     react(),

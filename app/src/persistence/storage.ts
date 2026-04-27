@@ -90,13 +90,8 @@ export async function loadFromFile(): Promise<{
         return;
       }
       void file.text().then((text) => {
-        try {
-          const saveFile = decode(text);
-          resolve({ loaded: true, saveFile });
-        } catch (err) {
-          // Re-throw so caller's try/catch surfaces the error.
-          throw err;
-        }
+        const saveFile = decode(text);
+        resolve({ loaded: true, saveFile });
       });
     };
     input.click();

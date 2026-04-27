@@ -104,13 +104,13 @@ export function Home() {
           <Button size="md" onClick={handleNew}>
             {t("home.newMeet")}
           </Button>
-          <Button size="md" variant="default" onClick={handleLoad}>
+          <Button size="md" variant="default" onClick={() => { void handleLoad(); }}>
             {t("home.loadMeet")}
           </Button>
           <Button
             size="md"
             variant="default"
-            onClick={handleSave}
+            onClick={() => { void handleSave(); }}
             disabled={!meet}
           >
             {t("home.saveMeet")}

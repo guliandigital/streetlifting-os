@@ -90,7 +90,7 @@ export function EntryFormModal(props: EntryFormModalProps) {
       size="xl"
       centered
     >
-      <form onSubmit={handleSubmit(submit)} noValidate>
+      <form onSubmit={(e) => { void handleSubmit(submit)(e); }} noValidate>
         <Stack gap="md">
           <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
             <TextInput

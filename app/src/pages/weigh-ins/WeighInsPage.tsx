@@ -34,7 +34,6 @@ import {
   confirmWeighIn,
   selectEntries,
 } from "@store/registration-slice";
-import type { AgeCategoryCode } from "@domain/models";
 import { ageInYears, resolveAgeCategory } from "@logic/isf/age";
 import { resolveWeightCategory } from "@logic/isf/weight-category-resolver";
 
@@ -49,21 +48,17 @@ export function WeighInsPage() {
   const meet = useAppSelector((s) => s.meet.current);
 
   const meetDate = meet?.meet.date ?? new Date().toISOString().slice(0, 10);
-  const ageCategories = meet?.meet.ageCategories ?? [];
-  const weightCategories = meet?.meet.weightCategories ?? [];
 
   const enriched = useMemo(() => {
+    const ageCategories = meet?.meet.ageCategories ?? [];
+    const weightCategories = meet?.meet.weightCategories ?? [];
     return entries.map((e) => {
       const age =
         e.ageOverride ??
         (e.birthDate ? ageInYears(e.birthDate, meetDate) : null);
       const ageCatCode =
         e.assignedAgeCategoryCode ??
-        (age !== null
-          ? (resolveAgeCategory(age, ageCategories)?.code as
-              | AgeCategoryCode
-              | undefined)
-          : undefined) ??
+        (age !== null ? resolveAgeCategory(age, ageCategories)?.code : undefined) ??
         null;
       const wc =
         e.bodyweightKg !== null
@@ -88,7 +83,7 @@ export function WeighInsPage() {
         status,
       };
     });
-  }, [entries, meetDate, ageCategories, weightCategories]);
+  }, [entries, meetDate, meet]);
 
   function handleSetBodyweight(id: string, value: number | null) {
     dispatch(setBodyweight({ id, bodyweightKg: value }));

@@ -40,12 +40,8 @@ jobs:
       - name: Unit tests
         run: npm run test -- --run
 
-      # Lint is skipped in v0.1.x — `eslint` v9 requires a flat config
-      # (eslint.config.js) and the project still ships an empty lint config.
-      # Tracked for v0.2.0 alongside the judging-UI sprint. Typecheck +
-      # tests + build are the quality gates for now.
-      # - name: Lint
-      #   run: npm run lint
+      - name: Lint
+        run: npm run lint
 
       - name: Vite production build
         run: npm run build

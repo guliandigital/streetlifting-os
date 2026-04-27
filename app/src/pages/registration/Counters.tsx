@@ -15,10 +15,10 @@ export function Counters({ entries }: { entries: ReadonlyArray<Entry> }) {
   const { t } = useTranslation();
   const meet = useAppSelector((s) => s.meet.current);
   const meetDate = meet?.meet.date ?? new Date().toISOString().slice(0, 10);
-  const ageCategories = meet?.meet.ageCategories ?? [];
-  const weightCategories = meet?.meet.weightCategories ?? [];
 
   const stats = useMemo(() => {
+    const ageCategories = meet?.meet.ageCategories ?? [];
+    const weightCategories = meet?.meet.weightCategories ?? [];
     const bySex: Record<string, number> = {};
     const byAge: Record<string, number> = {};
     const byWeight: Record<string, number> = {};
@@ -48,7 +48,7 @@ export function Counters({ entries }: { entries: ReadonlyArray<Entry> }) {
       if (wcCode) byWeight[wcCode] = (byWeight[wcCode] ?? 0) + 1;
     }
     return { bySex, byAge, byWeight };
-  }, [entries, meetDate, ageCategories, weightCategories]);
+  }, [entries, meetDate, meet]);
 
   return (
     <Card withBorder shadow="sm">
