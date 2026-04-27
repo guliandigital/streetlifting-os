@@ -47,12 +47,12 @@ jobs:
         run: npm run build
 
       - name: Setup Pages
+        # The Pages site was created at v0.1.0 (Settings → Pages → Source =
+        # "GitHub Actions"). Don't try to recreate it on every run — the action
+        # 404s on Get Pages and the GITHUB_TOKEN cannot Create Pages without
+        # repo-admin scope, so the workflow fails. Use `enablement: false`
+        # (the default) to assume the existing config.
         uses: actions/configure-pages@v5
-        with:
-          # Auto-create the Pages site if the repo doesn't have one configured
-          # yet. Equivalent to manually setting Settings → Pages → Source =
-          # "GitHub Actions" once.
-          enablement: true
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

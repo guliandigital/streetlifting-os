@@ -309,10 +309,10 @@ export function RegistrationPage() {
 
         <Group>
           <TextInput
-            placeholder="🔎"
+            placeholder={t("registration.searchPlaceholder")}
             value={search}
             onChange={(e) => setSearch(e.currentTarget.value)}
-            w={240}
+            w={280}
           />
           <Text size="xs" c="dimmed">
             {t("registration.tipDoubleClick")}
@@ -359,37 +359,44 @@ export function RegistrationPage() {
                 accessor: "birthDate",
                 title: t("registration.columns.birthDate"),
                 width: 120,
+                sortable: true,
                 render: (e: Entry) => e.birthDate ?? "—",
               },
               {
                 accessor: "age",
                 title: t("registration.columns.age"),
                 width: 60,
+                sortable: true,
                 render: (e: Entry) => ageOf(e) ?? "—",
               },
               {
                 accessor: "country",
                 title: t("registration.columns.country"),
+                sortable: true,
                 render: (e: Entry) => e.country ?? "—",
               },
               {
                 accessor: "division",
                 title: t("registration.columns.division"),
+                sortable: true,
               },
               {
                 accessor: "discipline",
                 title: t("registration.columns.discipline"),
+                sortable: true,
                 render: (e: Entry) =>
                   disciplineLabel.get(e.disciplineCode) ?? e.disciplineCode,
               },
               {
                 accessor: "weightCategory",
                 title: t("registration.columns.weightCategory"),
+                sortable: true,
                 render: (e: Entry) => weightCatOf(e) ?? "—",
               },
               {
                 accessor: "ageCategory",
                 title: t("registration.columns.ageCategory"),
+                sortable: true,
                 render: (e: Entry) => {
                   const c = ageCatOf(e);
                   return c
@@ -400,6 +407,7 @@ export function RegistrationPage() {
               {
                 accessor: "team",
                 title: t("registration.columns.team"),
+                sortable: true,
                 render: (e: Entry) => e.team ?? "—",
               },
               {

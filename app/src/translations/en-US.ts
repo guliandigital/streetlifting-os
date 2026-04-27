@@ -40,6 +40,7 @@ export const enUS = {
     edit: "Edit athlete",
     importCsv: "Import CSV",
     exportCsv: "Export CSV",
+    searchPlaceholder: "Search by name, team, country…",
     drawLots: "Draw lots",
     drawLotsConfirm:
       "Re-shuffle lot numbers across all athletes?",
@@ -137,6 +138,7 @@ export const enUS = {
     reweigh: "Reweigh (kg)",
     confirm: "Confirm",
     confirmAll: "Confirm all",
+    statusColumn: "Status",
     statusPending: "Pending",
     statusConfirmed: "Confirmed",
     statusReweigh: "Reweigh",

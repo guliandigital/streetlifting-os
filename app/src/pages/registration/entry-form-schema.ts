@@ -49,24 +49,26 @@ export const entryFormSchema = z
     message: "validation.ageOrBirthDate",
     path: ["birthDate"],
   })
-  .refine(
-    (v) =>
-      v.bodyweightKg === null ||
-      Number.isInteger(Math.round(v.bodyweightKg * 10)),
-    {
-      message: "validation.bodyweightPrecision",
-      path: ["bodyweightKg"],
-    },
-  )
-  .refine(
-    (v) =>
-      v.reweighKg === null ||
-      Number.isInteger(Math.round(v.reweighKg * 10)),
-    {
-      message: "validation.bodyweightPrecision",
-      path: ["reweighKg"],
-    },
-  );
+  .refine((v) => v.bodyweightKg === null || isOnTenthGrid(v.bodyweightKg), {
+    message: "validation.bodyweightPrecision",
+    path: ["bodyweightKg"],
+  })
+  .refine((v) => v.reweighKg === null || isOnTenthGrid(v.reweighKg), {
+    message: "validation.bodyweightPrecision",
+    path: ["reweighKg"],
+  });
+
+/**
+ * Check that a value is on the 0.1 kg grid (ISF v5.1 §7.2 precision).
+ *
+ * Naive `Number.isInteger(v * 10)` fails because `58.4 * 10 = 583.9999…` due
+ * to IEEE-754 representation. We compare against the rounded value with a
+ * tight epsilon — values like 58.4 round-trip cleanly, 58.45 does not.
+ */
+function isOnTenthGrid(v: number): boolean {
+  const tenths = Math.round(v * 10);
+  return Math.abs(v - tenths / 10) < 1e-9;
+}
 
 export type EntryFormValues = z.infer<typeof entryFormSchema>;
 

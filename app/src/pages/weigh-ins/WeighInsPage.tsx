@@ -273,7 +273,7 @@ export function WeighInsPage() {
               },
               {
                 accessor: "status",
-                title: "Status",
+                title: t("weighIns.statusColumn"),
                 width: 130,
                 render: (r) =>
                   r.status === "confirmed" ? (
