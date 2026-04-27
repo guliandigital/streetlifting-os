@@ -59,6 +59,8 @@ pnpm-debug.log*
 *.swp
 *.tmp
 .cache/
+app/install.out
+app/install.err
 
 # ─── Maintainer-local research / reference (do NOT commit) ──────────────────
 # Third-party reference material kept locally for clean-room analysis.
@@ -85,4 +87,9 @@ ISF_Rules_ver.*.docx
 
 # Claude Code session state (local IDE only)
 .claude/
+
+
+# Local install artefacts (npm output captures, etc.)
+app/install.err
+app/install.out
 
