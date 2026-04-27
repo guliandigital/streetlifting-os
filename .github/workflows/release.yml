@@ -20,15 +20,18 @@ jobs:
         include:
           - os: windows-latest
             label: Windows (x64 — MSI + NSIS)
-            target: ""
+            rust-targets: ""
             args: ""
           - os: macos-latest
             label: macOS (universal — DMG)
-            target: universal-apple-darwin
+            # `universal-apple-darwin` is a meta-target that has no rust-std
+            # component of its own — Tauri builds both x86_64 and aarch64,
+            # then `lipo`s them together, so we install both real targets.
+            rust-targets: "x86_64-apple-darwin,aarch64-apple-darwin"
             args: "--target universal-apple-darwin"
           - os: ubuntu-22.04
             label: Linux (x64 — AppImage + DEB)
-            target: ""
+            rust-targets: ""
             args: ""
 
     runs-on: ${{ matrix.os }}
@@ -47,13 +50,13 @@ jobs:
       - name: Setup Rust (stable)
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.target }}
+          targets: ${{ matrix.rust-targets }}
 
       - name: Cache Cargo registry + target
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: app/src-tauri -> target
-          key: ${{ matrix.os }}-${{ matrix.target }}
+          key: ${{ matrix.os }}-${{ matrix.rust-targets }}
 
       - name: Install Linux build dependencies
         if: runner.os == 'Linux'

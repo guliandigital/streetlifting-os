@@ -48,6 +48,11 @@ jobs:
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
+        with:
+          # Auto-create the Pages site if the repo doesn't have one configured
+          # yet. Equivalent to manually setting Settings → Pages → Source =
+          # "GitHub Actions" once.
+          enablement: true
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

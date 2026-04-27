@@ -46,12 +46,9 @@
     "longDescription": "Streetlifting OS — the operating system for streetlifting and weighted-calisthenics federations. Offline-first on tournament day. ISF v5.1 compliant with correct Masters M5/M6 split (70+ → 1.150).",
     "windows": {
       "nsis": {
-        "installMode": "perUser",
+        "installMode": "currentUser",
         "installerIcon": "icons/icon.ico",
         "languages": ["English", "Russian"]
-      },
-      "wix": {
-        "language": ["en-US", "ru-RU"]
       }
     },
     "macOS": {
