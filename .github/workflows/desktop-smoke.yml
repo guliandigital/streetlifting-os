@@ -1,0 +1,58 @@
+name: Desktop Smoke
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows-tauri-smoke:
+    name: Windows Tauri smoke build
+    runs-on: windows-latest
+
+    defaults:
+      run:
+        working-directory: app
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: app/package-lock.json
+
+      - name: Setup Rust (stable)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo registry + target
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: app/src-tauri -> target
+          key: windows-smoke
+
+      - name: Install npm dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Generate icons
+        run: npm run icons:generate
+
+      - name: Build Windows Tauri app
+        run: npm run tauri:build
+
+      - name: Upload Windows bundles
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-tauri-bundles
+          path: |
+            app/src-tauri/target/release/bundle/msi/**
+            app/src-tauri/target/release/bundle/nsis/**
+          if-no-files-found: error
