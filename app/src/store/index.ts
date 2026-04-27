@@ -5,11 +5,13 @@
 import { configureStore } from "@reduxjs/toolkit";
 import meetReducer from "./meet-slice";
 import { registrationReducer } from "./registration-slice";
+import judgingReducer from "./judging-slice";
 
 export const store = configureStore({
   reducer: {
     meet: meetReducer,
     registration: registrationReducer,
+    judging: judgingReducer,
   },
   middleware: (getDefault) => getDefault({ serializableCheck: true }),
   devTools: import.meta.env.DEV,

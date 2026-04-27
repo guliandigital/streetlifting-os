@@ -10,7 +10,8 @@
  */
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { SaveFile } from "@domain/models";
+import type { SaveFile, JudgeVotes } from "@domain/models";
+import { PENDING_VOTES } from "@domain/models";
 import {
   ISF_V51_AGE_CATEGORIES,
   ISF_V51_WEIGHT_CATEGORIES,
@@ -130,6 +131,82 @@ const meetSlice = createSlice({
       state.current = null;
       state.filePath = null;
       state.dirty = false;
+    },
+
+    /**
+     * Update the persisted judging position (activeEntryIndex, activeAttemptSequence).
+     * Called by JudgingPage when advancing to the next item.
+     */
+    updateJudgingState(
+      state,
+      action: PayloadAction<{
+        activeEntryIndex: number | null;
+        activeAttemptSequence: 1 | 2 | 3 | 4 | null;
+      }>,
+    ) {
+      if (!state.current) return;
+      state.current.judging.activeEntryIndex = action.payload.activeEntryIndex;
+      state.current.judging.activeAttemptSequence =
+        action.payload.activeAttemptSequence;
+      state.dirty = true;
+    },
+
+    /**
+     * Write judge votes (and optionally a declared load) for one attempt.
+     * Creates the attempt object if it doesn't exist yet.
+     * This is the primary "commit result" action for Classic judging.
+     */
+    commitAttemptVotes(
+      state,
+      action: PayloadAction<{
+        entryIndex: number;
+        exercise: "PU" | "DI";
+        sequence: 1 | 2 | 3;
+        votes: JudgeVotes;
+        declaredLoadKg?: number;
+        lastDeclarationAt?: string;
+      }>,
+    ) {
+      if (!state.current) return;
+      const { entryIndex, exercise, sequence, votes, declaredLoadKg, lastDeclarationAt } =
+        action.payload;
+      const entries = state.current.registration.entries;
+      const entry = entries[entryIndex];
+      if (!entry) return;
+
+      // Ensure the exercise result exists with classic format.
+      if (!entry.exercises[exercise]) {
+        entry.exercises[exercise] = {
+          format: "classic",
+          exercise,
+          attempts: [],
+        };
+      }
+      const ex = entry.exercises[exercise];
+      if (ex.format !== "classic") return;
+
+      // Find or create the attempt for this sequence.
+      let att = ex.attempts.find((a) => a.sequence === sequence);
+      if (!att) {
+        att = {
+          sequence,
+          declaredLoadKg: declaredLoadKg ?? null,
+          judgeVotes: { ...PENDING_VOTES },
+          lastDeclarationAt: lastDeclarationAt ?? null,
+          changesUsedInRound: 0,
+        };
+        ex.attempts.push(att);
+      }
+
+      att.judgeVotes = votes;
+      if (declaredLoadKg !== undefined) {
+        att.declaredLoadKg = declaredLoadKg;
+      }
+      if (lastDeclarationAt !== undefined) {
+        att.lastDeclarationAt = lastDeclarationAt;
+      }
+
+      state.dirty = true;
     },
   },
   extraReducers: (builder) => {
@@ -262,5 +339,12 @@ const meetSlice = createSlice({
   },
 });
 
-export const { newMeet, loadMeet, markSaved, closeMeet } = meetSlice.actions;
+export const {
+  newMeet,
+  loadMeet,
+  markSaved,
+  closeMeet,
+  updateJudgingState,
+  commitAttemptVotes,
+} = meetSlice.actions;
 export default meetSlice.reducer;

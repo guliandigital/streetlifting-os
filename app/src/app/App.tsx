@@ -22,6 +22,7 @@ import { theme } from "./theme";
 import { Home } from "@pages/home/Home";
 import { RegistrationPage } from "@pages/registration/RegistrationPage";
 import { WeighInsPage } from "@pages/weigh-ins/WeighInsPage";
+import { JudgingPage } from "@pages/judging/JudgingPage";
 import { RequireMeet } from "@components/RequireMeet";
 import { useAppSelector } from "@store/index";
 
@@ -33,6 +34,7 @@ function NavLinks() {
     { to: "/", label: t("nav.home"), needsMeet: false },
     { to: "/registration", label: t("nav.registration"), needsMeet: true },
     { to: "/weigh-ins", label: t("nav.weighIns"), needsMeet: true },
+    { to: "/judging", label: t("nav.judging"), needsMeet: true },
   ];
   return (
     <Group gap="md">
@@ -81,8 +83,8 @@ export function App() {
                   <Badge color="red" variant="light">
                     ISF v5.1
                   </Badge>
-                  <Badge color="gray" variant="light">
-                    {t("app.sprint1Status")}
+                  <Badge color="violet" variant="light">
+                    v0.2.0-dev
                   </Badge>
                   <NavLinks />
                 </Group>
@@ -119,6 +121,14 @@ export function App() {
                   element={
                     <RequireMeet>
                       <WeighInsPage />
+                    </RequireMeet>
+                  }
+                />
+                <Route
+                  path="/judging"
+                  element={
+                    <RequireMeet>
+                      <JudgingPage />
                     </RequireMeet>
                   }
                 />
