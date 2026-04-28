@@ -144,7 +144,7 @@ describe("computeClassicRows", () => {
     expect(rows[2]!.entryIndex).toBe(2);
   });
 
-  it("ISF points computed (coefficient=1 stub, finalPoints=total for M sex)", () => {
+  it("ISF points computed (real coefficient formula, finalPoints > 0 for M sex)", () => {
     const e = buildClassicEntry("Points", {
       bodyweightKg: 80,
       sex: "M",
@@ -155,8 +155,10 @@ describe("computeClassicRows", () => {
     });
     const rows = computeClassicRows([e], TEST_MEET, MEET_DATE);
     const row = rows[0]!;
-    expect(row.isfCoefficient).toBe(1); // stub returns 1.0
-    expect(row.isfBasePoints).toBe(180); // 180 * 1.0
+    // Real formula: M/PUDI/80kg coefficient ≈ 0.261
+    expect(row.isfCoefficient).toBeGreaterThan(0);
+    expect(row.isfCoefficient).toBeLessThan(1);
+    expect(row.isfBasePoints).toBeCloseTo(180 * row.isfCoefficient, 5);
     expect(row.isfFinalPoints).toBeGreaterThan(0);
   });
 });

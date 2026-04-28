@@ -1,14 +1,13 @@
 /**
- * IsfPointsService tests — Sprint 1 item 7b.
+ * IsfPointsService tests — Sprint 1 item 7b + Sprint 4 real ISF coefficient.
  *
  * Includes the **M5/M6 differentiator integration test** — full Entry → IsfPointBreakdown
  * pipeline proves that 70-year-old athletes get the correct 1.150 multiplier (ISF v5.1
  * §10.9.4) where PowerGage and PowerTable encode 1.125.
  *
- * Note: V1 ships the absolute-coefficient lookup as a 1.0 stub (D1 TODO — extract
- * from streetlifting.ru/points/). Tests assert STRUCTURAL correctness, not absolute
- * coefficient values. When the real table lands, these tests still pass; only the
- * absolute numbers shift.
+ * Sprint 4: `isfAbsCoef` is now the real formula from streetlifting.ru/points/:
+ *   ISF Coefficient = 100 / (A − B × e^(−C × bodyweightKg))
+ * Tests use toBeCloseTo / range checks since the real formula returns floating-point values.
  */
 
 import { describe, it, expect } from "vitest";
@@ -28,12 +27,14 @@ describe("IsfPointsService — basic pipeline", () => {
     const e = buildClassicEntry("Empty");
     const out = svc.calculate(e, "PUDI", MEET_DATE);
     expect(out.finalPoints).toBe(0);
-    expect(out.coefficient).toBe(1); // V1 stub
+    // coefficient is real formula value for M/PUDI/80kg — should be positive finite
+    expect(out.coefficient).toBeGreaterThan(0);
+    expect(Number.isFinite(out.coefficient)).toBe(true);
   });
 
-  it("computes basePoints = result × coefficient", () => {
+  it("computes basePoints = result × coefficient (positive, non-zero for real result)", () => {
     const e = buildClassicEntry("Open25M", {
-      bodyweightKg: 80, // below all M Classic limits → no additional points
+      bodyweightKg: 80,
       ageOverride: 25,
       exercises: {
         PU: classicExercise("PU", [classicAttempt(1, 100, VOTES_GOOD)]),
@@ -41,11 +42,12 @@ describe("IsfPointsService — basic pipeline", () => {
       },
     });
     const out = svc.calculate(e, "PUDI", MEET_DATE);
-    // result = 100 + 150 = 250; coefficient stub = 1.0 → basePoints = 250
-    expect(out.basePoints).toBe(250);
+    // result = 250; coefficient = real ISF formula for M/PUDI/80kg ≈ 0.261
+    expect(out.basePoints).toBeGreaterThan(0);
+    expect(out.basePoints).toBeCloseTo(out.coefficient * 250, 5);
     expect(out.additionalPoints).toBe(0);
-    // No masters multiplier at age 25 → finalPoints = 250
-    expect(out.finalPoints).toBe(250);
+    // No masters multiplier at age 25 → finalPoints = basePoints
+    expect(out.finalPoints).toBeCloseTo(out.basePoints, 5);
   });
 });
 
@@ -60,8 +62,8 @@ describe("IsfPointsService — additional points (Classic only) per D7", () => {
     });
     const out = svc.calculate(e, "PU", MEET_DATE);
     expect(out.additionalPoints).toBe(5);
-    // basePoints = 100 × 1.0 = 100; final = 100 + 5 = 105 (masters mul = 1.0)
-    expect(out.finalPoints).toBe(105);
+    // basePoints = 100 × real_coef; final = basePoints × 1.0 + 5
+    expect(out.finalPoints).toBeCloseTo(out.basePoints + 5, 5);
   });
 
   it("does NOT apply additional points for Multirep events", () => {
@@ -101,8 +103,8 @@ describe("IsfPointsService — masters multiplier pipeline", () => {
       },
     });
     const out = svc.calculate(e, "PU", MEET_DATE);
-    // basePoints = 100, mastersAdj = 1.025, addPts = 0 → final = 102.5
-    expect(out.finalPoints).toBeCloseTo(102.5, 6);
+    // mastersAdj = 1.025, addPts = 0 → finalPoints = basePoints × 1.025
+    expect(out.finalPoints).toBeCloseTo(out.basePoints * 1.025, 5);
   });
 
   it("M5 (60 yo) → 1.125 multiplier (boundary test, ISF v5.1 §10.9.4)", () => {
@@ -114,7 +116,7 @@ describe("IsfPointsService — masters multiplier pipeline", () => {
       },
     });
     const out = svc.calculate(e, "PU", MEET_DATE);
-    expect(out.finalPoints).toBeCloseTo(112.5, 6);
+    expect(out.finalPoints).toBeCloseTo(out.basePoints * 1.125, 5);
   });
 
   it("M5 (69 yo) → 1.125 multiplier (upper-boundary test)", () => {
@@ -126,7 +128,7 @@ describe("IsfPointsService — masters multiplier pipeline", () => {
       },
     });
     const out = svc.calculate(e, "PU", MEET_DATE);
-    expect(out.finalPoints).toBeCloseTo(112.5, 6);
+    expect(out.finalPoints).toBeCloseTo(out.basePoints * 1.125, 5);
   });
 });
 
@@ -153,27 +155,31 @@ describe("⭐ M5/M6 differentiator — full pipeline (ISF v5.1 §10.9.4)", () =>
     });
   }
 
-  it("age 60 → M5 multiplier 1.125 (basePoints 100 → finalPoints 112.5)", () => {
+  it("age 60 → M5 multiplier 1.125 (basePoints × 1.125)", () => {
     const out = svc.calculate(buildAtAge(60), "PU", MEET_DATE);
-    expect(out.finalPoints).toBeCloseTo(112.5, 6);
+    expect(out.finalPoints).toBeCloseTo(out.basePoints * 1.125, 5);
   });
 
   it("age 69 → M5 multiplier 1.125 (last year of M5 band)", () => {
     const out = svc.calculate(buildAtAge(69), "PU", MEET_DATE);
-    expect(out.finalPoints).toBeCloseTo(112.5, 6);
+    expect(out.finalPoints).toBeCloseTo(out.basePoints * 1.125, 5);
   });
 
   it("age 70 → M6 multiplier 1.150 — DIFFERS FROM POWERGAGE/POWERTABLE", () => {
-    const out = svc.calculate(buildAtAge(70), "PU", MEET_DATE);
-    // PowerGage / PowerTable would compute 112.5 here (1.125 multiplier — wrong by ISF v5.1).
-    // Streetlifting OS computes 115.0 (1.150 multiplier — correct).
-    expect(out.finalPoints).toBeCloseTo(115.0, 6);
-    expect(out.finalPoints).not.toBeCloseTo(112.5, 6); // explicit "not equal to wrong answer"
+    const out60 = svc.calculate(buildAtAge(60), "PU", MEET_DATE);
+    const out70 = svc.calculate(buildAtAge(70), "PU", MEET_DATE);
+    // Both use same bodyweight=80 so same basePoints; ratio of finalPoints = 1.150/1.125
+    expect(out70.finalPoints).toBeCloseTo(out60.finalPoints * (1.150 / 1.125), 4);
+    // PowerGage / PowerTable would compute finalPoints60 × 1.0 (same multiplier — wrong by ISF v5.1).
+    // Streetlifting OS correctly applies 1.150 to M6 vs 1.125 to M5.
+    expect(out70.finalPoints).toBeGreaterThan(out60.finalPoints);
+    // Verify M6 multiplier: finalPoints = basePoints × 1.150
+    expect(out70.finalPoints).toBeCloseTo(out70.basePoints * 1.150, 5);
   });
 
   it("age 80 → M6 multiplier 1.150 (deep into M6 range)", () => {
     const out = svc.calculate(buildAtAge(80), "PU", MEET_DATE);
-    expect(out.finalPoints).toBeCloseTo(115.0, 6);
+    expect(out.finalPoints).toBeCloseTo(out.basePoints * 1.150, 5);
   });
 });
 
@@ -188,7 +194,8 @@ describe("IsfPointsService — birthDate fallback for age", () => {
       },
     });
     const out = svc.calculate(e, "PU", MEET_DATE);
-    expect(out.finalPoints).toBeCloseTo(115.0, 6);
+    // M6 multiplier = 1.150; finalPoints = basePoints × 1.150
+    expect(out.finalPoints).toBeCloseTo(out.basePoints * 1.150, 5);
   });
 });
 
@@ -204,6 +211,125 @@ describe("IsfPointsService — assignedAgeCategoryCode takes precedence", () => 
       },
     });
     const out = svc.calculate(e, "PU", MEET_DATE);
-    expect(out.finalPoints).toBeCloseTo(115.0, 6);
+    // Overridden to M6 → 1.150 multiplier despite young birthDate
+    expect(out.finalPoints).toBeCloseTo(out.basePoints * 1.150, 5);
+  });
+});
+
+// ─── Sprint 4: Real ISF coefficient formula tests ───────────────────────────
+
+describe("ISF absolute coefficient — real formula (Sprint 4)", () => {
+  it("M/PU 80 kg → coefficient within [0.50, 0.53]", () => {
+    const e = buildClassicEntry("M_PU_80", {
+      bodyweightKg: 80,
+      sex: "M",
+      ageOverride: 25,
+      exercises: {
+        PU: classicExercise("PU", [classicAttempt(1, 100, VOTES_GOOD)]),
+      },
+    });
+    const out = svc.calculate(e, "PU", MEET_DATE);
+    expect(out.coefficient).toBeGreaterThanOrEqual(0.50);
+    expect(out.coefficient).toBeLessThanOrEqual(0.53);
+  });
+
+  it("M/DI 80 kg → coefficient positive", () => {
+    const e = buildClassicEntry("M_DI_80", {
+      bodyweightKg: 80,
+      sex: "M",
+      ageOverride: 25,
+      exercises: {
+        DI: classicExercise("DI", [classicAttempt(1, 100, VOTES_GOOD)]),
+      },
+    });
+    const out = svc.calculate(e, "DI", MEET_DATE);
+    expect(out.coefficient).toBeGreaterThan(0);
+    expect(Number.isFinite(out.coefficient)).toBe(true);
+  });
+
+  it("M/PUDI 70 kg → coefficient within [0.27, 0.29]", () => {
+    const e = buildClassicEntry("M_PUDI_70", {
+      bodyweightKg: 70,
+      sex: "M",
+      ageOverride: 25,
+      exercises: {
+        PU: classicExercise("PU", [classicAttempt(1, 100, VOTES_GOOD)]),
+        DI: classicExercise("DI", [classicAttempt(1, 100, VOTES_GOOD)]),
+      },
+    });
+    const out = svc.calculate(e, "PUDI", MEET_DATE);
+    expect(out.coefficient).toBeGreaterThanOrEqual(0.27);
+    expect(out.coefficient).toBeLessThanOrEqual(0.29);
+  });
+
+  it("F/PU 55 kg → coefficient within [0.85, 0.95] (verified against formula constants)", () => {
+    const e = buildClassicEntry("F_PU_55", {
+      bodyweightKg: 55,
+      sex: "F",
+      ageOverride: 25,
+      exercises: {
+        PU: classicExercise("PU", [classicAttempt(1, 100, VOTES_GOOD)]),
+      },
+    });
+    const out = svc.calculate(e, "PU", MEET_DATE);
+    // F:PU A=142.40, B=442.53, C=0.04724 → coef(55) ≈ 0.913
+    expect(out.coefficient).toBeGreaterThanOrEqual(0.85);
+    expect(out.coefficient).toBeLessThanOrEqual(0.95);
+  });
+
+  it("F/DI 60 kg → coefficient positive", () => {
+    const e = buildClassicEntry("F_DI_60", {
+      bodyweightKg: 60,
+      sex: "F",
+      ageOverride: 25,
+      exercises: {
+        DI: classicExercise("DI", [classicAttempt(1, 100, VOTES_GOOD)]),
+      },
+    });
+    const out = svc.calculate(e, "DI", MEET_DATE);
+    expect(out.coefficient).toBeGreaterThan(0);
+    expect(Number.isFinite(out.coefficient)).toBe(true);
+  });
+
+  it("F/PUDI 60 kg → coefficient positive", () => {
+    const e = buildClassicEntry("F_PUDI_60", {
+      bodyweightKg: 60,
+      sex: "F",
+      ageOverride: 25,
+      exercises: {
+        PU: classicExercise("PU", [classicAttempt(1, 100, VOTES_GOOD)]),
+        DI: classicExercise("DI", [classicAttempt(1, 100, VOTES_GOOD)]),
+      },
+    });
+    const out = svc.calculate(e, "PUDI", MEET_DATE);
+    expect(out.coefficient).toBeGreaterThan(0);
+    expect(Number.isFinite(out.coefficient)).toBe(true);
+  });
+
+  it("bodyweight 0 kg → coefficient is finite (formula does not crash)", () => {
+    const e = buildClassicEntry("BW0", {
+      bodyweightKg: 0,
+      sex: "M",
+      ageOverride: 25,
+      exercises: {
+        PU: classicExercise("PU", [classicAttempt(1, 100, VOTES_GOOD)]),
+      },
+    });
+    const out = svc.calculate(e, "PU", MEET_DATE);
+    expect(Number.isFinite(out.coefficient)).toBe(true);
+  });
+
+  it("bodyweight 200 kg → coefficient is finite positive", () => {
+    const e = buildClassicEntry("BW200", {
+      bodyweightKg: 200,
+      sex: "M",
+      ageOverride: 25,
+      exercises: {
+        PU: classicExercise("PU", [classicAttempt(1, 100, VOTES_GOOD)]),
+      },
+    });
+    const out = svc.calculate(e, "PU", MEET_DATE);
+    expect(out.coefficient).toBeGreaterThan(0);
+    expect(Number.isFinite(out.coefficient)).toBe(true);
   });
 });

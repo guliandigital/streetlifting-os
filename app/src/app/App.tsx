@@ -24,6 +24,8 @@ import { RegistrationPage } from "@pages/registration/RegistrationPage";
 import { WeighInsPage } from "@pages/weigh-ins/WeighInsPage";
 import { JudgingPage } from "@pages/judging/JudgingPage";
 import { ResultsPage } from "@pages/results/ResultsPage";
+import { MeetSetupPage } from "@pages/meet-setup/MeetSetupPage";
+import { FlightOrderPage } from "@pages/flight-order/FlightOrderPage";
 import { RequireMeet } from "@components/RequireMeet";
 import { useAppSelector } from "@store/index";
 
@@ -33,10 +35,12 @@ function NavLinks() {
   const location = useLocation();
   const items = [
     { to: "/", label: t("nav.home"), needsMeet: false },
+    { to: "/meet-setup", label: t("nav.meetSetup"), needsMeet: true },
     { to: "/registration", label: t("nav.registration"), needsMeet: true },
     { to: "/weigh-ins", label: t("nav.weighIns"), needsMeet: true },
     { to: "/judging", label: t("nav.judging"), needsMeet: true },
     { to: "/results", label: t("nav.results"), needsMeet: true },
+    { to: "/flight-order", label: t("nav.flightOrder"), needsMeet: true },
   ];
   return (
     <Group gap="md">
@@ -86,7 +90,7 @@ export function App() {
                     ISF v5.1
                   </Badge>
                   <Badge color="violet" variant="light">
-                    v0.2.0-dev
+                    v0.4.0
                   </Badge>
                   <NavLinks />
                 </Group>
@@ -139,6 +143,22 @@ export function App() {
                   element={
                     <RequireMeet>
                       <ResultsPage />
+                    </RequireMeet>
+                  }
+                />
+                <Route
+                  path="/meet-setup"
+                  element={
+                    <RequireMeet>
+                      <MeetSetupPage />
+                    </RequireMeet>
+                  }
+                />
+                <Route
+                  path="/flight-order"
+                  element={
+                    <RequireMeet>
+                      <FlightOrderPage />
                     </RequireMeet>
                   }
                 />

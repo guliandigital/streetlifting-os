@@ -10,7 +10,16 @@
  */
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { SaveFile, JudgeVotes } from "@domain/models";
+import type {
+  SaveFile,
+  JudgeVotes,
+  Plate,
+  WeightCategory,
+  AgeCategory,
+  CompetitionFormat,
+  ScoringFormula,
+  DisciplineCode,
+} from "@domain/models";
 import { PENDING_VOTES } from "@domain/models";
 import {
   ISF_V51_AGE_CATEGORIES,
@@ -207,6 +216,125 @@ const meetSlice = createSlice({
         att.lastDeclarationAt = lastDeclarationAt;
       }
 
+      state.dirty = true;
+    },
+
+    /**
+     * Merge-patch the basic meet metadata fields.
+     * Only provided keys are updated; dirty=true.
+     */
+    updateMeetBasics(
+      state,
+      action: PayloadAction<{
+        name?: string;
+        federation?: string;
+        country?: string;
+        state?: string;
+        city?: string;
+        date?: string;
+        competitionFormat?: CompetitionFormat;
+        formula?: ScoringFormula;
+        useMastersAdjustment?: boolean;
+        lowerBodyweightFirstTiebreak?: boolean;
+      }>,
+    ) {
+      if (!state.current) return;
+      const m = state.current.meet;
+      const p = action.payload;
+      if (p.name !== undefined) m.name = p.name;
+      if (p.federation !== undefined) m.federation = p.federation;
+      if (p.country !== undefined) m.country = p.country;
+      if (p.state !== undefined) m.state = p.state;
+      if (p.city !== undefined) m.city = p.city;
+      if (p.date !== undefined) m.date = p.date;
+      if (p.competitionFormat !== undefined) m.competitionFormat = p.competitionFormat;
+      if (p.formula !== undefined) m.formula = p.formula;
+      if (p.useMastersAdjustment !== undefined) m.useMastersAdjustment = p.useMastersAdjustment;
+      if (p.lowerBodyweightFirstTiebreak !== undefined) m.lowerBodyweightFirstTiebreak = p.lowerBodyweightFirstTiebreak;
+      state.dirty = true;
+    },
+
+    /**
+     * Toggle a discipline code: add if absent, remove if present.
+     */
+    toggleDisciplineCode(state, action: PayloadAction<DisciplineCode>) {
+      if (!state.current) return;
+      const codes = state.current.meet.enabledDisciplineCodes;
+      const idx = codes.indexOf(action.payload);
+      if (idx === -1) {
+        codes.push(action.payload);
+      } else {
+        codes.splice(idx, 1);
+      }
+      state.dirty = true;
+    },
+
+    /**
+     * Replace the full list of enabled discipline codes.
+     */
+    setEnabledDisciplineCodes(state, action: PayloadAction<DisciplineCode[]>) {
+      if (!state.current) return;
+      state.current.meet.enabledDisciplineCodes = [...action.payload];
+      state.dirty = true;
+    },
+
+    /**
+     * Mutate a plate at the given index with the given patch.
+     */
+    updatePlate(
+      state,
+      action: PayloadAction<{ index: number; patch: Partial<Plate> }>,
+    ) {
+      if (!state.current) return;
+      const plates = state.current.meet.classicLoadConfig?.plates;
+      if (!plates) return;
+      const { index, patch } = action.payload;
+      if (index < 0 || index >= plates.length) return;
+      const plate = plates[index];
+      if (!plate) return;
+      Object.assign(plate, patch);
+      state.dirty = true;
+    },
+
+    /**
+     * Append a new plate to classicLoadConfig.plates.
+     */
+    addPlate(state, action: PayloadAction<Plate>) {
+      if (!state.current) return;
+      const cfg = state.current.meet.classicLoadConfig;
+      if (!cfg) return;
+      cfg.plates.push({ ...action.payload });
+      state.dirty = true;
+    },
+
+    /**
+     * Remove the plate at the given index.
+     */
+    removePlate(state, action: PayloadAction<number>) {
+      if (!state.current) return;
+      const cfg = state.current.meet.classicLoadConfig;
+      if (!cfg) return;
+      const idx = action.payload;
+      if (idx < 0 || idx >= cfg.plates.length) return;
+      cfg.plates.splice(idx, 1);
+      state.dirty = true;
+    },
+
+    /**
+     * Replace the full list of weight categories.
+     */
+    setWeightCategories(state, action: PayloadAction<WeightCategory[]>) {
+      if (!state.current) return;
+      state.current.meet.weightCategories = [...action.payload];
+      state.dirty = true;
+    },
+
+    /**
+     * Replace the full list of age categories.
+     */
+    setAgeCategories(state, action: PayloadAction<AgeCategory[]>) {
+      if (!state.current) return;
+      state.current.meet.ageCategories = [...action.payload];
       state.dirty = true;
     },
 
@@ -409,5 +537,13 @@ export const {
   updateJudgingState,
   commitAttemptVotes,
   commitMultirepAttempt,
+  updateMeetBasics,
+  toggleDisciplineCode,
+  setEnabledDisciplineCodes,
+  updatePlate,
+  addPlate,
+  removePlate,
+  setWeightCategories,
+  setAgeCategories,
 } = meetSlice.actions;
 export default meetSlice.reducer;

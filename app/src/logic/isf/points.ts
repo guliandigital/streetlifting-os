@@ -8,15 +8,14 @@
  *   4. additional  = additionalPoints(sex, event, bw)   // Classic only per D7
  *   5. final       = basePoints × mastersAdj + additional
  *
- * NOTE: V1 ships `isf_abs_coef` as a stub returning 1.0 for all inputs (TODO: extract
- * the real coefficient table from streetlifting.ru/points/ — D1). Once the table lands
- * the only change is data, not shape.
+ * ISF absolute coefficient formula (source: streetlifting.ru/points/):
+ *   ISF Coefficient = 100 / (A − B × e^(−C × bodyweightKg))
+ * where A, B, C constants are tabulated by (sex × event).
  */
 
 import type {
   Entry,
   Event,
-  Sex,
   IsfPointBreakdown,
 } from "@domain/models";
 import { additionalPoints } from "@domain/presets";
@@ -27,22 +26,41 @@ import {
 } from "./result";
 
 /**
- * V1 STUB for ISF absolute-coefficient lookup table.
+ * ISF absolute-coefficient constants per (sex × event).
+ * Source: https://streetlifting.ru/points/
+ * Formula: ISF Coefficient = 100 / (A − B × e^(−C × bodyweightKg))
+ */
+const ISF_COEF_PARAMS: Record<string, { A: number; B: number; C: number }> = {
+  "M:PU":   { A: 320.98, B: 281.40, C: 0.01008 },
+  "M:DI":   { A: 381.22, B: 733.79, C: 0.02398 },
+  "M:PUDI": { A: 799.82, B: 681.45, C: 0.00614 },
+  "F:PU":   { A: 142.40, B: 442.53, C: 0.04724 },
+  "F:DI":   { A: 221.82, B: 357.00, C: 0.02937 },
+  "F:PUDI": { A: 406.89, B: 697.06, C: 0.02032 },
+};
+
+/**
+ * ISF absolute coefficient lookup.
  *
- * Source of truth: https://streetlifting.ru/points/ (D1). The real table is a
- * 4-D lookup over (sex × exercise × bodyweightKg) returning a multiplier. Until
- * extracted, this stub returns 1.0 — points calculations are structurally
- * correct but absolute values are placeholders.
+ * Source: https://streetlifting.ru/points/ (D1).
+ * Formula: ISF Coefficient = 100 / (A − B × e^(−C × bodyweightKg))
  *
- * TODO Sprint 2: scrape streetlifting.ru/points/ → ship as a TS constant or
- * JSON in src/domain/presets/isf-coefficients.ts.
+ * Returns 1.0 fallback for unsupported events (MU, SQ, etc.) or sex = OPEN.
  */
 function isfAbsCoef(
-  _bodyweightKg: number,
-  _event: Event,
-  _sex: Sex,
+  bodyweightKg: number,
+  event: Event,
+  sex: "M" | "F",
 ): number {
-  return 1.0;
+  const eventKey = event === "PU" ? "PU" : event === "DI" ? "DI" : event === "PUDI" ? "PUDI" : null;
+  if (!eventKey) return 1.0; // fallback for unsupported events (MU, SQ, etc.)
+  const key = `${sex}:${eventKey}`;
+  const p = ISF_COEF_PARAMS[key];
+  if (!p) return 1.0;
+  const { A, B, C } = p;
+  const denom = A - B * Math.exp(-C * bodyweightKg);
+  if (denom <= 0) return 0; // protect against division by zero/negative
+  return 100 / denom;
 }
 
 /**
