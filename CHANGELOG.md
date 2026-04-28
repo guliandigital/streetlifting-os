@@ -10,6 +10,63 @@ release will be 1.0.0 once V1 reaches production-ready quality.
 
 ## [Unreleased]
 
+### Planned for 0.5.0
+- Auto-updater (Ed25519 keypair, Tauri updater endpoint)
+- Records module (V2 feature — deferred)
+- Beat-to-first-place forecast (V2 — full D16 implementation)
+
+---
+
+## [0.4.0] — 2026-04-28
+
+Sprint 4 — ISF coefficient formula, Meet Setup screen, Flight Order screen.
+
+### Added
+- **Real ISF absolute-coefficient formula** (`src/logic/isf/points.ts`).
+  Replaces the `1.0` stub with the formula sourced from
+  `streetlifting.ru/points/`:
+  ```
+  Coefficient = 100 / (A − B × e^(−C × bodyweight_kg))
+  ```
+  with six sets of constants: M/F × PU/DI/PUDI. Points calculations
+  now produce correct ISF absolute values (e.g. 80 kg male PU ≈ 0.512,
+  70 kg male total ≈ 0.280). OPEN sex and V3 events (MU, SQ) still
+  return 1.0 as a safe fallback.
+- **`/meet-setup` screen** (guarded by `RequireMeet`). Five tabs:
+  - *Основные / Basic* — meet name, federation, country, region, city,
+    date, competition format (SegmentedControl), scoring formula (Select),
+    masters-adjustment and lower-BW-first toggles (Switch).
+  - *Дисциплины / Disciplines* — checkboxes for all 19 ISF disciplines,
+    grouped into Classic and Multirep. "Select all Classic / Multirep"
+    convenience buttons.
+  - *Весовые кат. / Weight Cats* — two-column M/F checklist. Toggle
+    adds/removes the full `WeightCategory` object. "Reset to ISF defaults".
+  - *Возрастные кат. / Age Cats* — checklist. "Reset to ISF defaults".
+  - *Диски / Plates* — inline-editable table (weight, pairs, color,
+    record-only flag). Add plate / Remove plate / Reset to ISF defaults.
+- **`/flight-order` screen** (guarded by `RequireMeet`). Printable starting
+  list grouped by flight. Exercise filter (PU / DI / All). Entries sorted
+  by opener load ASC for Classic, lot order for Multirep.
+  `window.print()` with `@media print` CSS to suppress navigation.
+- **8 new actions on `meet-slice`**: `updateMeetBasics`, `toggleDisciplineCode`,
+  `setEnabledDisciplineCodes`, `updatePlate`, `addPlate`, `removePlate`,
+  `setWeightCategories`, `setAgeCategories`. All no-op when no meet is open.
+- Full `meetSetup.*`, `flightOrder.*`, `nav.meetSetup`, `nav.flightOrder`
+  i18n keys in both **ru-RU** and **en-US**.
+
+### Tests
+- **363 unit tests** (up from 279 → 320 → 363).
+- `tests/isf-coefficient.test.ts` (11) — formula correctness for all
+  6 sex×event combinations, edge cases (bw=1, bw=200), fallbacks.
+- `tests/meet-slice-setup.test.ts` (24) — all 8 new reducers, including
+  no-op-when-null cases.
+- `tests/points.test.ts` updated — replaced stub-tolerance assertions with
+  formula-verified ranges.
+- `tests/classic-placing.test.ts` updated — ISF point checks now use real
+  coefficient values.
+
+---
+
 ### Planned for 0.4.0
 - Meet Setup screen — discipline / category / plate editors — blueprint v2 §11.2
 - Auto-updater (Ed25519 keypair, Tauri updater endpoint)
@@ -277,7 +334,8 @@ First public release. Sprint 1 of the V1 client (registration + weigh-in).
 - Save-file format is versioned independently via `stateVersion`; a major
   app-version bump does not necessarily change `stateVersion`.
 
-[Unreleased]: https://github.com/GulianDigital/streetlifting-os/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/GulianDigital/streetlifting-os/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/GulianDigital/streetlifting-os/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/GulianDigital/streetlifting-os/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/GulianDigital/streetlifting-os/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/GulianDigital/streetlifting-os/releases/tag/v0.1.0
