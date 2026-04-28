@@ -123,6 +123,9 @@ export function AboutPage() {
               >
                 ISF Website
               </Anchor>
+              <Anchor href="/scoreboard" target="_blank" rel="noopener noreferrer">
+                📺 {t("scoreboard.openScoreboard")}
+              </Anchor>
             </Group>
           </Stack>
         </Card>

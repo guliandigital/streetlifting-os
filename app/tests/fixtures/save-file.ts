@@ -14,7 +14,7 @@ export function buildEmptyV2SaveFile(): SaveFile {
   return {
     versions: {
       stateVersion: "2",
-      releaseVersion: "1.0.0",
+      releaseVersion: "1.1.0",
     },
     meet: {
       name: "Test Meet",

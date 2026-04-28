@@ -341,6 +341,15 @@ export function Home() {
           </Stack>
         )}
 
+        {/* Scoreboard link */}
+        <Group>
+          <a href="/scoreboard" target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>
+            <Button size="xs" variant="subtle" color="gray" leftSection={<Text span>📺</Text>}>
+              {t("scoreboard.openScoreboard")}
+            </Button>
+          </a>
+        </Group>
+
         {/* ISF correctness marketing card */}
         <Alert
           color="red"

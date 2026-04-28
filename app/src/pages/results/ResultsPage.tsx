@@ -9,7 +9,7 @@
  * Route guard: handled by RequireMeet in App.tsx.
  */
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Container,
@@ -21,6 +21,7 @@ import {
   Group,
   Stack,
   Badge,
+  NumberInput,
 } from "@mantine/core";
 import { useAppSelector } from "@store/index";
 import { selectEntries } from "@store/registration-slice";
@@ -40,6 +41,8 @@ import type {
   MultirepResultGroup,
   MultirepResultRow,
 } from "@logic/isf/multirep-placing";
+import { computeTeamScores } from "@logic/isf/team-scoring";
+import type { TeamScore } from "@logic/isf/team-scoring";
 import {
   exportClassicProtocolCsv,
   exportMultirepProtocolCsv,
@@ -366,6 +369,103 @@ function MultirepGroupTable({ group }: { group: MultirepResultGroup }) {
   );
 }
 
+// ─── Team standings table ────────────────────────────────────────────────────
+
+function TeamStandingsTab({
+  rows,
+}: {
+  rows: ClassicResultRow[];
+}) {
+  const { t } = useTranslation();
+  const [topN, setTopN] = useState<number>(3);
+
+  const teamScores = useMemo<TeamScore[]>(
+    () => computeTeamScores(rows, topN),
+    [rows, topN],
+  );
+
+  const hasTeams = rows.some(
+    (r) => !r.entry.guest && typeof r.entry.team === "string" && r.entry.team.trim().length > 0,
+  );
+
+  if (!hasTeams) {
+    return (
+      <Text c="dimmed" ta="center" py="xl">
+        {t("team.noTeams")}
+      </Text>
+    );
+  }
+
+  return (
+    <Stack gap="md">
+      <Group align="center">
+        <Text size="sm" fw={500}>
+          {t("team.topN")}:
+        </Text>
+        <NumberInput
+          value={topN}
+          onChange={(val) => {
+            const n = typeof val === "number" ? val : parseInt(String(val), 10);
+            if (!isNaN(n) && n >= 1 && n <= 10) setTopN(n);
+          }}
+          min={1}
+          max={10}
+          step={1}
+          style={{ width: 80 }}
+          size="xs"
+        />
+      </Group>
+
+      <Table striped withTableBorder withColumnBorders fz="xs">
+        <Table.Thead>
+          <Table.Tr>
+            <Table.Th>{t("team.place")}</Table.Th>
+            <Table.Th>{t("team.team")}</Table.Th>
+            <Table.Th>{t("team.athletes")}</Table.Th>
+            <Table.Th>{t("team.points")}</Table.Th>
+            <Table.Th>{t("team.contributors")}</Table.Th>
+          </Table.Tr>
+        </Table.Thead>
+        <Table.Tbody>
+          {teamScores.map((ts) => {
+            const color = placeColor(ts.place);
+            const contribText = ts.contributors
+              .map((c) => `${c.entry.name} ${c.points.toFixed(2)}`)
+              .join(", ");
+            return (
+              <Table.Tr key={ts.teamName}>
+                <Table.Td>
+                  <Text size="sm" fw={600} style={{ color }}>
+                    {ts.place}
+                  </Text>
+                </Table.Td>
+                <Table.Td>
+                  <Text size="sm" fw={500}>
+                    {ts.teamName}
+                  </Text>
+                </Table.Td>
+                <Table.Td>
+                  <Text size="xs">{ts.athleteCount}</Text>
+                </Table.Td>
+                <Table.Td>
+                  <Text size="xs" fw={600}>
+                    {ts.totalPoints.toFixed(2)}
+                  </Text>
+                </Table.Td>
+                <Table.Td>
+                  <Text size="xs" c="dimmed">
+                    {contribText}
+                  </Text>
+                </Table.Td>
+              </Table.Tr>
+            );
+          })}
+        </Table.Tbody>
+      </Table>
+    </Stack>
+  );
+}
+
 // ─── Main page ───────────────────────────────────────────────────────────────
 
 export function ResultsPage() {
@@ -408,6 +508,23 @@ export function ResultsPage() {
     if (!meet) return [];
     return computeMultirepResults(entries, meet.meet, meetDate);
   }, [meet, entries, meetDate]);
+
+  // Team scoring — uses all classic non-guest rows
+  const allClassicRows = useMemo<ClassicResultRow[]>(() => {
+    if (!meet) return [];
+    return computeClassicRows(entries, meet.meet, meetDate);
+  }, [meet, entries, meetDate]);
+
+  const hasTeamEntries = useMemo(
+    () =>
+      allClassicRows.some(
+        (r) =>
+          !r.entry.guest &&
+          typeof r.entry.team === "string" &&
+          r.entry.team.trim().length > 0,
+      ),
+    [allClassicRows],
+  );
 
   const hasMultirepDisciplines = useMemo(() => {
     const enabled = meet?.meet.enabledDisciplineCodes ?? [];
@@ -461,6 +578,9 @@ export function ResultsPage() {
             {hasMultirepDisciplines && (
               <Tabs.Tab value="multirep">{t("results.multirepTab")}</Tabs.Tab>
             )}
+            {(hasTeamEntries || allClassicRows.length > 0) && (
+              <Tabs.Tab value="team">{t("team.title")}</Tabs.Tab>
+            )}
           </Tabs.List>
 
           <Tabs.Panel value="byCategory">
@@ -501,6 +621,12 @@ export function ResultsPage() {
                   <MultirepGroupTable key={group.label} group={group} />
                 ))
               )}
+            </Tabs.Panel>
+          )}
+
+          {(hasTeamEntries || allClassicRows.length > 0) && (
+            <Tabs.Panel value="team" pt="md">
+              <TeamStandingsTab rows={allClassicRows} />
             </Tabs.Panel>
           )}
         </Tabs>

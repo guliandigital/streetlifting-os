@@ -39,10 +39,12 @@ import { ResultsPage } from "@pages/results/ResultsPage";
 import { RecordsPage } from "@pages/records/RecordsPage";
 import { MeetSetupPage } from "@pages/meet-setup/MeetSetupPage";
 import { FlightOrderPage } from "@pages/flight-order/FlightOrderPage";
+import { ScoreboardPage } from "@pages/scoreboard/ScoreboardPage";
+import { PrintPage } from "@pages/print/PrintPage";
 import { RequireMeet } from "@components/RequireMeet";
 import { useAppSelector } from "@store/index";
 
-const APP_VERSION = "1.0.0";
+const APP_VERSION = "1.1.0";
 
 // ─── Sidebar navigation ───────────────────────────────────────────────────────
 
@@ -65,6 +67,8 @@ function SidebarNav({ onNavigate }: SidebarNavProps) {
     { to: "/judging", label: t("nav.judging"), emoji: "🏋️", needsMeet: true },
     { to: "/results", label: t("nav.results"), emoji: "🏆", needsMeet: true },
     { to: "/records", label: t("nav.records"), emoji: "🏅", needsMeet: true },
+    { to: "/scoreboard", label: t("nav.scoreboard"), emoji: "📺", needsMeet: false },
+    { to: "/print", label: t("nav.print"), emoji: "🖨️", needsMeet: true },
   ];
 
   const bottomItems = [
@@ -225,6 +229,15 @@ function AppWithRouter() {
             element={
               <RequireMeet>
                 <FlightOrderPage />
+              </RequireMeet>
+            }
+          />
+          <Route path="/scoreboard" element={<ScoreboardPage />} />
+          <Route
+            path="/print"
+            element={
+              <RequireMeet>
+                <PrintPage />
               </RequireMeet>
             }
           />
