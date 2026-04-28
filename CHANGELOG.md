@@ -10,10 +10,14 @@ release will be 1.0.0 once V1 reaches production-ready quality.
 
 ## [Unreleased]
 
+### Added since 0.2.0
+- Results screen (`/results`) — by-category grouped tables + absolute ISF-points ranking
+- Classic protocol CSV export (PowerTable-compatible column order, UTF-8 BOM)
+
 ### Planned for 0.3.0 (Sprint 3)
-- Results screen (by category / by ISF points / absolute) — blueprint v2 §11.7
-- Classic protocol CSV export (UTF-8)
 - Multirep module — preset config, 120 s timer, reps/no-rep entry, placing — blueprint v2 §15
+- Meet Setup screen — discipline/category/plate editors — blueprint v2 §11.2
+- Auto-updater (Ed25519 keypair, Tauri updater endpoint)
 
 ---
 
