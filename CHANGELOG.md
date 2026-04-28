@@ -386,9 +386,9 @@ First public release. Sprint 1 of the V1 client (registration + weigh-in).
   - `docs/installation-v1.md` — end-user install guide for each OS.
   - `docs/brand/brand-guidelines-v1.md` — colour, typography, voice.
   - `docs/brand/icon-generation.md` — icon pipeline (single-source SVG).
-  - `docs/user-manual/operator-manual-v0.1.0-ru.md` — for federation
+  - `docs/user-manual/operator-manual-ru.md` — for federation
     secretaries.
-  - `docs/user-manual/quick-start-v0.1.0-ru.md` — one-page tournament-day
+  - `docs/user-manual/quick-start-ru.md` — one-page tournament-day
     cheat-sheet.
 
 ### Tests
