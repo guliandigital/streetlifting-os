@@ -10,6 +10,61 @@ release will be 1.0.0 once V1 reaches production-ready quality.
 
 ## [Unreleased]
 
+### Planned for 1.0.0 (V1 GA)
+- Code-signing (Windows EV cert + Apple Developer ID)
+- Auto-updater keypair activation (replace placeholder pubkey)
+- Records module (per-competition best lifts per discipline × age × weight cat)
+- Full forecast implementation (D16 — kg-to-first-place projection)
+- Real-tournament UAT + bug-bash
+
+---
+
+## [0.5.0] — 2026-04-28
+
+Sprint 5 — UI overhaul, keyboard shortcuts, auto-updater infrastructure.
+
+### Added
+- **Home dashboard** — complete rewrite. When a meet is open: meet title,
+  federation, city, date; 4 stat cards (athletes count, weighed-in count,
+  attempts-done / attempts-total, enabled disciplines); progress bar; quick-
+  jump buttons to Judging, Results, Registration, Weigh-ins; file path or
+  "Не сохранено / Unsaved" indicator. When no meet: welcome screen with
+  5-step quick-start guide.
+- **Sidebar navigation** — replaced the cramped 7-item header nav with a
+  `AppShell.Navbar` (200 px). Header is now clean: app name, ISF badge,
+  version badge, language toggle, hamburger for mobile. Sidebar items:
+  Home / Setup / Registration / Weigh-ins / Flight Order / Judging /
+  Results / About. Disabled items visible but non-interactive when no
+  meet is open. Active item highlighted in ISF Red.
+- **`/about` page** — version info, ISF Rules version, correctness facts
+  table (M6 ×1.150 differentiator, weight-category boundary, additional-
+  points formula, ISF coefficient formula), full keyboard shortcuts
+  reference, GitHub link, legal notice.
+- **Judging keyboard shortcuts** — live on the `/judging` page:
+  `Q/A` = Left good/no-lift, `W/S` = Center, `E/D` = Right,
+  `Space` = confirm attempt (when all 3 votes cast), `Esc` = clear all.
+  Inactive when focus is inside a form element.
+- **Auto-updater infrastructure** — `tauri-plugin-updater` registered in
+  `lib.rs`; endpoint configured in `tauri.conf.json` pointing at GitHub
+  Releases `latest.json`; `@tauri-apps/plugin-updater` added to deps;
+  "Check for updates" button in Home page (Tauri only, degrades gracefully
+  while pubkey is placeholder). To activate: run
+  `npx @tauri-apps/cli signer generate`, store private key as
+  `TAURI_SIGNING_PRIVATE_KEY` GitHub secret, replace `pubkey` placeholder
+  in `tauri.conf.json` with the generated public key.
+- `LICENSE` (MIT), `NOTICE`, `SECURITY.md` added (PR #8).
+- New i18n keys: `home.quickStart.*`, `home.stats.*`,
+  `home.checkUpdates/updateAvailable/upToDate`, full `about.*` section,
+  `nav.about`.
+
+### Tests
+- **380 unit tests** (up from 320 → 363 → 380).
+- `tests/home-stats.test.ts` (17) — `countWeighedIn`, `countAttemptsDone`,
+  `countAttemptsTotal` with edge cases (empty, mixed, record-attempt
+  exclusion, multirep entries).
+
+---
+
 ### Planned for 0.5.0
 - Auto-updater (Ed25519 keypair, Tauri updater endpoint)
 - Records module (V2 feature — deferred)
@@ -334,7 +389,8 @@ First public release. Sprint 1 of the V1 client (registration + weigh-in).
 - Save-file format is versioned independently via `stateVersion`; a major
   app-version bump does not necessarily change `stateVersion`.
 
-[Unreleased]: https://github.com/GulianDigital/streetlifting-os/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/GulianDigital/streetlifting-os/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/GulianDigital/streetlifting-os/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/GulianDigital/streetlifting-os/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/GulianDigital/streetlifting-os/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/GulianDigital/streetlifting-os/compare/v0.1.0...v0.2.0
