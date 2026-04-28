@@ -10,6 +10,20 @@ release will be 1.0.0 once V1 reaches production-ready quality.
 
 ## [Unreleased]
 
+### Planned for next minor
+- Code-signing (Windows EV cert + Apple Developer ID — both deferred
+  pending D40.4 legal entity decision)
+- Cross-competition records archive (V2 feature)
+- Real-tournament UAT + bug-bash
+
+---
+
+## [1.1.1] — 2026-04-28
+
+Patch release. Activates the auto-updater signing chain so v1.1.1 and
+later get over-the-air updates; existing v1.1.0 installs need a manual
+re-download once.
+
 ### Added
 - **Auto-updater signing keypair activated.** The placeholder pubkey
   (`dW5zZXQ=`) in `app/src-tauri/tauri.conf.json` is replaced with the
@@ -22,16 +36,21 @@ release will be 1.0.0 once V1 reaches production-ready quality.
   per-OS bundle gets a sibling `.sig` file plus a `latest.json` is
   uploaded to the release — exactly what the updater endpoint
   (`https://github.com/GulianDigital/streetlifting-os/releases/latest/download/latest.json`)
-  expects. **Bridge note for users**: existing v1.1.0 installs cannot
-  auto-update (they have the placeholder pubkey baked in). The first
-  build cut after this change is the floor — v1.1.0 → that build is a
-  manual reinstall, but every future build chains through the updater.
+  expects.
 
-### Planned for next minor
-- Code-signing (Windows EV cert + Apple Developer ID — both deferred
-  pending D40.4 legal entity decision)
-- Cross-competition records archive (V2 feature)
-- Real-tournament UAT + bug-bash
+### Migration note (v1.1.0 → v1.1.1)
+Existing v1.1.0 installs cannot auto-update to v1.1.1 — their bundle
+has the placeholder pubkey baked in and rejects every signed payload.
+**Users on v1.1.0 must manually download v1.1.1 once** from
+[GitHub Releases](https://github.com/GulianDigital/streetlifting-os/releases/tag/v1.1.1)
+and re-run the installer. From v1.1.1 onwards the updater chain works
+transparently.
+
+### Known limitations (carried over from 1.1.0)
+- Binaries unsigned (no Windows EV cert, no Apple Developer ID).
+  SmartScreen / Gatekeeper "open anyway" steps documented in
+  `docs/installation-v1.md`.
+- ISF cross-competition records archive deferred to V2.
 
 ---
 
