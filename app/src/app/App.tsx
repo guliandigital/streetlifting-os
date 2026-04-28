@@ -36,12 +36,13 @@ import { RegistrationPage } from "@pages/registration/RegistrationPage";
 import { WeighInsPage } from "@pages/weigh-ins/WeighInsPage";
 import { JudgingPage } from "@pages/judging/JudgingPage";
 import { ResultsPage } from "@pages/results/ResultsPage";
+import { RecordsPage } from "@pages/records/RecordsPage";
 import { MeetSetupPage } from "@pages/meet-setup/MeetSetupPage";
 import { FlightOrderPage } from "@pages/flight-order/FlightOrderPage";
 import { RequireMeet } from "@components/RequireMeet";
 import { useAppSelector } from "@store/index";
 
-const APP_VERSION = "0.5.0";
+const APP_VERSION = "1.0.0";
 
 // ─── Sidebar navigation ───────────────────────────────────────────────────────
 
@@ -63,6 +64,7 @@ function SidebarNav({ onNavigate }: SidebarNavProps) {
     { to: "/flight-order", label: t("nav.flightOrder"), emoji: "📊", needsMeet: true },
     { to: "/judging", label: t("nav.judging"), emoji: "🏋️", needsMeet: true },
     { to: "/results", label: t("nav.results"), emoji: "🏆", needsMeet: true },
+    { to: "/records", label: t("nav.records"), emoji: "🏅", needsMeet: true },
   ];
 
   const bottomItems = [
@@ -199,6 +201,14 @@ function AppWithRouter() {
             element={
               <RequireMeet>
                 <ResultsPage />
+              </RequireMeet>
+            }
+          />
+          <Route
+            path="/records"
+            element={
+              <RequireMeet>
+                <RecordsPage />
               </RequireMeet>
             }
           />

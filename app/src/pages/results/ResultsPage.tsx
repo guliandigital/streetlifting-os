@@ -28,6 +28,8 @@ import {
   computeClassicResults,
   computeClassicRows,
 } from "@logic/isf/classic-placing";
+import { ClassicForecastService } from "@logic/isf/forecast";
+import type { ForecastResult } from "@domain/models";
 import type {
   ClassicResultRow,
   ClassicResultGroup,
@@ -178,7 +180,13 @@ function CategoryGroupTable({ group }: { group: ClassicResultGroup }) {
 
 // ─── Absolute (by ISF points) table ─────────────────────────────────────────
 
-function AbsoluteTable({ rows }: { rows: ClassicResultRow[] }) {
+function AbsoluteTable({
+  rows,
+  forecastMap,
+}: {
+  rows: ClassicResultRow[];
+  forecastMap: Map<string, ForecastResult>;
+}) {
   const { t } = useTranslation();
 
   const sorted = useMemo(
@@ -198,12 +206,17 @@ function AbsoluteTable({ rows }: { rows: ClassicResultRow[] }) {
           <Table.Th>{t("results.total")}</Table.Th>
           <Table.Th>{t("results.coef")}</Table.Th>
           <Table.Th>{t("results.isfPoints")}</Table.Th>
+          <Table.Th>{t("results.predPlace")}</Table.Th>
+          <Table.Th>{t("results.toFirst")}</Table.Th>
         </Table.Tr>
       </Table.Thead>
       <Table.Tbody>
         {sorted.map((row, i) => {
           const place = i + 1;
           const color = placeColor(place);
+          const forecast = forecastMap.get(row.entry.id);
+          const predPlace = forecast?.predictedPlace ?? null;
+          const kgToFirst = forecast?.kgToFirstPlace ?? null;
           return (
             <Table.Tr key={row.entry.id}>
               <Table.Td>
@@ -229,6 +242,20 @@ function AbsoluteTable({ rows }: { rows: ClassicResultRow[] }) {
               </Table.Td>
               <Table.Td>
                 <Text size="xs" fw={600}>{row.isfFinalPoints.toFixed(2)}</Text>
+              </Table.Td>
+              <Table.Td>
+                <Text size="xs" c="dimmed">
+                  {predPlace !== null ? predPlace : "–"}
+                </Text>
+              </Table.Td>
+              <Table.Td>
+                <Text size="xs" c="dimmed">
+                  {kgToFirst === null
+                    ? "–"
+                    : kgToFirst === 0
+                    ? "—"
+                    : `+${kgToFirst.toFixed(2)} кг`}
+                </Text>
               </Table.Td>
             </Table.Tr>
           );
@@ -365,6 +392,17 @@ export function ResultsPage() {
     return allNonGuestRows.some((r) => r.total > 0);
   }, [allNonGuestRows]);
 
+  // Forecast map: entry.id → ForecastResult
+  const forecastMap = useMemo<Map<string, ForecastResult>>(() => {
+    if (!meet) return new Map();
+    const svc = new ClassicForecastService(meetDate);
+    const map = new Map<string, ForecastResult>();
+    for (const row of allNonGuestRows) {
+      map.set(row.entry.id, svc.forecast(row.entry, entries));
+    }
+    return map;
+  }, [meet, allNonGuestRows, entries, meetDate]);
+
   // Multirep results
   const multirepGroups = useMemo<MultirepResultGroup[]>(() => {
     if (!meet) return [];
@@ -444,7 +482,7 @@ export function ResultsPage() {
                 {t("results.noResults")}
               </Text>
             ) : (
-              <AbsoluteTable rows={allNonGuestRows} />
+              <AbsoluteTable rows={allNonGuestRows} forecastMap={forecastMap} />
             )}
           </Tabs.Panel>
 
