@@ -1,6 +1,6 @@
 {
   "name": "streetlifting-os-client",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "private": true,
   "type": "module",
   "description": "Streetlifting OS — offline-first ISF Streetlifting & Calisthenics meet client",
@@ -18,17 +18,18 @@
     "icons:generate": "tsx scripts/generate-icons.ts"
   },
   "dependencies": {
+    "@hookform/resolvers": "^3.9.0",
     "@mantine/core": "^7.13.0",
     "@mantine/dates": "^7.13.0",
     "@mantine/form": "^7.13.0",
     "@mantine/hooks": "^7.13.0",
     "@mantine/modals": "^7.13.0",
     "@mantine/notifications": "^7.13.0",
-    "@hookform/resolvers": "^3.9.0",
     "@reduxjs/toolkit": "^2.3.0",
     "@tauri-apps/api": "^2.1.0",
-    "@tauri-apps/plugin-fs": "^2.0.0",
     "@tauri-apps/plugin-dialog": "^2.0.0",
+    "@tauri-apps/plugin-fs": "^2.0.0",
+    "@tauri-apps/plugin-updater": "^2.10.1",
     "dayjs": "^1.11.13",
     "dexie": "^4.0.10",
     "dexie-react-hooks": "^1.1.7",

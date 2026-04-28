@@ -325,6 +325,90 @@ export function JudgingPage() {
     advanceMultirepQueue(multirepActiveItem);
   }
 
+  // ─── Keyboard shortcuts ────────────────────────────────────────────────────
+  // Must be declared before early return to satisfy rules-of-hooks.
+
+  // Capture mutable values in refs so the effect doesn't need to re-register
+  // on every render (avoids stale closure issues).
+  const pendingVotesRef = useRef({
+    left: judging.pendingLeft,
+    center: judging.pendingCenter,
+    right: judging.pendingRight,
+  });
+  pendingVotesRef.current = {
+    left: judging.pendingLeft,
+    center: judging.pendingCenter,
+    right: judging.pendingRight,
+  };
+
+  const isMultirepTabRef = useRef(isMultirepTab);
+  isMultirepTabRef.current = isMultirepTab;
+
+  const confirmRef = useRef({ handleClassicConfirm, handleMultirepConfirm });
+  confirmRef.current = { handleClassicConfirm, handleMultirepConfirm };
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      // Don't capture keys when focus is inside a form element
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        e.target instanceof HTMLSelectElement
+      ) {
+        return;
+      }
+
+      switch (e.key) {
+        case "q":
+        case "Q":
+          dispatch(castVote({ judge: "left", value: true }));
+          break;
+        case "a":
+        case "A":
+          dispatch(castVote({ judge: "left", value: false }));
+          break;
+        case "w":
+        case "W":
+          dispatch(castVote({ judge: "center", value: true }));
+          break;
+        case "s":
+        case "S":
+          dispatch(castVote({ judge: "center", value: false }));
+          break;
+        case "e":
+        case "E":
+          dispatch(castVote({ judge: "right", value: true }));
+          break;
+        case "d":
+        case "D":
+          dispatch(castVote({ judge: "right", value: false }));
+          break;
+        case " ": {
+          e.preventDefault();
+          const status = attemptStatusFromVotes(pendingVotesRef.current);
+          if (status !== "pending") {
+            if (isMultirepTabRef.current) {
+              confirmRef.current.handleMultirepConfirm();
+            } else {
+              confirmRef.current.handleClassicConfirm();
+            }
+          }
+          break;
+        }
+        case "Escape":
+          dispatch(clearPendingVotes());
+          break;
+        default:
+          break;
+      }
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [dispatch]);
+
   if (!meet) return null;
 
   const pendingVotes: JudgeVotes = {

@@ -1,12 +1,23 @@
 /**
- * Root App shell.
+ * Root App shell — Sprint 5.
  *
- * Sprint 1 routes: Home / Registration / Weigh-ins.
- * Registration & Weigh-ins are guarded by `RequireMeet` — if no meet is open,
- * user is redirected to Home.
+ * Navigation moved from cramped header links to a left sidebar (AppShell.Navbar).
+ * Header retains: app name, ISF badge, version badge, language toggle, mobile hamburger.
+ * Sidebar: 8 nav items + About; disabled (opacity 0.4) when no meet open.
  */
 
-import { MantineProvider, AppShell, Group, Text, Badge } from "@mantine/core";
+import { useState } from "react";
+import {
+  MantineProvider,
+  AppShell,
+  Group,
+  Text,
+  Badge,
+  Burger,
+  NavLink,
+  Stack,
+  Divider,
+} from "@mantine/core";
 import { Notifications } from "@mantine/notifications";
 import { ModalsProvider } from "@mantine/modals";
 import { useTranslation } from "react-i18next";
@@ -14,12 +25,13 @@ import {
   BrowserRouter,
   Routes,
   Route,
-  NavLink,
   useLocation,
+  useNavigate,
 } from "react-router-dom";
 
 import { theme } from "./theme";
 import { Home } from "@pages/home/Home";
+import { AboutPage } from "@pages/about/AboutPage";
 import { RegistrationPage } from "@pages/registration/RegistrationPage";
 import { WeighInsPage } from "@pages/weigh-ins/WeighInsPage";
 import { JudgingPage } from "@pages/judging/JudgingPage";
@@ -29,142 +41,196 @@ import { FlightOrderPage } from "@pages/flight-order/FlightOrderPage";
 import { RequireMeet } from "@components/RequireMeet";
 import { useAppSelector } from "@store/index";
 
-function NavLinks() {
+const APP_VERSION = "0.5.0";
+
+// ─── Sidebar navigation ───────────────────────────────────────────────────────
+
+interface SidebarNavProps {
+  onNavigate?: () => void;
+}
+
+function SidebarNav({ onNavigate }: SidebarNavProps) {
   const { t } = useTranslation();
   const meet = useAppSelector((s) => s.meet.current);
   const location = useLocation();
-  const items = [
-    { to: "/", label: t("nav.home"), needsMeet: false },
-    { to: "/meet-setup", label: t("nav.meetSetup"), needsMeet: true },
-    { to: "/registration", label: t("nav.registration"), needsMeet: true },
-    { to: "/weigh-ins", label: t("nav.weighIns"), needsMeet: true },
-    { to: "/judging", label: t("nav.judging"), needsMeet: true },
-    { to: "/results", label: t("nav.results"), needsMeet: true },
-    { to: "/flight-order", label: t("nav.flightOrder"), needsMeet: true },
+  const navigate = useNavigate();
+
+  const mainItems = [
+    { to: "/", label: t("nav.home"), emoji: "🏠", needsMeet: false },
+    { to: "/meet-setup", label: t("nav.meetSetup"), emoji: "⚙️", needsMeet: true },
+    { to: "/registration", label: t("nav.registration"), emoji: "📋", needsMeet: true },
+    { to: "/weigh-ins", label: t("nav.weighIns"), emoji: "⚖️", needsMeet: true },
+    { to: "/flight-order", label: t("nav.flightOrder"), emoji: "📊", needsMeet: true },
+    { to: "/judging", label: t("nav.judging"), emoji: "🏋️", needsMeet: true },
+    { to: "/results", label: t("nav.results"), emoji: "🏆", needsMeet: true },
   ];
+
+  const bottomItems = [
+    { to: "/about", label: t("nav.about"), emoji: "ℹ️", needsMeet: false },
+  ];
+
+  function renderItem(it: { to: string; label: string; emoji: string; needsMeet: boolean }) {
+    const disabled = it.needsMeet && !meet;
+    const active = location.pathname === it.to;
+
+    return (
+      <NavLink
+        key={it.to}
+        label={`${it.emoji} ${it.label}`}
+        active={active}
+        disabled={disabled}
+        onClick={() => {
+          if (!disabled) {
+            void navigate(it.to);
+            onNavigate?.();
+          }
+        }}
+        style={{
+          opacity: disabled ? 0.4 : 1,
+          pointerEvents: disabled ? "none" : "auto",
+          borderRadius: "var(--mantine-radius-sm)",
+        }}
+        styles={{
+          root: {
+            ...(active && {
+              backgroundColor: "var(--mantine-color-red-6)",
+              color: "white",
+            }),
+          },
+        }}
+      />
+    );
+  }
+
   return (
-    <Group gap="md">
-      {items.map((it) => {
-        const disabled = it.needsMeet && !meet;
-        const active = location.pathname === it.to;
-        return (
-          <NavLink
-            key={it.to}
-            to={it.to}
-            style={{
-              textDecoration: "none",
-              color: disabled
-                ? "var(--mantine-color-dimmed)"
-                : active
-                  ? "var(--mantine-color-blue-6)"
-                  : "inherit",
-              fontWeight: active ? 600 : 400,
-              pointerEvents: disabled ? "none" : "auto",
-              opacity: disabled ? 0.5 : 1,
-            }}
-          >
-            {it.label}
-          </NavLink>
-        );
-      })}
-    </Group>
+    <Stack gap={2} p="xs" h="100%">
+      {mainItems.map(renderItem)}
+      <Divider my="xs" />
+      {bottomItems.map(renderItem)}
+    </Stack>
+  );
+}
+
+// ─── App shell ────────────────────────────────────────────────────────────────
+
+function AppWithRouter() {
+  const { t, i18n } = useTranslation();
+  const [opened, setOpened] = useState(false);
+
+  return (
+    <AppShell
+      header={{ height: 56 }}
+      navbar={{ width: 200, breakpoint: "sm", collapsed: { mobile: !opened } }}
+      padding="md"
+    >
+      {/* Header */}
+      <AppShell.Header>
+        <Group h="100%" px="md" justify="space-between">
+          <Group gap="sm">
+            <Burger
+              opened={opened}
+              onClick={() => setOpened((o) => !o)}
+              hiddenFrom="sm"
+              size="sm"
+            />
+            <Text fw={700} size="lg">
+              {t("app.name")}
+            </Text>
+            <Badge color="red" variant="light">
+              ISF v5.1
+            </Badge>
+            <Badge color="violet" variant="light">
+              v{APP_VERSION}
+            </Badge>
+          </Group>
+          <Group gap="sm">
+            <Text
+              size="xs"
+              c="dimmed"
+              style={{ cursor: "pointer" }}
+              onClick={() =>
+                void i18n.changeLanguage(
+                  i18n.language === "ru-RU" ? "en-US" : "ru-RU",
+                )
+              }
+            >
+              {i18n.language === "ru-RU" ? "EN" : "RU"}
+            </Text>
+          </Group>
+        </Group>
+      </AppShell.Header>
+
+      {/* Sidebar */}
+      <AppShell.Navbar>
+        <SidebarNav onNavigate={() => setOpened(false)} />
+      </AppShell.Navbar>
+
+      {/* Main content */}
+      <AppShell.Main>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route
+            path="/registration"
+            element={
+              <RequireMeet>
+                <RegistrationPage />
+              </RequireMeet>
+            }
+          />
+          <Route
+            path="/weigh-ins"
+            element={
+              <RequireMeet>
+                <WeighInsPage />
+              </RequireMeet>
+            }
+          />
+          <Route
+            path="/judging"
+            element={
+              <RequireMeet>
+                <JudgingPage />
+              </RequireMeet>
+            }
+          />
+          <Route
+            path="/results"
+            element={
+              <RequireMeet>
+                <ResultsPage />
+              </RequireMeet>
+            }
+          />
+          <Route
+            path="/meet-setup"
+            element={
+              <RequireMeet>
+                <MeetSetupPage />
+              </RequireMeet>
+            }
+          />
+          <Route
+            path="/flight-order"
+            element={
+              <RequireMeet>
+                <FlightOrderPage />
+              </RequireMeet>
+            }
+          />
+        </Routes>
+      </AppShell.Main>
+    </AppShell>
   );
 }
 
 export function App() {
-  const { t, i18n } = useTranslation();
-
   return (
     <MantineProvider theme={theme} defaultColorScheme="auto">
       <ModalsProvider>
         <Notifications position="top-right" />
         <BrowserRouter>
-          <AppShell header={{ height: 56 }} padding="md">
-            <AppShell.Header>
-              <Group h="100%" px="md" justify="space-between">
-                <Group gap="sm">
-                  <Text fw={700} size="lg">
-                    {t("app.name")}
-                  </Text>
-                  <Badge color="red" variant="light">
-                    ISF v5.1
-                  </Badge>
-                  <Badge color="violet" variant="light">
-                    v0.4.0
-                  </Badge>
-                  <NavLinks />
-                </Group>
-                <Group gap="sm">
-                  <Text
-                    size="xs"
-                    c="dimmed"
-                    style={{ cursor: "pointer" }}
-                    onClick={() =>
-                      void i18n.changeLanguage(
-                        i18n.language === "ru-RU" ? "en-US" : "ru-RU",
-                      )
-                    }
-                  >
-                    {i18n.language === "ru-RU" ? "EN" : "RU"}
-                  </Text>
-                </Group>
-              </Group>
-            </AppShell.Header>
-
-            <AppShell.Main>
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route
-                  path="/registration"
-                  element={
-                    <RequireMeet>
-                      <RegistrationPage />
-                    </RequireMeet>
-                  }
-                />
-                <Route
-                  path="/weigh-ins"
-                  element={
-                    <RequireMeet>
-                      <WeighInsPage />
-                    </RequireMeet>
-                  }
-                />
-                <Route
-                  path="/judging"
-                  element={
-                    <RequireMeet>
-                      <JudgingPage />
-                    </RequireMeet>
-                  }
-                />
-                <Route
-                  path="/results"
-                  element={
-                    <RequireMeet>
-                      <ResultsPage />
-                    </RequireMeet>
-                  }
-                />
-                <Route
-                  path="/meet-setup"
-                  element={
-                    <RequireMeet>
-                      <MeetSetupPage />
-                    </RequireMeet>
-                  }
-                />
-                <Route
-                  path="/flight-order"
-                  element={
-                    <RequireMeet>
-                      <FlightOrderPage />
-                    </RequireMeet>
-                  }
-                />
-              </Routes>
-            </AppShell.Main>
-          </AppShell>
+          <AppWithRouter />
         </BrowserRouter>
       </ModalsProvider>
     </MantineProvider>

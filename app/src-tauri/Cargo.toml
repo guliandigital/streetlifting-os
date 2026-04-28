@@ -1,6 +1,6 @@
 [package]
 name = "streetlifting-os"
-version = "0.4.0"
+version = "0.5.0"
 description = "Streetlifting OS — offline-first ISF Streetlifting & Calisthenics meet client"
 authors = ["Streetlifting OS Team"]
 edition = "2021"
@@ -17,6 +17,7 @@ tauri-build = { version = "2.0", features = [] }
 tauri = { version = "2.1", features = [] }
 tauri-plugin-fs = "2.0"
 tauri-plugin-dialog = "2.0"
+tauri-plugin-updater = "2.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 # V2: ed25519-dalek = "2.1"  # Save-file signing per D38

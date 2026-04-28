@@ -1,14 +1,13 @@
 /**
- * Home page — Sprint 1 with save/load wired up.
+ * Home page — Sprint 5 tournament dashboard.
  *
- * Buttons:
- *   - "Новое соревнование" → creates fresh meet from ISF v5.1 presets
- *   - "Загрузить соревнование" → opens file picker (Tauri) or browser file input
- *   - "Сохранить" → exports current meet to JSON file (Tauri save dialog or browser download)
- *   - "Продолжить" → no-op for now (would navigate to last-edited screen in V2)
+ * Shows a welcome card with quick-start guide when no meet is open.
+ * Shows meet stats (athletes, weigh-ins, attempts, disciplines) when a meet is loaded.
+ * Includes auto-updater check button when running in Tauri.
  */
 
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Container,
   Stack,
@@ -19,6 +18,11 @@ import {
   Card,
   Alert,
   Notification,
+  SimpleGrid,
+  Progress,
+  List,
+  Badge,
+  Divider,
 } from "@mantine/core";
 import { useTranslation } from "react-i18next";
 
@@ -33,14 +37,35 @@ import {
   loadFromFile,
   SaveFileDecodeError,
 } from "@/persistence";
+import { countWeighedIn, countAttemptsDone, countAttemptsTotal } from "./home-stats";
+
+const APP_RELEASE_VERSION = "0.5.0";
+
+declare global {
+  interface Window {
+    __TAURI__?: unknown;
+    __TAURI_INTERNALS__?: unknown;
+  }
+}
+
+function isTauriEnv(): boolean {
+  return (
+    typeof window !== "undefined" &&
+    (window.__TAURI__ !== undefined || window.__TAURI_INTERNALS__ !== undefined)
+  );
+}
 
 export function Home() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const meet = useAppSelector((s) => s.meet.current);
   const dirty = useAppSelector((s) => s.meet.dirty);
+  const filePath = useAppSelector((s) => s.meet.filePath);
   const [errMsg, setErrMsg] = useState<string | null>(null);
   const [okMsg, setOkMsg] = useState<string | null>(null);
+  const [updateMsg, setUpdateMsg] = useState<string | null>(null);
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
 
   function handleNew() {
     dispatch(newMeetAction());
@@ -78,7 +103,7 @@ export function Home() {
     setOkMsg(null);
     try {
       const result = await saveToFile(meet);
-      if (!result.saved) return; // user cancelled dialog
+      if (!result.saved) return;
       dispatch(
         markSaved(result.path !== undefined ? { filePath: result.path } : {}),
       );
@@ -92,35 +117,70 @@ export function Home() {
     }
   }
 
+  async function handleCheckUpdates() {
+    setCheckingUpdate(true);
+    setUpdateMsg(null);
+    try {
+      const { check } = await import("@tauri-apps/plugin-updater");
+      const update = await check();
+      if (update?.available) {
+        setUpdateMsg(`${t("home.updateAvailable")}: v${update.version}`);
+      } else {
+        setUpdateMsg(t("home.upToDate"));
+      }
+    } catch {
+      // Placeholder pubkey or no network — silently degrade
+      setUpdateMsg(t("home.updateUnavailable"));
+    } finally {
+      setCheckingUpdate(false);
+    }
+  }
+
+  // Stats for meet dashboard
+  const entries = meet?.registration.entries ?? [];
+  const totalAthletes = entries.length;
+  const weighedIn = countWeighedIn(entries);
+  const attemptsDone = countAttemptsDone(entries);
+  const attemptsTotal = countAttemptsTotal(entries);
+  const disciplineCount = meet?.meet.enabledDisciplineCodes.length ?? 0;
+  const progressPct =
+    attemptsTotal > 0 ? Math.round((attemptsDone / attemptsTotal) * 100) : 0;
+
+  const fileStatusText =
+    dirty || !filePath
+      ? t("home.unsaved")
+      : `${t("home.savedAt")}: ${filePath}`;
+
   return (
     <Container size="lg" py="xl">
       <Stack gap="lg">
+        {/* Action toolbar */}
         <Stack gap={4}>
-          <Title order={1}>{t("home.title")}</Title>
-          <Text c="dimmed">{t("app.tagline")}</Text>
+          <Group gap="sm" wrap="wrap">
+            <Button size="md" onClick={handleNew}>
+              {t("home.newMeet")}
+            </Button>
+            <Button size="md" variant="default" onClick={() => { void handleLoad(); }}>
+              {t("home.loadMeet")}
+            </Button>
+            <Button
+              size="md"
+              variant="default"
+              onClick={() => { void handleSave(); }}
+              disabled={!meet}
+            >
+              {t("home.saveMeet")}
+              {dirty ? " *" : ""}
+            </Button>
+          </Group>
+
+          {/* File path indicator */}
+          <Text size="xs" c={dirty || !filePath ? "orange" : "dimmed"}>
+            {fileStatusText}
+          </Text>
         </Stack>
 
-        <Group gap="sm">
-          <Button size="md" onClick={handleNew}>
-            {t("home.newMeet")}
-          </Button>
-          <Button size="md" variant="default" onClick={() => { void handleLoad(); }}>
-            {t("home.loadMeet")}
-          </Button>
-          <Button
-            size="md"
-            variant="default"
-            onClick={() => { void handleSave(); }}
-            disabled={!meet}
-          >
-            {t("home.saveMeet")}
-            {dirty ? " *" : ""}
-          </Button>
-          <Button size="md" variant="default" disabled>
-            {t("home.continueMeet")}
-          </Button>
-        </Group>
-
+        {/* Notifications */}
         {okMsg && (
           <Notification
             color="green"
@@ -139,26 +199,149 @@ export function Home() {
             {errMsg}
           </Notification>
         )}
+        {updateMsg && (
+          <Notification
+            color={updateMsg === t("home.upToDate") ? "green" : "blue"}
+            onClose={() => setUpdateMsg(null)}
+            title={t("home.checkUpdates")}
+          >
+            {updateMsg}
+          </Notification>
+        )}
 
-        {meet && (
-          <Card withBorder shadow="sm">
-            <Stack gap="xs">
-              <Title order={4}>
-                Текущее соревнование: {meet.meet.name || "(без названия)"}
+        {/* No meet: welcome card */}
+        {!meet && (
+          <Card withBorder shadow="sm" p="xl">
+            <Stack gap="md" align="center">
+              {/* ISF logo placeholder */}
+              <Badge color="red" size="xl" variant="filled" radius="sm">
+                ISF v5.1
+              </Badge>
+              <Title order={2} ta="center">
+                Streetlifting OS
               </Title>
-              <Text size="sm" c="dimmed">
-                Дата: {meet.meet.date} · Город: {meet.meet.city || "—"} ·
-                Формат: {meet.meet.competitionFormat} · Спортсменов:{" "}
-                {meet.registration.entries.length}
+              <Text c="dimmed" ta="center">
+                {t("app.tagline")}
               </Text>
-              <Text size="xs" c="dimmed">
-                stateVersion: {meet.versions.stateVersion} · releaseVersion:{" "}
-                {meet.versions.releaseVersion}
+              <Text c="dimmed" ta="center" size="sm">
+                {t("home.quickStart.title")} — создайте новое соревнование или
+                загрузите существующий файл
               </Text>
+
+              <Divider w="100%" />
+
+              <Stack gap="xs" w="100%">
+                <Text fw={600}>{t("home.quickStart.title")}</Text>
+                <List type="ordered" spacing="xs" size="sm">
+                  <List.Item>{t("home.quickStart.step1")}</List.Item>
+                  <List.Item>{t("home.quickStart.step2")}</List.Item>
+                  <List.Item>{t("home.quickStart.step3")}</List.Item>
+                  <List.Item>{t("home.quickStart.step4")}</List.Item>
+                  <List.Item>{t("home.quickStart.step5")}</List.Item>
+                </List>
+              </Stack>
             </Stack>
           </Card>
         )}
 
+        {/* Meet open: dashboard */}
+        {meet && (
+          <Stack gap="md">
+            {/* Meet header */}
+            <Stack gap={2}>
+              <Title order={2}>
+                {meet.meet.name || "(без названия)"}
+              </Title>
+              <Text c="dimmed" size="sm">
+                {meet.meet.federation}
+                {meet.meet.city ? ` · ${meet.meet.city}` : ""}
+                {meet.meet.date ? ` · ${meet.meet.date}` : ""}
+              </Text>
+            </Stack>
+
+            {/* Stat cards grid */}
+            <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="sm">
+              <StatCard
+                emoji="👤"
+                label={t("home.stats.athletes")}
+                value={String(totalAthletes)}
+              />
+              <StatCard
+                emoji="⚖️"
+                label={t("home.stats.weighedIn")}
+                value={`${weighedIn} / ${totalAthletes}`}
+              />
+              <StatCard
+                emoji="🏋️"
+                label={t("home.stats.attempts")}
+                value={`${attemptsDone} / ${attemptsTotal}`}
+              />
+              <StatCard
+                emoji="🏆"
+                label={t("home.stats.disciplines")}
+                value={String(disciplineCount)}
+              />
+            </SimpleGrid>
+
+            {/* Progress bar */}
+            {attemptsTotal > 0 && (
+              <Stack gap={4}>
+                <Group justify="space-between">
+                  <Text size="sm" c="dimmed">
+                    {t("home.stats.attempts")}: {progressPct}%
+                  </Text>
+                  <Text size="sm" c="dimmed">
+                    {attemptsDone} / {attemptsTotal}
+                  </Text>
+                </Group>
+                <Progress value={progressPct} color="blue" size="sm" />
+              </Stack>
+            )}
+
+            {/* Quick jump buttons */}
+            <Stack gap="xs">
+              <Text size="sm" fw={600} c="dimmed">
+                {t("home.quickJump")}
+              </Text>
+              <Group gap="sm" wrap="wrap">
+                <Button
+                  size="sm"
+                  variant="light"
+                  color="blue"
+                  onClick={() => void navigate("/judging")}
+                >
+                  🏋️ {t("nav.judging")}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="light"
+                  color="teal"
+                  onClick={() => void navigate("/results")}
+                >
+                  🏆 {t("nav.results")}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="light"
+                  color="grape"
+                  onClick={() => void navigate("/registration")}
+                >
+                  📋 {t("nav.registration")}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="light"
+                  color="orange"
+                  onClick={() => void navigate("/weigh-ins")}
+                >
+                  ⚖️ {t("nav.weighIns")}
+                </Button>
+              </Group>
+            </Stack>
+          </Stack>
+        )}
+
+        {/* ISF correctness marketing card */}
         <Alert
           color="red"
           variant="light"
@@ -167,18 +350,50 @@ export function Home() {
           {t("about.correctness.m6")}
         </Alert>
 
-        <Card withBorder shadow="sm">
-          <Stack gap="xs">
-            <Title order={4}>Sprint 1 build status — 10/10</Title>
-            <Text size="sm" c="dimmed">
-              Выполнено: типы, ISF v5.1 пресеты, голосование судей, age/masters,
-              расчёт результата (Classic + ISF points), порядок подходов,
-              forecast-stub, сохранение/загрузка с миграциями, регистрация +
-              взвешивание. 167/167 тестов проходят.
-            </Text>
-          </Stack>
-        </Card>
+        {/* Tauri: update check */}
+        {isTauriEnv() && (
+          <Group>
+            <Button
+              size="xs"
+              variant="subtle"
+              color="gray"
+              loading={checkingUpdate}
+              onClick={() => void handleCheckUpdates()}
+            >
+              {t("home.checkUpdates")}
+            </Button>
+          </Group>
+        )}
+
+        {/* Version badge */}
+        <Text size="xs" c="dimmed">
+          Streetlifting OS v{APP_RELEASE_VERSION} · ISF Rules v5.1 (2025-08-01)
+        </Text>
       </Stack>
     </Container>
+  );
+}
+
+// ─── StatCard sub-component ───────────────────────────────────────────────────
+
+interface StatCardProps {
+  emoji: string;
+  label: string;
+  value: string;
+}
+
+function StatCard({ emoji, label, value }: StatCardProps) {
+  return (
+    <Card withBorder shadow="xs" p="md">
+      <Stack gap={4} align="center">
+        <Text size="xl">{emoji}</Text>
+        <Text size="xs" c="dimmed" ta="center">
+          {label}
+        </Text>
+        <Title order={3} ta="center">
+          {value}
+        </Title>
+      </Stack>
+    </Card>
   );
 }
