@@ -13,8 +13,9 @@ release will be 1.0.0 once V1 reaches production-ready quality.
 ### Planned for next minor
 - Code-signing (Windows EV cert + Apple Developer ID — both deferred
   pending D40.4 legal entity decision)
-- Cross-competition records archive (V2 feature)
 - Real-tournament UAT + bug-bash
+- Release hardening after live-event validation (installer / updater smoke
+  tests, packaging polish as needed)
 
 ---
 
@@ -464,11 +465,15 @@ First public release. Sprint 1 of the V1 client (registration + weigh-in).
 - **0.X.Y** — V1 sprints. Each Sprint completion = minor bump.
 - **1.0.0** — V1 General Availability (ISF v5.1 hardcoded, client-only,
   judging + result calculation + audit trail polished).
-- **2.0.0** — V2 launch (backend, RulesPack abstraction, multi-federation).
+- **2.0.0** — V2 launch (backend billing + reconciliation, RulesPack abstraction,
+  audio/reporting expansion).
+- **3.0.0** — V3 launch (multi-federation onboarding, athlete passport,
+  sanctioning + crypto signing, broadcast surfaces).
 - Save-file format is versioned independently via `stateVersion`; a major
   app-version bump does not necessarily change `stateVersion`.
 
-[Unreleased]: https://github.com/GulianDigital/streetlifting-os/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/GulianDigital/streetlifting-os/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/GulianDigital/streetlifting-os/compare/v1.0.0...v1.1.1
 [1.0.0]: https://github.com/GulianDigital/streetlifting-os/compare/v0.5.0...v1.0.0
 [0.5.0]: https://github.com/GulianDigital/streetlifting-os/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/GulianDigital/streetlifting-os/compare/v0.3.0...v0.4.0

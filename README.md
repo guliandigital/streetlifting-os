@@ -4,7 +4,7 @@ Open-source, offline-first software for running streetlifting & calisthenics mee
 
 → **<https://streetlifting.app>** — landing, downloads, project page
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) [![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20macOS%20%7C%20Linux-blue)](#downloads) [![Tests](https://img.shields.io/badge/tests-428%20passing-brightgreen)](#status) [![Version](https://img.shields.io/badge/version-1.1.0-blue)](CHANGELOG.md)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) [![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20macOS%20%7C%20Linux-blue)](#downloads) [![Tests](https://img.shields.io/badge/tests-428%20passing-brightgreen)](#status) [![Version](https://img.shields.io/badge/version-1.1.1-blue)](CHANGELOG.md)
 
 ---
 
@@ -38,15 +38,27 @@ Existing commercial tools (PowerTable, PowerGage) are Russian-market 1С product
 
 ## Status
 
-**v1.1.0** — V1 GA shipped (1.0.0, 2026-04-28) plus follow-up M1 release (team scoring, public scoreboard, print forms). **428 unit tests** passing across 24 test files. TypeScript strict, ESLint clean. The full meet workflow works end-to-end on Windows / macOS / Linux.
+**v1.1.1** — current stable release. V1 GA shipped in **1.0.0** (2026-04-28); follow-up **1.1.x** releases hardened distribution and operations. **428 unit tests** pass across 24 test files. TypeScript strict, ESLint clean. The full meet workflow works end-to-end on Windows / macOS / Linux.
 
-Remaining V1.x gates before declaring "production-hardened":
+Recent milestones:
+- **1.0.0** — full Classic + Multirep meet workflow, records screen, real Classic forecast
+- **1.1.0** — team scoring, public scoreboard, print forms
+- **1.1.1** — auto-updater signing chain activated (`tauri.conf.json` pubkey + updater artifacts)
+
+Remaining V1.x gates before declaring the product fully production-hardened:
 - Code-signing (Windows EV cert + Apple Developer ID) — eliminates SmartScreen / Gatekeeper warnings on install
-- Auto-updater pubkey activation (replace placeholder in `app/src-tauri/tauri.conf.json`)
 - Real-tournament UAT + bug-bash on a live ISF event
-- Cross-competition records archive (V2 work)
+- Post-signing installer / update smoke tests on Windows, macOS, Linux
 
 For per-release detail see [CHANGELOG.md](CHANGELOG.md).
+
+## Roadmap
+
+- **V1.x hardening** — finish code-signing, run live-tournament UAT, polish packaging and update flows
+- **V2** — backend for billing + reconciliation, RulesPack abstraction, audio system, awards ceremony, OpenPowerlifting export, athlete↔nomination split, stream/group scheduling, sport-rank computation, cross-competition records archive
+- **V3** — multi-federation onboarding (WSF, НАП, FinalRep), athlete passport, sanctioning + crypto signing, local broadcast publisher, OBS/share-link broadcast surfaces
+- **V4** — Weighted Calisthenics sport support, audit & enforcement workflows, judge certification system
+- **V5** — federated records and a focused mobile companion app
 
 ## Downloads
 
@@ -68,8 +80,9 @@ Per-OS install instructions, including SmartScreen / Gatekeeper bypass for the (
 
 **For developers / contributors:**
 - [app/README.md](app/README.md) — code layout, build commands, architecture invariants
+- [docs/current-implementation-plan.md](docs/current-implementation-plan.md) — current V1.x–V5 implementation roadmap
 - [docs/architecture-v1.md](docs/architecture-v1.md) — six-layer V1–V5 architecture
-- [docs/openlifter-isf-implementation-blueprint-v2.md](docs/openlifter-isf-implementation-blueprint-v2.md) — V1 implementation spec
+- [docs/openlifter-isf-implementation-blueprint-v2.md](docs/openlifter-isf-implementation-blueprint-v2.md) — historical V1 implementation spec
 - [docs/decisions-v1.md](docs/decisions-v1.md) … [v4](docs/decisions-v4.md) — D1–D45 decision log
 - [docs/release-process-v1.md](docs/release-process-v1.md) — release procedure + code-signing
 - [docs/rules-pack-spec-v1.md](docs/rules-pack-spec-v1.md) — V2 RulesPack format

@@ -1,7 +1,8 @@
 # OpenLifter -> ISF Streetlifting — Implementation Blueprint v2
 
 Date: 2026-04-25
-Supersedes: [openlifter-isf-implementation-blueprint-v1.md](openlifter-isf-implementation-blueprint-v1.md). Read v1 for unchanged narrative sections; this document contains all amendments and is the **single source of truth for Sprint 1 implementation**.
+Current status: historical V1 implementation blueprint. V1 has shipped; use [current-implementation-plan.md](current-implementation-plan.md) for the active V1.x–V5 roadmap.
+Supersedes: [openlifter-isf-implementation-blueprint-v1.md](openlifter-isf-implementation-blueprint-v1.md). Read v1 for unchanged narrative sections. This document was the **single source of truth for Sprint 1 implementation** during the V1 build.
 
 Source-of-truth references:
 - ISF Rules v5.1 (effective 2025-08-01) — `ISF_Rules_ver.5.1_(RU).docx`, `ISF_Rules_ver.5.1_(en-US).docx`

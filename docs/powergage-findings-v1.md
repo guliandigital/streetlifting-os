@@ -1,7 +1,8 @@
-# PowerGage — Findings v1 (static pass)
+# PowerGage — Findings v1 (static + manuals pass)
 
 Date: 2026-04-25
-Method: static analysis of the already-extracted install tree at `C:\PROJECTS\streetlifting-os\Power Gage\`. No sandbox session yet — runtime sections are deferred and explicitly marked.
+Updated: 2026-04-29
+Method: static analysis of the already-extracted install tree at `C:\PROJECTS\streetlifting-os\Power Gage\`, plus text extraction from bundled PDF/DOCX manuals and release notes. No runtime execution of PowerGage binaries.
 Reference role: PowerGage is a **black-box proprietary product**. We use it as a workflow / domain-coverage reference. Source code is unavailable. Some of its database-procedure source (`*.proc`) ships with the installer as plain text and gives unusually strong evidence of the runtime data model.
 
 ## 1. What was inspected
@@ -11,13 +12,15 @@ Reference role: PowerGage is a **black-box proprietary product**. We use it as a
 - `App/Update/*.rep` — 23 bilingual report templates (`_RU.rep` / `_ENG.rep` pairs plus a few unilingual).
 - `App/Update/*.data` — seed data, including WRPF norms reference (`SPR_WRPF_NORMAT*.data`).
 - `App/Plugins/*` — import plugin SDK including a federation-specific WPC-AWPC importer.
-- `Docs/*.pdf` and `Docs/*.docx` — Russian-language operator manuals (not yet read in detail in this pass).
+- `Docs/*.pdf` and `Docs/*.docx` — Russian-language operator manuals and release notes, extracted and summarized in §5.1.
+- `App/*.ini`, `App/Plugins/*.ini`, and `ExtScr/OnlineScore.xml` — shell/plugin configuration and online-score sample data.
+- Installed desktop launcher folder at `C:\Users\arara\OneDrive\Рабочий стол\Power Gage` — role-oriented shortcuts created by the installer.
 
 Not inspected in this pass:
 - runtime behavior (any GUI screen)
 - live save/export files
 - DLL internals
-- contents of the Russian PDF manuals beyond filenames
+- the legacy `.doc` equipment-layout file (`Примерная расстановка оборудования.doc`) because it is not a DOCX container
 
 ## 2. Architecture (as evidenced)
 
@@ -51,6 +54,55 @@ Implication: PowerGage operationally separates the *secretary desk* from the *ju
 - `App/Plugins/{CSVImportPluginObj.dll, TextImportPluginObj.dll, MYSQLIimportPluginObj.dll, WPCAWPCImportPluginObj.dll}` — pluggable importer DLL pattern. MySQL importer is paired with `plink.exe` + `tunnel.bat` for SSH tunneling.
 - `backUp.cmd` — manual backup batch script. No automated backup or save-version system observed.
 - `fontsAdd.vbs`, `firewall_addrule.cmd` — install-time hooks.
+- `App/MainShell.ini` maps external functions to local TCP endpoints (`ExternalTimer`, `ExternalScoreboard`, `ExternalOut`, `ExternalTechMon`) and a `PlatformNumber`. This confirms a LAN-first multi-device architecture: secretary/judge table, timer, scoreboard, tech monitor, and external output are separate roles coordinated around the same local installation.
+- `ExtScr/OnlineScore.xml` + XSLT templates show a file-based public scoreboard pipeline. The sample data includes ISF divisions, categories, attempt fields, points, places, team/town metadata, and update timestamps.
+
+### 2.5 Installed desktop launch surface
+
+The installer also creates a desktop folder:
+
+`C:\Users\arara\OneDrive\Рабочий стол\Power Gage`
+
+This folder is not another application copy. It is a **launcher console** over the same install tree. The link metadata was read without launching targets. `WScript.Shell` returned empty `TargetPath` for these links, but raw shell-link strings expose the targets and command-line flags.
+
+Top-level shortcuts:
+
+| Shortcut | Target / role | Status |
+|---|---|---|
+| `Документация` | `Power Gage\Docs` | existing docs folder |
+| `Документы и отчёты` | `App\Reports.exe` | existing |
+| `Настройки` | `C:\Users\arara\AppData\Roaming\Power Gage` | target folder absent until first-run / config creation |
+| `Предварительная регистрация и взвешивание` | `App\MainShell.exe` | existing |
+| `Рабочее место секретаря` | `App\SecrShell.exe` | existing |
+| `Проверка обновлений` | `PGUpdater.exe` | target referenced by link strings but not found in the extracted install tree |
+
+`Табло/` shortcuts:
+
+| Shortcut family | Target | Flags observed | Interpretation |
+|---|---|---|---|
+| `Блины ассистентам` | `ExtScr\TechMonitor.exe` | optional `/eng` | plate-loading / assistant technical monitor |
+| `Очередность выхода на помост` | `ExtScr\OrderOut.exe` | optional `/eng` | platform order display |
+| `Таймер выхода на помост` | `ExtScr\TimerOnly.exe` | optional `/eng` | standalone attempt timer |
+| `Экран для видеотрансляции` | `ExtScr\VideoTranslationScr.exe` | optional `/eng` | broadcast-facing screen |
+| `Электронное табло без таймера` | `ExtScr\LightTableV2.exe` | `/notimer`, optional `/eng` | scoreboard without timer |
+| `Электронное табло с таймером` | `ExtScr\LightTableV2.exe` | optional `/eng` | scoreboard with timer |
+
+`Утилиты/` shortcuts:
+
+| Shortcut | Target | Role |
+|---|---|---|
+| `Настройка соединения с БД` | `Tools\Configurator.exe` | database connection setup |
+| `Проверка БД на целостность` | `check.cmd` | database integrity check |
+| `Протокол On-Line` | `Tools\OnlineScoreTable.exe` | online protocol publisher |
+| `Резервная копия БД` | `backUp.cmd` | manual backup |
+| `Рекорды и нормативы` | `Tools\RecordsKeeper.exe` | records and norms maintenance |
+
+Implications:
+
+- PowerGage makes external displays first-class launch targets, not hidden settings. This supports the V3 `broadcast publisher` and `OBS/chromakey modes` roadmap items.
+- RU/ENG is implemented as runtime flags on display binaries, not as separate builds. For Streetlifting OS, this maps to URL/query or route-level language selection for public display pages.
+- The "settings" target being an AppData folder suggests local machine config is created outside the install tree. Streetlifting OS should keep this explicit: project save-file vs machine settings vs secrets are separate stores.
+- The missing `PGUpdater.exe` target is either omitted from this extracted installer payload or removed post-install. Treat PowerGage updater evidence as inconclusive beyond "installer exposes update checking in the launch surface".
 
 ## 3. Domain model (reconstructed from .proc text)
 
@@ -223,12 +275,101 @@ The Russian-language operator manuals in `Power Gage/Docs/` describe the operato
 - `Примерная расстановка оборудования.doc` (23 KB) — example platform layout.
 - `PowerGage 2.{1..8} что нового.docx` — release notes 2.1 through 2.8.
 
-These were not opened in this static pass. **Action for next pass**: read them to extract:
-- The exact step list of pre-registration and weigh-in.
-- Secretary-vs-judge separation of duties.
-- CSV import column specification (relevant to our Registration §11.3 bulk tools).
-- Equipment layout assumptions (how many platforms, scoreboard placement).
-- Backup procedure (what we should automate that PowerGage leaves manual).
+Second pass read the extractable PDF/DOCX manuals and release notes. Digest below.
+
+### 5.1 Manuals digest (2026-04-29)
+
+#### 5.1.1 Product modules and operator roles
+
+The manuals confirm a three-module product model:
+
+- **Pre-registration and weigh-in** — create meet, pick federation/rules, manage athlete dictionary, create nominations, weigh athletes, set teams, openers, streams, and admission status.
+- **Secretary module** — run the meet: assign streams/groups, update external boards, enter attempts, cancel decisions, handle refusals/no-shows, print cards, and keep live output synchronized.
+- **Reports / documents / diplomas** — generate protocols, cards, diplomas, certificates, team reports, absolute reports, Excel exports, and external-site exports.
+
+Streetlifting OS should keep the same role split as route/layout separation, not as separate binaries: `Registration/Weigh-ins`, `Run meet/Judging`, `Results/Reports`, `Broadcast`.
+
+#### 5.1.2 Pre-registration and weigh-in workflow
+
+PowerGage creates the meet first; the selected federation drives age categories, weight categories, disciplines, coefficient/formula behavior, and record-level settings. Athlete registration is dictionary-based: the operator can reuse an existing athlete, create a new athlete card, copy an athlete between divisions, and adjust age-category participation when the athlete is eligible for more than one group (for example, Open plus age group).
+
+Important fields observed in manuals:
+
+- Athlete identity: full name parts, alternate English name, birthdate, sex.
+- Geography and contacts: country, region, city, phone, email, postal address.
+- Sport data: team/club, coach/trainer, sport rank, restrictions/disqualifications.
+- Nomination data: division, age category, weight category, bodyweight, first attempts, admission status.
+
+Admission can be constrained by sport rank or by sum of first attempts. If a nomination fails the rule, the operator can reject the nomination or change the attempts. PowerGage also supports per-division restrictions/exclusions. For Streetlifting OS this maps to explicit validation warnings with override/audit, not silent blocking.
+
+#### 5.1.3 Secretary module and live meet execution
+
+The secretary manual confirms several operational features not obvious from procedure names:
+
+- Streams can be assigned in bulk.
+- A "virtual stream" can combine nominations from different divisions when the platform flow is shared.
+- `Поток2` opens streams with the same name across a competition group, useful for multi-division events.
+- External information boards are expected to be refreshed before running a stream.
+- The attempt timer starts when the athlete is called and also updates assistant/plate-loading information.
+- Attempt actions include good lift, no lift, cancel decision, delete attempt, athlete refusal from remaining attempts, and zero-total handling.
+
+PowerGage sometimes models edge cases through workarounds, e.g. folk/multirep data can be represented as extra attempt cards for export compatibility. Streetlifting OS should model these states explicitly: `pass`, `withdrawn`, `noShow`, `refusedFurtherAttempts`, and `manualCorrection`, rather than encoding them as fake failed attempts.
+
+#### 5.1.4 Reports, documents, and exports
+
+The reports manual is broader than the `.rep` filename list. It includes:
+
+- Operational documents: manual flow sheet, weigh-in card, attempt cards, athlete records.
+- Result documents: short and extended final protocols, final protocol with sport ranks, absolute classification, team standings, stream list.
+- Awards documents: diplomas, absolute diplomas/certificates, master-tournament diplomas.
+- Exports: final protocol to Excel, preliminary nominations to HTML, records by division to Excel, athletes in competition to Excel, athlete catalog to Excel, Allpowerlifting protocol export.
+
+Actionable requirement: Streetlifting OS should implement a **report registry** rather than scattered buttons. Each report should declare scope, language, output format, required filters, and whether it is official/export-only/print-only.
+
+#### 5.1.5 CSV import contract
+
+`CSV Import plugin.docx` defines an OEM-encoded text import, delimiter `~`, header row required, and fields such as:
+
+`npp`, `_RANGE_`, `fullname`, `birthday`, `phone`, `email`, `weight_category`, `age_category`, `sex`, `country`, `region`, `city`, `coach`, `additional_information`, `team`.
+
+The importer scans `_RANGE_` values, lets the operator choose imported divisions, and performs fuzzy athlete matching. If the match is uncertain, the operator chooses an existing athlete or creates a new one.
+
+Streetlifting OS should not copy OEM/tilde CSV as the main contract. The useful behavior is:
+
+- flexible column aliases;
+- per-row validation errors;
+- duplicate-resolution UI;
+- import preview before commit;
+- stable UTF-8 CSV/XLSX import/export;
+- normalized country/region/city/team/coach fields.
+
+#### 5.1.6 Equipment and LAN assumptions
+
+The equipment setup manual describes one-platform and multi-platform modes. A single machine can act as server plus chief secretary/speaker workstation for small meets; larger meets use a dedicated local server and multiple LAN clients. Wi-Fi setup guidance emphasizes protected local networks, signal/channel checks, and setup order: server first, then weigh-in, secretary, and scoreboards.
+
+Actionable requirement for V3 broadcast/judge remotes: add a **network readiness screen** that exposes LAN URL/QR, local IPs, connectivity checks, and role status (`server`, `secretary`, `platform`, `scoreboard`, `judge remote`). Do not require operators to manually edit firewall rules or TCP endpoints.
+
+#### 5.1.7 Release notes 2.1-2.8
+
+Release notes show PowerGage evolved toward broad federation coverage and operational tooling:
+
+- Federations/rules automated by 2.8 include WEPF soft equipment, ISF, WSF, and WUAP.
+- Weigh-in module gained password protection.
+- Movement storage changed in the database.
+- Diploma/report templates were simplified into separate one-movement and multi-movement variants.
+- `Поток2` was optimized for events with more than 10 divisions.
+- Secretary module can filter divisions by type.
+- Timer module supports multiple visual styles: barbell, armlifting, kettlebell.
+- The operator can close arbitrary divisions/tournaments without generating reports.
+- Licensing is tournament-oriented: a license can be requested before the meet and then reused by computers connected to the same local server.
+
+Actionable requirement for V2 billing/reconciliation: prefer a **tournament license / entitlement token** that is cached before the event and can operate offline during the meet, rather than per-machine online checks during judging.
+
+#### 5.1.8 Security and operations
+
+`MYSQLIimportPluginObj.ini` contains plaintext database connection settings. Values are intentionally not copied here. This is an anti-pattern for Streetlifting OS: no plaintext production credentials in distributable config files, no bundled external DB passwords, and no hidden SSH tunnel scripts for normal import paths.
+
+The manuals also describe delete/reject flows that appear operationally destructive. Streetlifting OS should use soft-delete, undo where practical, explicit confirmations, and an audit trail for nomination/attempt/result corrections.
 
 ## 6. What is worth borrowing
 
@@ -243,6 +384,13 @@ These were not opened in this static pass. **Action for next pass**: read them t
 | Live online score table as a separate process | Decouples high-stakes judging app from spectator output | Out of scope V1; keep as a future "publisher" component |
 | Audio cues at attempt start / good-lift | Real-world judging benefits | Defer beyond V1 unless trivial |
 | Manual `backUp.cmd` script | Simple; maps onto our save-file model | We already have JSON save-files — just document the equivalent flow |
+| Report/document center | PowerGage's report surface is operationally broad and mature | V2 report registry with protocols, cards, diplomas, certificates, Excel/CSV exports |
+| Duplicate-resolution import | Real nomination files contain repeated athletes and inconsistent spelling | Add import preview + fuzzy duplicate resolution after V1 basics |
+| Virtual streams / stream groups | Operators need to combine compatible nominations on one platform | V2 `Stream` / `Group` entities and auto-scheduling |
+| Tournament license cached before the meet | Avoids online dependency during judging | V2 billing/reconciliation entitlement model |
+| LAN readiness checklist | Multi-device meets fail on network setup, not only on app logic | V3 broadcast/judge-remotes setup screen |
+| Role-oriented launcher surface | Operators need "what workstation am I on?" clarity before the meet starts | Streetlifting OS should expose a clear role dashboard / launch mode selector |
+| Display variants as explicit launch modes | Scoreboard, timer-only, order board, plate monitor, and broadcast screen are different surfaces | Implement as web routes: `/display/scoreboard`, `/display/timer`, `/display/order`, `/display/plates`, `/display/broadcast` |
 
 ## 7. What is **not** worth borrowing
 
@@ -255,6 +403,14 @@ These were not opened in this static pass. **Action for next pass**: read them t
 | 70+ overlapping discipline codes (folk BP, FZHD, armlift, WSF, …) | Out of scope; ISF only. The breadth here is what forces the schema overload above. |
 | Manual `.cmd` backup as the only safety net | We have `stateVersion`-aware save files. Migrations + autosave > batch script. |
 | `SELECT_ORDEROUT_OLYMPICSYSTEM` as shipped | Body is partial / deprecated. Not a reference. |
+| OEM-encoded `~`-delimited CSV as primary import | Fragile for modern users and non-Russian data. Use UTF-8 CSV/XLSX with preview and aliases. |
+| Plaintext DB credentials in plugin config | Security risk. Use OS credential storage, encrypted app secrets, or backend-issued short-lived tokens. |
+| Manual firewall/TCP endpoint setup for normal operation | Too error-prone for meet staff. Provide automatic discovery and readiness checks. |
+| Encoding pass/refusal/no-show as fake failed attempts | Pollutes results and exports. Model these statuses explicitly. |
+| Irreversible destructive flows | Meet operations need auditability and recovery. Use soft-delete/undo/confirmed corrections. |
+| Many desktop `.lnk` files as the primary UX | Works for Windows-only operations, but does not map to browser/Tauri/mobile. Use in-app role selection and shareable display URLs. |
+| Machine config hidden behind AppData folder shortcuts | Makes it hard to audit what is meet data vs local config. Keep local settings visible and exportable, and keep secrets out of plain files. |
+| Dangling updater shortcut | Update flows must fail visibly and be testable. Tauri updater should expose status, signature verification, and actionable errors. |
 
 ## 8. Cross-references to our blueprint
 
@@ -267,23 +423,33 @@ These were not opened in this static pass. **Action for next pass**: read them t
 - Blueprint §9.2 Multirep order — PowerGage shows "manual fixed order" is operationally fine; no auto-sort by reps observed.
 - Blueprint §11.7 Results / exports — extend to cover the 5-template minimum (short final, attempt card, team, absolute, diploma).
 - Blueprint §17 "do not model ISF on top of S/B/D" — PowerGage is the cautionary tale; §3.4 above is the evidence.
+- Roadmap V2 `RulesPack abstraction` — release notes show why this belongs after V1: PowerGage's broad federation support creates schema and UX complexity. Keep V1 ISF hardcoded, then introduce rules packs deliberately.
+- Roadmap V2 `Audio system` — PowerGage confirms timer/signal/voice cues are operationally useful, but they should be a replaceable audio layer, not hardwired WAV files.
+- Roadmap V2 `Awards ceremony view` — PowerGage's diploma/awards surface confirms this as a real operator workflow, not a cosmetic feature.
+- Roadmap V2 `OpenPowerlifting export` — PowerGage already exports to external powerlifting sites; our export layer should be adapter-based.
+- Roadmap V3 `broadcast publisher` — PowerGage's LAN scoreboard and XML/XSLT online table validate a decoupled publisher, but we should use web-native local channels, not DB views plus XSLT.
+- Roadmap V3 `OBS chromakey HTML modes` — the desktop `Экран для видеотрансляции` shortcut confirms broadcast output should be a dedicated surface, not just a resized scoreboard.
+- Roadmap V3 `multi-platform broadcast layouts` — the desktop `Табло` folder confirms separate order, timer, plate, and scoreboard surfaces are operationally distinct.
 
 ## 9. Risk and caveats
 
 - **Source-of-truth risk**: every constant copied from `CALC_PTS.proc` (curves, masters multipliers, federation bands) must be re-verified against ISF v5.1 + streetlifting.ru/points/ before landing in our codebase.
-- **Version drift**: PowerGage 2.8 is the latest folder evidence. Procedures may have evolved across 2.1–2.8. The release-notes `.docx` files are not yet read in this pass.
+- **Version drift**: PowerGage 2.8 is the latest folder evidence. Procedures may have evolved across 2.1–2.8; the release notes confirm storage and module behavior changed across versions.
 - **Static-only blind spots**: this pass cannot evidence (a) save/export file formats, (b) actual UI ergonomics, (c) which menu items are wired vs dead, (d) exact reports output. These need a sandbox session.
+- **Manual extraction gap**: the legacy `.doc` equipment-layout file was not parsed; only the PDF equipment manual was summarized.
+- **Security gap in reference product**: plaintext DB connection settings were observed in an importer config. Do not copy this pattern or its values.
+- **Shortcut metadata caveat**: normal COM shortcut metadata returned empty targets, so targets/arguments were recovered from raw link strings and verified with `Test-Path` where possible.
 - **License**: PowerGage is closed-source proprietary software. Filenames, schema names, formula structure recovered here are observations of its installer payload, not redistributable assets. Do not paste `.proc` source into our repository.
 
 ## 10. Open follow-ups
 
-1. Read the four operator PDFs in `Power Gage/Docs/` and append a §5.1 "Manuals digest" subsection.
-2. Read the 8 release-notes `.docx` files and append a version-history snapshot.
-3. Open the `.rep` templates with a text/hex editor to identify the report engine (FastReport, Stimulsoft, or proprietary).
-4. Scan all remaining `.proc` files for any procedure encoding the **"additional points above threshold in Classic"** rule from streetlifting.ru. Current evidence: not present in `CALC_PTS`. If absent globally, our product implements this rule independently.
+1. Open the `.rep` templates with a text/hex editor to identify the report engine (FastReport, Stimulsoft, or proprietary).
+2. Scan all remaining `.proc` files for any procedure encoding the **"additional points above threshold in Classic"** rule from streetlifting.ru. Current evidence: not present in `CALC_PTS`. If absent globally, our product implements this rule independently.
+3. Parse or visually inspect `Примерная расстановка оборудования.doc` if equipment placement detail becomes relevant.
+4. If updater behavior matters, locate the original installer payload that contains `PGUpdater.exe` or confirm the shortcut is stale.
 5. Run the sandbox playbook (`docs/powergage-analysis-playbook.md` §6) only if a specific question still needs runtime evidence — e.g., the actual structure of the save/export file.
-6. Compare against `docs/powertable-findings-v1.md` once that is produced.
+6. Compare against `docs/powertable-findings-v4.md` when deciding V2/V3 scope.
 
 ## 11. One-line summary
 
-PowerGage is a Firebird+stored-procedure multi-federation Windows product. Its `.proc` source proves the ISF scoring math, masters age multipliers, attempt status pattern, and round-system order — but also proves that PowerGage encodes ISF by overloading a powerlifting schema, which is exactly what our blueprint avoids.
+PowerGage is a Firebird+stored-procedure multi-federation Windows product with mature secretary, reports, LAN scoreboard, import, and licensing workflows. Its `.proc` source proves the ISF scoring math, masters age multipliers, attempt status pattern, and round-system order — while the manuals show useful operational requirements we should implement with a modern offline-first web/desktop model instead of copying its Firebird/ODBC/Windows-LAN architecture or its ISF-on-powerlifting schema overload.

@@ -32,7 +32,7 @@ Streetlifting OS is the **operating system for streetlifting and weighted-calist
 | **ISF-anchored, others as guests** | ISF gets privileged tier and co-branding; platform stays independent (Stripe model) | D33 |
 | **Cryptographic chain-of-trust** | Save-files signed end-to-end; sanctioning embedded; tamper-evident | D38 |
 | **Federation-aware data sovereignty** | Per-federation regional storage where law requires (RU ФЗ-152, EU GDPR); central anonymized pool for records | D33, D37 |
-| **Open APIs, closed source** | Rules Pack format is open spec; client and platform code is proprietary commercial | D30, D32 |
+| **Open client, paid platform services** | V1 client is MIT/open-source in this repository; commercial backend/federation services are paid platform work unless separately relicensed | README, D30, D32 |
 
 ## 3. Topology — six layers
 
@@ -405,13 +405,13 @@ When operator registers an athlete for a meet:
 
 ## 10. Phasing — what ships when
 
-| Version | Layer 1 | Layer 2 | Layer 0 | Layer 3 | Layer −1 | Layer 4 |
-|---|---|---|---|---|---|---|
-| **V1** (Sprints 1–3) | ✓ ISF v5.1 hardcoded | (embedded only, no fetch) | — | — | — | — |
-| **V2** (Sprints 4–6) | ✓ Pack consumer | ✓ ISF Pack only | ✓ launch | ✓ launch | — | — |
-| **V3** (Sprints 7–9) | ✓ multi-pack | ✓ WSF + НАП Packs | ✓ multi-fed | ✓ records extraction | ✓ ISF Central + WSF Central | ✓ launch |
-| **V4** (Sprints 10–12) | ✓ WC sport | ✓ FinalRep + smaller | ✓ WC billing | ✓ WC records | ✓ all federations | ✓ enhanced |
-| **V5** | ✓ mature | open publishing portal | mature | federated records | mature | mobile companion (if telemetry justifies) |
+| Version | Product outcome | Main deliverables | Status on 2026-04-29 |
+|---|---|---|---|
+| **V1** | Offline-first ISF meet client | Hardcoded ISF v5.1 domain, Meet Setup, registration, weigh-ins, flight order, Classic + Multirep judging, results, records, team scoring, public scoreboard, print forms, desktop/PWA distribution | **Shipped** (`1.0.0`) and hardened through `1.1.1` |
+| **V2** | Commercial backend + configurable rules foundation | Backend billing + reconciliation, RulesPack abstraction, audio system, awards ceremony, OpenPowerlifting export, athlete↔nomination split, stream/group scheduling, sport-rank computation, cross-competition records archive | **Next major phase** |
+| **V3** | Multi-federation onboarding + trust layer | WSF / НАП / FinalRep onboarding, multi-pack support, athlete passport, sanctioning + crypto signing, local broadcast publisher, OBS/share-link broadcast surfaces | **Planned after V2 foundation** |
+| **V4** | Weighted Calisthenics + governance tooling | WC sport domain, audit & enforcement workflows, judge certification system, expanded federation operations | **Planned** |
+| **V5** | Network effects + companion surfaces | Federated records, mature publishing/distribution surfaces, focused mobile companion app | **Long-term** |
 
 ## 11. Out of scope explicitly
 
@@ -424,8 +424,8 @@ When operator registers an athlete for a meet:
 | Athlete personal portal with online registration | Out of platform — federations may build their own using our APIs |
 | Telegram bot integration (PowerTable parity) | Out — heavy maintenance burden, low-margin feature |
 | Live online cloud sync of working state during meet | Anti-pattern — would break offline-first guarantee (D5) |
-| Mobile native apps | Deferred indefinitely; PWA + URL-judge-remotes cover 95% of use cases (per D23 + V3 scope) |
-| Federation CRM / ERP / accounting | Out — federations use external accounting; we provide invoicing data via API |
+| Full-featured mobile apps before V5 | Deferred; PWA covers meet-day usage. Only a narrow companion app is considered in V5 if telemetry justifies it |
+| Full federation CRM / ERP / accounting suite | Out — V2 billing/reconciliation covers only Streetlifting OS commercial flows, not the federation's general back-office stack |
 | White-label native apps for individual federations | Possible at high price tier; not planned for V1–V4 |
 
 ## 12. Risk register

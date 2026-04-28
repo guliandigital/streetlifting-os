@@ -1,6 +1,7 @@
 # Reference Comparison v1 — OpenLifter vs PowerGage vs PowerTable
 
 Date: 2026-04-25
+Current status: historical comparison. It captures the evidence available during V1 planning; later PowerTable/PowerGage details are in `powertable-findings-v4.md` and `powergage-findings-v1.md`, and the active roadmap is `current-implementation-plan.md`.
 Anchors:
 - [openlifter-isf-implementation-blueprint-v1.md](openlifter-isf-implementation-blueprint-v1.md)
 - [powergage-findings-v1.md](powergage-findings-v1.md)

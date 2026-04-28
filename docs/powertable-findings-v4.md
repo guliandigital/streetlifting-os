@@ -570,7 +570,55 @@ Plus per-meet/per-nomination Telegram notifications throughout. **PowerTable rep
 
 V3 candidate; out of V1/V2 product scope.
 
-## 18. Cross-references to blueprint v2
+## 18. Modernization takeaways for Streetlifting OS
+
+PowerTable's strongest product lesson is not its 1C UI. It is the breadth of the operator workflow: one product covers federation setup, meet setup, nominations, judge assignments, stream planning, print forms, awards, scoreboard, audio, and exports. Streetlifting OS should keep that operational coverage, but implement it as a modern offline-first client plus optional backend services rather than as a 1C infobase.
+
+### 18.1 Keep as product requirements
+
+| PowerTable pattern | Why it matters | Streetlifting OS target |
+|---|---|---|
+| Athlete catalog separate from nominations | Athletes persist across meets; one athlete may have multiple nominations in one meet | V2 `Athlete` + `Nomination`, with V1 `Entry` migration path |
+| Per-meet discipline / age / weight / plate setup | Federation rules vary by meet and season | V1.x editable meet setup; V2 RulesPack-backed defaults |
+| Judge catalog + per-meet judge nominations | Judges are certified people, not anonymous buttons | V3/V4 judge certification + per-meet assignment |
+| Stream and group planning | Real competitions need platform/day scheduling before judging starts | V2 stream/group entities with duration estimation |
+| Attempt-duration analytics | Schedule accuracy improves after previous meets | V2 local statistics first; backend aggregation later |
+| 3 judge remotes by URL | Judges should not need a native mobile app | V3 local publisher with per-role short-lived URLs |
+| Awards ceremony mode | Medal flow is a live event, not a static report | V2 `/awards` view with keyboard-driven progression |
+| Print/export center | Secretariats need protocols, cards, diplomas, judge sheets, OpenPowerlifting export | V1.x/V2 report registry with stable templates |
+| Audio cues and walk-in music | Reduces operator load during attempts and ceremony | V2 audio system; local file picker instead of Telegram dependency |
+| Test meet toggle | Training operators without polluting records/ratings is valuable | V1.x or V2 `testMeet` flag: no records, no billing, no ratings |
+
+### 18.2 Do not copy directly
+
+| PowerTable implementation choice | Problem | Modern replacement |
+|---|---|---|
+| 1C infobase as the application runtime | Vendor lock-in, Windows/1C dependency, difficult browser/PWA distribution | React + Tauri desktop/PWA client with pure TypeScript domain logic |
+| Online-only web-server infobase | Meet-day operations depend on server quality and connectivity | Offline-first save-file; backend sync only after the meet |
+| Shared federation `sk` token in URLs | Token leak can expose broad federation data | Per-meet/per-role tokens, expiry, revocation, optional LAN-only mode |
+| Global MDI tab workspace | Fast for trained 1C users, noisy for new operators | Task-oriented sidebar + focused pages; preserve dense tables where useful |
+| Dense 1C forms with many hidden business rules | Hard to onboard volunteers; easy to miss required setup | Step validation, explicit blockers, readiness checks before publishing/running |
+| Telegram bot as core UX | Useful in RU market but high maintenance and platform risk | Optional notification adapters; core workflow remains app-native |
+| Report/export buttons scattered across screens | Operators must remember where each output lives | Central report registry plus contextual shortcuts |
+| Manual recalculation buttons everywhere | Easy to forget recalculation and publish stale output | Derived selectors, deterministic recalculation, explicit dirty-state indicators |
+
+### 18.3 Roadmap impact
+
+V1 is already differentiated by being offline-first, cross-platform, and correct against ISF v5.1. The PowerTable re-analysis confirms that the next competitive gap is not another Classic judging feature; it is federation-grade operations around the meet.
+
+Recommended implementation order:
+
+1. **V1.x hardening** — code-signing, live-event UAT, update smoke tests, `testMeet` flag if scope allows.
+2. **V2 operational core** — Athlete/Nomination split, Stream/Group scheduling, report/export registry, awards, audio, OpenPowerlifting export, cross-meet records.
+3. **V2 commercial backend** — billing/reconciliation after the local workflow is stable; keep meet-day path fully offline.
+4. **V3 broadcast and federation trust** — local broadcast publisher, judge remotes, share links, sanctioning, crypto signing, athlete passport.
+5. **V4/V5 governance and network effects** — judge certification, audit/enforcement, WC sport, federated records, focused mobile companion.
+
+### 18.4 Architecture rule
+
+PowerTable centralizes everything in 1C and compensates with a very broad feature set. Streetlifting OS should invert that architecture: pure local meet engine first, optional backend for money/trust/records second, federation-specific integrations third. A tournament must remain runnable with network unplugged even after V2+ launches.
+
+## 19. Cross-references to blueprint v2
 
 | Blueprint v2 § | Driven by v4 finding |
 |---|---|
@@ -586,7 +634,7 @@ V3 candidate; out of V1/V2 product scope.
 | §6.8 (Awards ceremony) | §9 |
 | §V3 (broadcast publisher) | §12 (broadcast catalog) |
 
-## 19. Risks and caveats
+## 20. Risks and caveats
 
 - **Static-only**: We did not interact with the live client beyond viewing screenshots. Exact JSON shapes of save/export are still unknown.
 - **Some PowerTable fields are conjectural** based on column abbreviations (e.g., `Ш`, `Г`, icon meanings). Treated as informational, not authoritative.
@@ -594,6 +642,6 @@ V3 candidate; out of V1/V2 product scope.
 - **Broadcast catalog evidence is text-only** (URL list). Actual rendered HTML structure of each view is not captured.
 - **Auth via `sk` token**: we observed but did not test the security model. The shared token may be additionally protected by IP whitelisting (`Автоматическое IP-whitelisting` per PowerTable changelog 2025-11-07) — verify before assuming bare-link access.
 
-## 20. One-line summary
+## 21. One-line summary
 
-PowerTable's installed client and broadcast catalog confirm: the rule-engine is partially incorrect (M5/M6 against ISF v5.1), the entity model is richer than our v1 blueprint (Athlete↔Nomination split, Stream/Group, Judge entity with 3 remotes, Forecast columns, Sport-rank computation), and the broadcast layer is a 40+-view first-class product surface that we explicitly defer to V3.
+PowerTable's installed client and broadcast catalog confirm: the rule-engine is partially incorrect (M5/M6 against ISF v5.1), the entity model is richer than our v1 blueprint (Athlete↔Nomination split, Stream/Group, Judge entity with 3 remotes, Forecast columns, Sport-rank computation), and the broadcast layer is a 40+-view first-class product surface that we explicitly defer to V3; the modernization opportunity is to keep the operational breadth while replacing the 1C dependency with an offline-first web/desktop architecture.
