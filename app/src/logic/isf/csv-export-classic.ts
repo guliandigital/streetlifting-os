@@ -1,5 +1,5 @@
 /**
- * CSV export for classic competition protocol.
+ * CSV export for classic and multirep competition protocols.
  *
  * Separate from csv-export.ts (registration import/export).
  * PowerTable-compatible column order per powertable-findings-v2.md §4.3.
@@ -8,6 +8,7 @@
  */
 
 import type { ClassicResultGroup, ClassicResultRow, AttemptDisplay } from "./classic-placing";
+import type { MultirepResultGroup, MultirepResultRow } from "./multirep-placing";
 
 const UTF8_BOM = "﻿";
 
@@ -124,6 +125,91 @@ export function exportClassicProtocolCsv(
 
     for (const row of group.rows) {
       lines.push(rowToCsvLine(row));
+    }
+  }
+
+  return UTF8_BOM + lines.join("\n");
+}
+
+// ─── Multirep CSV export ─────────────────────────────────────────────────────
+
+const MULTIREP_HEADERS = [
+  "#",
+  "Возраст. кат / Age Cat",
+  "Команда / Team",
+  "Дата рожд / Birth",
+  "ВК / Weight Cat",
+  "Вес / BW",
+  "Нагрузка PU / PU Load",
+  "PU повт / PU Reps",
+  "Нагрузка DI / DI Load",
+  "DI повт / DI Reps",
+  "Сумма повт / Total Reps",
+  "Коэф / Coef",
+  "ISF очки / ISF Pts",
+  "Место / Place",
+];
+
+function multirepRowToCsvLine(row: MultirepResultRow): string {
+  const e = row.entry;
+
+  const placeStr = row.place === null ? "Г/G" : String(row.place);
+  const ageCatStr = row.resolvedAgeCategoryCode ?? "";
+  const teamStr = e.team ?? "";
+  const birthStr = e.birthDate ?? (e.ageOverride !== null ? String(e.ageOverride) : "");
+  const wcStr = row.resolvedWeightCategoryCode ?? "";
+  const bwStr = e.bodyweightKg !== null ? String(e.bodyweightKg) : "";
+
+  const puLoad = row.presetLoadKgPu !== null ? String(row.presetLoadKgPu) : "";
+  const puReps = String(row.puReps);
+  const diLoad = row.presetLoadKgDi !== null ? String(row.presetLoadKgDi) : "";
+  const diReps = String(row.diReps);
+  const totalReps = String(row.totalReps);
+  const coef = String(row.isfCoefficient);
+  const isfPts = String(row.isfFinalPoints);
+
+  const cells = [
+    e.name,
+    ageCatStr,
+    teamStr,
+    birthStr,
+    wcStr,
+    bwStr,
+    puLoad,
+    puReps,
+    diLoad,
+    diReps,
+    totalReps,
+    coef,
+    isfPts,
+    placeStr,
+  ];
+
+  return cells.map(escapeCell).join(",");
+}
+
+/**
+ * Export multirep protocol to CSV.
+ *
+ * @param groups  Computed multirep result groups
+ * @param meetName  Name of the meet (used in header comment)
+ * @param meetDate  ISO 8601 date of the meet
+ */
+export function exportMultirepProtocolCsv(
+  groups: MultirepResultGroup[],
+  meetName: string,
+  meetDate: string,
+): string {
+  const lines: string[] = [];
+
+  lines.push(`# ${meetName} — ${meetDate} — Многоповторный / Multirep`);
+  lines.push(MULTIREP_HEADERS.map(escapeCell).join(","));
+
+  for (const group of groups) {
+    lines.push(`=== ${group.label} ===`);
+
+    for (const row of group.rows) {
+      lines.push(multirepRowToCsvLine(row));
     }
   }
 

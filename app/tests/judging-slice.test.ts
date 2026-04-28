@@ -13,6 +13,7 @@ import judgingReducer, {
   castVote,
   resetVote,
   clearPendingVotes,
+  setPendingReps,
   type JudgingSliceState,
 } from "@store/judging-slice";
 import { attemptStatusFromVotes } from "@logic/isf/judge-votes";
@@ -231,6 +232,44 @@ describe("clearPendingVotes", () => {
     expect(s.pendingLeft).toBeNull();
     expect(s.pendingCenter).toBeNull();
     expect(s.pendingRight).toBeNull();
+  });
+});
+
+// ─── setPendingReps ────────────────────────────────────────────────────────────
+
+describe("setPendingReps", () => {
+  it("sets pendingReps to the given number", () => {
+    const store = makeStore();
+    store.dispatch(setPendingReps(12));
+    expect(getState(store).pendingReps).toBe(12);
+  });
+
+  it("sets pendingReps to null (clear)", () => {
+    const store = makeStore();
+    store.dispatch(setPendingReps(5));
+    store.dispatch(setPendingReps(null));
+    expect(getState(store).pendingReps).toBeNull();
+  });
+
+  it("sets pendingReps to 0", () => {
+    const store = makeStore();
+    store.dispatch(setPendingReps(0));
+    expect(getState(store).pendingReps).toBe(0);
+  });
+
+  it("initial state has pendingReps=null", () => {
+    const store = makeStore();
+    expect(getState(store).pendingReps).toBeNull();
+  });
+
+  it("clearPendingVotes also clears pendingReps", () => {
+    const store = makeStore();
+    store.dispatch(setPendingReps(42));
+    store.dispatch(castVote({ judge: "left", value: true }));
+    store.dispatch(clearPendingVotes());
+    const s = getState(store);
+    expect(s.pendingReps).toBeNull();
+    expect(s.pendingLeft).toBeNull();
   });
 });
 

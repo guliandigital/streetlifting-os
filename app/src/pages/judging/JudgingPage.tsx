@@ -1,5 +1,5 @@
 /**
- * JudgingPage — Sprint 2 Classic judging screen.
+ * JudgingPage — Sprint 2 Classic + Sprint 3 Multirep judging screen.
  *
  * Blueprint v2 §11.6 layout:
  *   Left panel:  next 5 items in queue
@@ -21,6 +21,8 @@ import {
   Button,
   Card,
   Tabs,
+  NumberInput,
+  Divider,
 } from "@mantine/core";
 import { useAppDispatch, useAppSelector } from "@store/index";
 import {
@@ -30,9 +32,11 @@ import {
   castVote,
   resetVote,
   clearPendingVotes,
+  setPendingReps,
 } from "@store/judging-slice";
 import {
   commitAttemptVotes,
+  commitMultirepAttempt,
   updateJudgingState,
 } from "@store/meet-slice";
 import { selectEntries } from "@store/registration-slice";
@@ -40,10 +44,20 @@ import {
   buildAttemptQueue,
   getActiveItem,
 } from "@logic/isf/attempt-queue";
+import {
+  buildMultirepQueue,
+  getMultirepActiveItem,
+} from "@logic/isf/multirep-queue";
 import { attemptStatusFromVotes, isSplitDecision } from "@logic/isf/judge-votes";
+import { ISF_V51_DISCIPLINES } from "@domain/presets";
 import type { JudgeVotes } from "@domain/models";
 import { JudgeVoteCard } from "@components/judge-vote-card/JudgeVoteCard";
 import { TimerDisplay } from "@components/timer-display/TimerDisplay";
+
+// ─── Tab value types ─────────────────────────────────────────────────────────
+
+type ClassicTab = "PU" | "DI";
+type ActiveTab = ClassicTab | `multirep_${string}`;
 
 export function JudgingPage() {
   const { t } = useTranslation();
@@ -55,6 +69,8 @@ export function JudgingPage() {
 
   // Which exercise tab is active — prefer first enabled exercise in meet config.
   const enabledDisciplines = meet?.meet.enabledDisciplineCodes ?? [];
+
+  // Classic tabs
   const hasPU =
     enabledDisciplines.some((c) => c.includes("pu") || c === "classic_2lift") ||
     entries.some((e) => e.event === "PU" || e.event === "PUDI");
@@ -62,26 +78,63 @@ export function JudgingPage() {
     enabledDisciplines.some((c) => c.includes("di") || c === "classic_2lift") ||
     entries.some((e) => e.event === "DI" || e.event === "PUDI");
 
+  // Multirep tabs: enabled multirep discipline codes
+  const enabledMultirepCodes = enabledDisciplines.filter((c) => {
+    const disc = ISF_V51_DISCIPLINES.find((d) => d.code === c);
+    return disc?.competitionFormat === "multirep";
+  });
+
   const defaultExercise: "PU" | "DI" = hasPU ? "PU" : "DI";
 
-  const [activeExercise, setActiveExercise] = useStateLazy<"PU" | "DI">(
-    () => defaultExercise,
+  const [activeTab, setActiveTab] = useStateLazy<ActiveTab>(() =>
+    defaultExercise,
   );
 
+  const isMultirepTab = activeTab.startsWith("multirep_");
+  const activeMultirepCode = isMultirepTab ? activeTab : null;
+
   const lowerBWFirst = meet?.meet.lowerBodyweightFirstTiebreak ?? true;
-  const defaultDuration = meet?.meet.classicLoadConfig?.defaultAttemptDurationSec ?? 60;
+  const defaultClassicDuration =
+    meet?.meet.classicLoadConfig?.defaultAttemptDurationSec ?? 60;
+  const defaultMultirepDuration =
+    meet?.meet.multirepConfig?.defaultAttemptDurationSec ?? 120;
+
+  const defaultDuration = isMultirepTab
+    ? defaultMultirepDuration
+    : defaultClassicDuration;
 
   const savedActiveEntryIndex = meet?.judging.activeEntryIndex ?? null;
   const savedActiveAttemptSequence = meet?.judging.activeAttemptSequence ?? null;
 
-  const queue = buildAttemptQueue(entries, activeExercise, lowerBWFirst);
-  const activeItem = getActiveItem(
+  // Classic queue
+  const classicExercise: "PU" | "DI" = isMultirepTab
+    ? "PU"
+    : (activeTab as "PU" | "DI");
+
+  const classicQueue = buildAttemptQueue(entries, classicExercise, lowerBWFirst);
+  const classicActiveItem = getActiveItem(
     entries,
-    activeExercise,
+    classicExercise,
     savedActiveEntryIndex,
     savedActiveAttemptSequence,
     lowerBWFirst,
   );
+
+  // Multirep queue (filtered to the active multirep discipline code)
+  const allMultirepQueue = buildMultirepQueue(entries, lowerBWFirst);
+  const filteredMultirepQueue = activeMultirepCode
+    ? allMultirepQueue.filter(
+        (item) => item.entry.disciplineCode === activeMultirepCode,
+      )
+    : [];
+
+  const multirepActiveItem = activeMultirepCode
+    ? (getMultirepActiveItem(
+        entries.filter((e) => e.disciplineCode === activeMultirepCode),
+        savedActiveEntryIndex,
+        lowerBWFirst,
+      ) ?? null)
+    : null;
 
   // Timer interval.
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -107,8 +160,11 @@ export function JudgingPage() {
   // Beep when timer hits 0.
   const prevRunning = useRef(judging.timerRunning);
   useEffect(() => {
-    if (prevRunning.current && !judging.timerRunning && judging.timerSecondsLeft === 0) {
-      // Simple Web Audio beep.
+    if (
+      prevRunning.current &&
+      !judging.timerRunning &&
+      judging.timerSecondsLeft === 0
+    ) {
       try {
         const ctx = new AudioContext();
         const osc = ctx.createOscillator();
@@ -152,17 +208,20 @@ export function JudgingPage() {
     dispatch(castVote({ judge: "right", value: false }));
   }
 
-  function getNextItem(after: typeof activeItem) {
-    if (!after) return queue[0] ?? null;
-    const idx = queue.findIndex(
+  // ─── Classic queue helpers ──────────────────────────────────────────────────
+
+  function getNextClassicItem(after: typeof classicActiveItem) {
+    if (!after) return classicQueue[0] ?? null;
+    const idx = classicQueue.findIndex(
       (item) =>
-        item.entryIndex === after.entryIndex && item.sequence === after.sequence,
+        item.entryIndex === after.entryIndex &&
+        item.sequence === after.sequence,
     );
-    return queue[idx + 1] ?? queue[0] ?? null;
+    return classicQueue[idx + 1] ?? classicQueue[0] ?? null;
   }
 
-  function advanceQueue(after: typeof activeItem) {
-    const next = getNextItem(after);
+  function advanceClassicQueue(after: typeof classicActiveItem) {
+    const next = getNextClassicItem(after);
     if (next) {
       dispatch(
         updateJudgingState({
@@ -171,14 +230,19 @@ export function JudgingPage() {
         }),
       );
     } else {
-      dispatch(updateJudgingState({ activeEntryIndex: null, activeAttemptSequence: null }));
+      dispatch(
+        updateJudgingState({
+          activeEntryIndex: null,
+          activeAttemptSequence: null,
+        }),
+      );
     }
     dispatch(clearPendingVotes());
     dispatch(stopTimer());
   }
 
-  function handleConfirm() {
-    if (!activeItem) return;
+  function handleClassicConfirm() {
+    if (!classicActiveItem) return;
     const votes: JudgeVotes = {
       left: judging.pendingLeft,
       center: judging.pendingCenter,
@@ -186,22 +250,79 @@ export function JudgingPage() {
     };
     dispatch(
       commitAttemptVotes({
-        entryIndex: activeItem.entryIndex,
-        exercise: activeItem.exercise,
-        sequence: activeItem.sequence,
+        entryIndex: classicActiveItem.entryIndex,
+        exercise: classicActiveItem.exercise,
+        sequence: classicActiveItem.sequence,
         votes,
-        ...(activeItem.attempt?.declaredLoadKg !== undefined &&
-        activeItem.attempt.declaredLoadKg !== null
-          ? { declaredLoadKg: activeItem.attempt.declaredLoadKg }
+        ...(classicActiveItem.attempt?.declaredLoadKg !== undefined &&
+        classicActiveItem.attempt.declaredLoadKg !== null
+          ? { declaredLoadKg: classicActiveItem.attempt.declaredLoadKg }
           : {}),
         lastDeclarationAt: new Date().toISOString(),
       }),
     );
-    advanceQueue(activeItem);
+    advanceClassicQueue(classicActiveItem);
   }
 
-  function handleSkip() {
-    advanceQueue(activeItem);
+  function handleClassicSkip() {
+    advanceClassicQueue(classicActiveItem);
+  }
+
+  // ─── Multirep queue helpers ─────────────────────────────────────────────────
+
+  function getNextMultirepItem(after: typeof multirepActiveItem) {
+    if (!after) return filteredMultirepQueue[0] ?? null;
+    const idx = filteredMultirepQueue.findIndex(
+      (item) => item.entryIndex === after.entryIndex && item.exercise === after.exercise,
+    );
+    return filteredMultirepQueue[idx + 1] ?? filteredMultirepQueue[0] ?? null;
+  }
+
+  function advanceMultirepQueue(after: typeof multirepActiveItem) {
+    const next = getNextMultirepItem(after);
+    if (next) {
+      dispatch(
+        updateJudgingState({
+          activeEntryIndex: next.entryIndex,
+          activeAttemptSequence: 1,
+        }),
+      );
+    } else {
+      dispatch(
+        updateJudgingState({
+          activeEntryIndex: null,
+          activeAttemptSequence: null,
+        }),
+      );
+    }
+    dispatch(clearPendingVotes());
+    dispatch(stopTimer());
+  }
+
+  function handleMultirepConfirm() {
+    if (!multirepActiveItem) return;
+    // exercise must be PU or DI (PUDI items are split into separate entries)
+    const exercise = multirepActiveItem.exercise;
+    if (exercise !== "PU" && exercise !== "DI") return;
+
+    const votes: JudgeVotes = {
+      left: judging.pendingLeft,
+      center: judging.pendingCenter,
+      right: judging.pendingRight,
+    };
+    dispatch(
+      commitMultirepAttempt({
+        entryIndex: multirepActiveItem.entryIndex,
+        exercise,
+        reps: judging.pendingReps ?? 0,
+        votes,
+      }),
+    );
+    advanceMultirepQueue(multirepActiveItem);
+  }
+
+  function handleMultirepSkip() {
+    advanceMultirepQueue(multirepActiveItem);
   }
 
   if (!meet) return null;
@@ -214,7 +335,14 @@ export function JudgingPage() {
   const currentStatus = attemptStatusFromVotes(pendingVotes);
   const isSplit = isSplitDecision(pendingVotes);
 
-  const next5 = queue.slice(0, 5);
+  const activeQueue = isMultirepTab ? filteredMultirepQueue : classicQueue;
+  const activeItem = isMultirepTab ? multirepActiveItem : classicActiveItem;
+  const next5 = activeQueue.slice(0, 5);
+
+  // ─── Multirep active disc info ──────────────────────────────────────────────
+  const activeDisc = activeMultirepCode
+    ? ISF_V51_DISCIPLINES.find((d) => d.code === activeMultirepCode)
+    : null;
 
   return (
     <Container size="xl" py="md">
@@ -224,10 +352,10 @@ export function JudgingPage() {
           <Title order={2}>{t("judging.title")}</Title>
           <Group gap="xs">
             <Tabs
-              value={activeExercise}
+              value={activeTab}
               onChange={(v) => {
-                if (v === "PU" || v === "DI") {
-                  setActiveExercise(v);
+                if (v) {
+                  setActiveTab(v as ActiveTab);
                   dispatch(clearPendingVotes());
                   dispatch(stopTimer());
                 }
@@ -236,16 +364,29 @@ export function JudgingPage() {
               <Tabs.List>
                 {hasPU && <Tabs.Tab value="PU">{t("judging.exercisePU")}</Tabs.Tab>}
                 {hasDI && <Tabs.Tab value="DI">{t("judging.exerciseDI")}</Tabs.Tab>}
+                {enabledMultirepCodes.length > 0 && (
+                  <>
+                    <Divider orientation="vertical" mx="xs" />
+                    {enabledMultirepCodes.map((code) => {
+                      const disc = ISF_V51_DISCIPLINES.find((d) => d.code === code);
+                      return (
+                        <Tabs.Tab key={code} value={code}>
+                          {disc?.labelEn ?? code}
+                        </Tabs.Tab>
+                      );
+                    })}
+                  </>
+                )}
               </Tabs.List>
             </Tabs>
           </Group>
         </Group>
 
-        {queue.length === 0 && entries.length === 0 ? (
+        {activeQueue.length === 0 && entries.length === 0 ? (
           <Card withBorder>
             <Text c="dimmed">{t("judging.noEntries")}</Text>
           </Card>
-        ) : queue.length === 0 ? (
+        ) : activeQueue.length === 0 ? (
           <Card withBorder>
             <Text c="dimmed">{t("judging.allDone")}</Text>
           </Card>
@@ -260,15 +401,21 @@ export function JudgingPage() {
                     <Text size="sm" c="dimmed">
                       {t("judging.queue.empty")}
                     </Text>
-                  ) : (
+                  ) : isMultirepTab ? (
+                    // Multirep queue items
                     next5.map((item, i) => {
+                      const mItem = item as typeof filteredMultirepQueue[0];
                       const isActive =
                         activeItem &&
-                        item.entryIndex === activeItem.entryIndex &&
-                        item.sequence === activeItem.sequence;
+                        mItem.entryIndex === activeItem.entryIndex;
+                      const repsDisplay =
+                        mItem.attempt?.reps !== null &&
+                        mItem.attempt?.reps !== undefined
+                          ? String(mItem.attempt.reps)
+                          : "–";
                       return (
                         <Card
-                          key={`${item.entryIndex}-${item.sequence}`}
+                          key={`${mItem.entryIndex}-${mItem.exercise}`}
                           withBorder
                           p="xs"
                           style={{
@@ -284,23 +431,70 @@ export function JudgingPage() {
                             <Stack gap={0}>
                               <Text size="sm" fw={isActive ? 700 : 400}>
                                 {i === 0 && isActive
-                                  ? `▶ ${item.entry.name}`
-                                  : item.entry.name}
+                                  ? `▶ ${mItem.entry.name}`
+                                  : mItem.entry.name}
                               </Text>
                               <Text size="xs" c="dimmed">
-                                {item.entry.bodyweightKg !== null
-                                  ? `${item.entry.bodyweightKg} kg`
+                                {mItem.entry.bodyweightKg !== null
+                                  ? `${mItem.entry.bodyweightKg} kg`
+                                  : "—"}
+                              </Text>
+                            </Stack>
+                            <Group gap="xs">
+                              <Badge size="sm" color="teal" variant="light">
+                                {mItem.exercise}
+                              </Badge>
+                              <Badge size="sm" color="gray" variant="outline">
+                                {repsDisplay}
+                              </Badge>
+                            </Group>
+                          </Group>
+                        </Card>
+                      );
+                    })
+                  ) : (
+                    // Classic queue items
+                    next5.map((item, i) => {
+                      const cItem = item as typeof classicQueue[0];
+                      const isActive =
+                        activeItem &&
+                        cItem.entryIndex === activeItem.entryIndex &&
+                        (activeItem as typeof classicQueue[0]).sequence === cItem.sequence;
+                      return (
+                        <Card
+                          key={`${cItem.entryIndex}-${cItem.sequence}`}
+                          withBorder
+                          p="xs"
+                          style={{
+                            background: isActive
+                              ? "var(--mantine-color-blue-light)"
+                              : undefined,
+                            borderColor: isActive
+                              ? "var(--mantine-color-blue-5)"
+                              : undefined,
+                          }}
+                        >
+                          <Group justify="space-between" gap="xs">
+                            <Stack gap={0}>
+                              <Text size="sm" fw={isActive ? 700 : 400}>
+                                {i === 0 && isActive
+                                  ? `▶ ${cItem.entry.name}`
+                                  : cItem.entry.name}
+                              </Text>
+                              <Text size="xs" c="dimmed">
+                                {cItem.entry.bodyweightKg !== null
+                                  ? `${cItem.entry.bodyweightKg} kg`
                                   : "—"}
                               </Text>
                             </Stack>
                             <Group gap="xs">
                               <Badge size="sm" color="blue" variant="light">
-                                {t("judging.round")} {item.sequence}
+                                {t("judging.round")} {cItem.sequence}
                               </Badge>
-                              {item.attempt?.declaredLoadKg !== null &&
-                              item.attempt?.declaredLoadKg !== undefined ? (
+                              {cItem.attempt?.declaredLoadKg !== null &&
+                              cItem.attempt?.declaredLoadKg !== undefined ? (
                                 <Badge size="sm" color="teal" variant="outline">
-                                  {item.attempt.declaredLoadKg} kg
+                                  {cItem.attempt.declaredLoadKg} kg
                                 </Badge>
                               ) : (
                                 <Badge size="sm" color="gray" variant="outline">
@@ -334,17 +528,67 @@ export function JudgingPage() {
                         </Text>
                       </Stack>
                       <Group gap="xs">
-                        <Badge size="lg" color="blue">
-                          {t("judging.round")} {activeItem.sequence}
-                        </Badge>
-                        {activeItem.attempt?.declaredLoadKg !== null &&
-                        activeItem.attempt?.declaredLoadKg !== undefined ? (
-                          <Badge size="lg" color="teal">
-                            {activeItem.attempt.declaredLoadKg} kg
-                          </Badge>
-                        ) : null}
+                        {isMultirepTab ? (
+                          <>
+                            <Badge size="lg" color="teal">
+                              {(activeItem as typeof filteredMultirepQueue[0]).exercise}
+                            </Badge>
+                            {activeDisc?.presetLoadKg && (
+                              <Badge size="lg" color="orange" variant="outline">
+                                {t("judging.presetLoad")}:{" "}
+                                {activeDisc.presetLoadKg.PU !== undefined
+                                  ? `${activeDisc.presetLoadKg.PU} kg PU`
+                                  : ""}
+                                {activeDisc.presetLoadKg.PU !== undefined &&
+                                activeDisc.presetLoadKg.DI !== undefined
+                                  ? " + "
+                                  : ""}
+                                {activeDisc.presetLoadKg.DI !== undefined
+                                  ? `${activeDisc.presetLoadKg.DI} kg DI`
+                                  : ""}
+                              </Badge>
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            <Badge size="lg" color="blue">
+                              {t("judging.round")}{" "}
+                              {(activeItem as typeof classicQueue[0]).sequence}
+                            </Badge>
+                            {(activeItem as typeof classicQueue[0]).attempt
+                              ?.declaredLoadKg !== null &&
+                            (activeItem as typeof classicQueue[0]).attempt
+                              ?.declaredLoadKg !== undefined ? (
+                              <Badge size="lg" color="teal">
+                                {(activeItem as typeof classicQueue[0]).attempt!
+                                  .declaredLoadKg}{" "}
+                                kg
+                              </Badge>
+                            ) : null}
+                          </>
+                        )}
                       </Group>
                     </Group>
+
+                    {/* Multirep: reps input */}
+                    {isMultirepTab && (
+                      <NumberInput
+                        label={t("multirep.enterReps")}
+                        min={0}
+                        value={judging.pendingReps ?? ""}
+                        onChange={(v) =>
+                          dispatch(
+                            setPendingReps(
+                              typeof v === "number" && Number.isFinite(v)
+                                ? v
+                                : null,
+                            ),
+                          )
+                        }
+                        size="lg"
+                        placeholder="0"
+                      />
+                    )}
 
                     {/* Timer */}
                     <Group justify="center" gap="md">
@@ -442,7 +686,11 @@ export function JudgingPage() {
                       <Button
                         size="lg"
                         color="blue"
-                        onClick={handleConfirm}
+                        onClick={
+                          isMultirepTab
+                            ? handleMultirepConfirm
+                            : handleClassicConfirm
+                        }
                         disabled={currentStatus === "pending"}
                       >
                         {t("judging.confirm")}
@@ -451,7 +699,9 @@ export function JudgingPage() {
                         size="sm"
                         variant="subtle"
                         color="gray"
-                        onClick={handleSkip}
+                        onClick={
+                          isMultirepTab ? handleMultirepSkip : handleClassicSkip
+                        }
                       >
                         {t("judging.skip")}
                       </Button>

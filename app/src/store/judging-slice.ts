@@ -20,6 +20,8 @@ export type JudgingSliceState = {
   pendingCenter: boolean | null;
   /** Pending vote from the right judge; null = not yet cast. */
   pendingRight: boolean | null;
+  /** Pending rep count for Multirep judging; null = not yet entered. */
+  pendingReps: number | null;
 };
 
 const DEFAULT_DURATION_SEC = 60;
@@ -30,6 +32,7 @@ const initialState: JudgingSliceState = {
   pendingLeft: null,
   pendingCenter: null,
   pendingRight: null,
+  pendingReps: null,
 };
 
 const judgingSlice = createSlice({
@@ -94,6 +97,12 @@ const judgingSlice = createSlice({
       state.pendingLeft = null;
       state.pendingCenter = null;
       state.pendingRight = null;
+      state.pendingReps = null;
+    },
+
+    /** Set pending reps count for Multirep judging. */
+    setPendingReps(state, action: PayloadAction<number | null>) {
+      state.pendingReps = action.payload;
     },
   },
 });
@@ -105,6 +114,7 @@ export const {
   castVote,
   resetVote,
   clearPendingVotes,
+  setPendingReps,
 } = judgingSlice.actions;
 
 export default judgingSlice.reducer;

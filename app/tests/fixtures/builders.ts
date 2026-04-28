@@ -1,10 +1,11 @@
 /**
  * Test fixtures + builder helpers — used across multiple test files to construct
- * Entry / ClassicAttempt fixtures without verbose object-literal noise.
+ * Entry / ClassicAttempt / MultirepAttempt fixtures without verbose object-literal noise.
  */
 
 import type {
   ClassicAttempt,
+  MultirepAttempt,
   Entry,
   ExerciseResult,
   JudgeVotes,
@@ -49,6 +50,30 @@ export function classicExercise(
   return { format: "classic", exercise, attempts };
 }
 
+export function multirepAttempt(
+  reps: number | null,
+  votes: JudgeVotes = VOTES_PENDING,
+  presetLoadKg: number | null = null,
+  noRepCount?: number,
+): MultirepAttempt {
+  const att: MultirepAttempt = {
+    sequence: 1,
+    presetLoadKg,
+    reps,
+    judgeVotes: votes,
+    durationSec: 120,
+  };
+  if (noRepCount !== undefined) att.noRepCount = noRepCount;
+  return att;
+}
+
+export function multirepExercise(
+  exercise: "PU" | "DI",
+  attempts: MultirepAttempt[],
+): ExerciseResult {
+  return { format: "multirep", exercise, attempts };
+}
+
 export type EntryOverrides = Partial<Entry>;
 
 let _idCounter = 0;
@@ -70,6 +95,37 @@ export function buildClassicEntry(
     id: nextId(),
     competitionFormat: "classic",
     disciplineCode: "classic_2lift",
+    event: "PUDI",
+    day: 1,
+    platform: 1,
+    flight: "A",
+    name,
+    sex: "M",
+    birthDate: null,
+    ageOverride: null,
+    division: "amateur",
+    guest: false,
+    country: null,
+    bodyweightKg: 80,
+    reweighKg: null,
+    exercises: {},
+  };
+  return { ...base, ...overrides };
+}
+
+/**
+ * Build a Multirep entry with sane defaults. Override any field via the second arg.
+ *
+ * Defaults: male, 80 kg bodyweight, no birthDate, division=amateur, multirep_2lift_16_24.
+ */
+export function buildMultirepEntry(
+  name: string,
+  overrides: EntryOverrides = {},
+): Entry {
+  const base: Entry = {
+    id: nextId(),
+    competitionFormat: "multirep",
+    disciplineCode: "multirep_2lift_16_24",
     event: "PUDI",
     day: 1,
     platform: 1,

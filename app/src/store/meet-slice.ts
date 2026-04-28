@@ -17,6 +17,7 @@ import {
   ISF_V51_WEIGHT_CATEGORIES,
   ISF_V51_DEFAULT_PLATES,
   ISF_V51_MULTIREP_PRESETS,
+  ISF_V51_DISCIPLINES,
 } from "@domain/presets";
 import { CURRENT_STATE_VERSION, APP_RELEASE_VERSION } from "@/persistence";
 import {
@@ -208,6 +209,67 @@ const meetSlice = createSlice({
 
       state.dirty = true;
     },
+
+    /**
+     * Write reps + judgeVotes for a Multirep attempt.
+     * Creates the attempt object if it doesn't exist yet (sequence always = 1).
+     * Gets presetLoadKg from the ISF discipline catalog.
+     */
+    commitMultirepAttempt(
+      state,
+      action: PayloadAction<{
+        entryIndex: number;
+        exercise: "PU" | "DI";
+        reps: number;
+        votes: JudgeVotes;
+        noRepCount?: number;
+      }>,
+    ) {
+      if (!state.current) return;
+      const { entryIndex, exercise, reps, votes, noRepCount } = action.payload;
+      const entries = state.current.registration.entries;
+      const entry = entries[entryIndex];
+      if (!entry) return;
+
+      // Look up presetLoadKg from discipline catalog
+      const disc = ISF_V51_DISCIPLINES.find(
+        (d) => d.code === entry.disciplineCode,
+      );
+      const presetLoadKg =
+        disc?.presetLoadKg?.[exercise] ?? null;
+
+      // Ensure the exercise result exists with multirep format
+      if (!entry.exercises[exercise]) {
+        entry.exercises[exercise] = {
+          format: "multirep",
+          exercise,
+          attempts: [],
+        };
+      }
+      const ex = entry.exercises[exercise];
+      if (ex.format !== "multirep") return;
+
+      // Find or create the single attempt (sequence = 1)
+      let att = ex.attempts.find((a) => a.sequence === 1);
+      if (!att) {
+        att = {
+          sequence: 1,
+          presetLoadKg,
+          reps: null,
+          judgeVotes: { ...PENDING_VOTES },
+          durationSec: state.current.meet.multirepConfig?.defaultAttemptDurationSec ?? 120,
+        };
+        ex.attempts.push(att);
+      }
+
+      att.reps = reps;
+      att.judgeVotes = votes;
+      if (noRepCount !== undefined) {
+        att.noRepCount = noRepCount;
+      }
+
+      state.dirty = true;
+    },
   },
   extraReducers: (builder) => {
     // ─── Registration CRUD (Sprint 1 §5) ────────────────────────────────
@@ -346,5 +408,6 @@ export const {
   closeMeet,
   updateJudgingState,
   commitAttemptVotes,
+  commitMultirepAttempt,
 } = meetSlice.actions;
 export default meetSlice.reducer;
