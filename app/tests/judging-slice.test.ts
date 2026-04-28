@@ -13,6 +13,7 @@ import judgingReducer, {
   castVote,
   resetVote,
   clearPendingVotes,
+  setPendingReps,
   type JudgingSliceState,
 } from "@store/judging-slice";
 import { attemptStatusFromVotes } from "@logic/isf/judge-votes";
@@ -231,6 +232,51 @@ describe("clearPendingVotes", () => {
     expect(s.pendingLeft).toBeNull();
     expect(s.pendingCenter).toBeNull();
     expect(s.pendingRight).toBeNull();
+  });
+
+  it("also clears pendingReps to null", () => {
+    const store = makeStore();
+    store.dispatch(setPendingReps(15));
+    expect(getState(store).pendingReps).toBe(15);
+    store.dispatch(clearPendingVotes());
+    expect(getState(store).pendingReps).toBeNull();
+  });
+});
+
+// ─── setPendingReps (Multirep) ───────────────────────────────────────────────
+
+describe("setPendingReps", () => {
+  it("starts as null in initial state", () => {
+    const store = makeStore();
+    expect(getState(store).pendingReps).toBeNull();
+  });
+
+  it("sets pendingReps to the given integer", () => {
+    const store = makeStore();
+    store.dispatch(setPendingReps(20));
+    expect(getState(store).pendingReps).toBe(20);
+  });
+
+  it("can be cleared by passing null", () => {
+    const store = makeStore();
+    store.dispatch(setPendingReps(20));
+    store.dispatch(setPendingReps(null));
+    expect(getState(store).pendingReps).toBeNull();
+  });
+
+  it("overwrites previous reps value", () => {
+    const store = makeStore();
+    store.dispatch(setPendingReps(10));
+    store.dispatch(setPendingReps(15));
+    expect(getState(store).pendingReps).toBe(15);
+  });
+
+  it("does not affect votes", () => {
+    const store = makeStore();
+    store.dispatch(castVote({ judge: "left", value: true }));
+    store.dispatch(setPendingReps(12));
+    expect(getState(store).pendingLeft).toBe(true);
+    expect(getState(store).pendingReps).toBe(12);
   });
 });
 

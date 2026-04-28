@@ -162,6 +162,18 @@ export const enUS = {
     noMeetOpen: "No meet open",
     noEntries: "No athletes registered",
     allDone: "All attempts complete",
+    format: {
+      title: "Format",
+      classic: "Classic",
+      multirep: "Multirep",
+    },
+    multirep: {
+      presetLoad: "Load",
+      repsLabel: "Reps",
+      repsPlaceholder: "Enter rep count",
+      noPreset: "No preset — operator must enter load manually",
+      overrideLoad: "Manual load (kg)",
+    },
     timer: {
       start: "Start",
       stop: "Stop",
@@ -217,6 +229,17 @@ export const enUS = {
     guest: "G",
     noResults: "No results — run judging first",
     attempted: "attempted",
+    formatTab: {
+      classic: "Classic",
+      multirep: "Multirep",
+    },
+    multirep: {
+      puLoad: "PU Load",
+      puReps: "PU Reps",
+      diLoad: "DI Load",
+      diReps: "DI Reps",
+      totalReps: "Total Reps",
+    },
     columns: {
       place: "Place",
       total: "Total",

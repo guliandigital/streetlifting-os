@@ -1,6 +1,6 @@
 /**
  * Test fixtures + builder helpers — used across multiple test files to construct
- * Entry / ClassicAttempt fixtures without verbose object-literal noise.
+ * Entry / ClassicAttempt / MultirepAttempt fixtures without verbose object-literal noise.
  */
 
 import type {
@@ -8,6 +8,7 @@ import type {
   Entry,
   ExerciseResult,
   JudgeVotes,
+  MultirepAttempt,
 } from "@domain/models";
 import { PENDING_VOTES } from "@domain/models";
 
@@ -86,4 +87,58 @@ export function buildClassicEntry(
     exercises: {},
   };
   return { ...base, ...overrides };
+}
+
+/**
+ * Build a Multirep multirep_2lift_24_32 entry with sane defaults.
+ *
+ * Defaults: male, 80 kg, division=amateur, format=multirep, event=PUDI,
+ * disciplineCode=multirep_2lift_24_32 (the standard M-Open two-lift discipline).
+ */
+export function buildMultirepEntry(
+  name: string,
+  overrides: EntryOverrides = {},
+): Entry {
+  const base: Entry = {
+    id: nextId(),
+    competitionFormat: "multirep",
+    disciplineCode: "multirep_2lift_24_32",
+    event: "PUDI",
+    day: 1,
+    platform: 1,
+    flight: "A",
+    name,
+    sex: "M",
+    birthDate: null,
+    ageOverride: null,
+    division: "amateur",
+    guest: false,
+    country: null,
+    bodyweightKg: 80,
+    reweighKg: null,
+    exercises: {},
+  };
+  return { ...base, ...overrides };
+}
+
+export function multirepAttempt(
+  presetLoadKg: number | null,
+  reps: number | null,
+  votes: JudgeVotes = VOTES_PENDING,
+  durationSec = 120,
+): MultirepAttempt {
+  return {
+    sequence: 1,
+    presetLoadKg,
+    reps,
+    judgeVotes: votes,
+    durationSec,
+  };
+}
+
+export function multirepExercise(
+  exercise: "PU" | "DI",
+  attempts: MultirepAttempt[],
+): ExerciseResult {
+  return { format: "multirep", exercise, attempts };
 }

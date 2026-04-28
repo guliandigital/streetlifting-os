@@ -161,6 +161,18 @@ export const ruRU = {
     noMeetOpen: "Соревнование не открыто",
     noEntries: "Нет зарегистрированных спортсменов",
     allDone: "Все попытки завершены",
+    format: {
+      title: "Формат",
+      classic: "Классика",
+      multirep: "Многоповт.",
+    },
+    multirep: {
+      presetLoad: "Доп. вес",
+      repsLabel: "Повторений",
+      repsPlaceholder: "Введите количество",
+      noPreset: "Нет пресета — введите вес вручную",
+      overrideLoad: "Ручной вес (кг)",
+    },
     timer: {
       start: "Старт",
       stop: "Стоп",
@@ -216,6 +228,17 @@ export const ruRU = {
     guest: "Г",
     noResults: "Нет результатов — сначала проведите судейство",
     attempted: "выполнено",
+    formatTab: {
+      classic: "Классика",
+      multirep: "Многоповт.",
+    },
+    multirep: {
+      puLoad: "PU вес",
+      puReps: "PU повт",
+      diLoad: "DI вес",
+      diReps: "DI повт",
+      totalReps: "Всего повт",
+    },
     columns: {
       place: "Место",
       total: "Сумма",

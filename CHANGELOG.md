@@ -13,9 +13,18 @@ release will be 1.0.0 once V1 reaches production-ready quality.
 ### Added since 0.2.0
 - Results screen (`/results`) — by-category grouped tables + absolute ISF-points ranking
 - Classic protocol CSV export (PowerTable-compatible column order, UTF-8 BOM)
+- **Multirep module (Sprint 3 — blueprint v2 §16)** — full second competition format:
+  - `multirep-resolver.ts` — pure preset-load lookup over the (sex × exercise × division × age category) matrix per ISF v5.1 §2.2 (D3); returns null when no preset matches so the operator can override.
+  - `multirep-queue.ts` — manual fixed-order queue (entryIndex ASC) per blueprint v2 §9.2; one attempt per athlete per exercise per ISF v5.1 §7.5.
+  - `multirep-placing.ts` — full placing pipeline mirror of `classic-placing.ts`. Per D7 + ISF v5.1 §10.9.5: NO additional-points formula for Multirep (Classic only); masters multipliers still apply.
+  - `csv-export-multirep.ts` — UTF-8 BOM CSV protocol with PU/DI load + reps columns and group section headers.
+  - `commitMultirepAttempt` action on `meet-slice` and `setPendingReps` action on `judging-slice` (resets via `clearPendingVotes`).
+  - JudgingPage: top-level Classic / Multirep format selector (auto-routes to whichever format has entries; SegmentedControl when both present). Multirep panel shows auto-resolved preset load badge with manual-override Alert when no preset matches, 120s timer (ISF v5.1 §7.5.1, D10), reps NumberInput (0..200, integer), 3 judge cards, status + split-decision badges, All Good / All No aggregate buttons, Confirm + Skip.
+  - ResultsPage: top-level Classic / Multirep format tabs (only shown when both formats present); Multirep tab has byCategory + byPoints sub-tabs and a CSV download button (`multirep-results-${date}.csv`).
+- Translations (ru-RU + en-US parity): `judging.format.*`, `judging.multirep.*`, `results.formatTab.*`, `results.multirep.*`.
+- **+74 new tests** (multirep-resolver: 15, multirep-queue: 14, multirep-placing: 32, csv-export-multirep: 7, judging-slice +6 for setPendingReps + clearPendingVotes pendingReps reset). Total suite: 353 passing.
 
-### Planned for 0.3.0 (Sprint 3)
-- Multirep module — preset config, 120 s timer, reps/no-rep entry, placing — blueprint v2 §15
+### Planned for 0.3.x
 - Meet Setup screen — discipline/category/plate editors — blueprint v2 §11.2
 - Auto-updater (Ed25519 keypair, Tauri updater endpoint)
 

@@ -208,6 +208,61 @@ const meetSlice = createSlice({
 
       state.dirty = true;
     },
+
+    /**
+     * Write a complete Multirep attempt: presetLoad + reps + judge votes.
+     * Per ISF v5.1 §7.5: Multirep has ONE attempt per athlete (sequence === 1)
+     * with a 120s timer (D10).
+     */
+    commitMultirepAttempt(
+      state,
+      action: PayloadAction<{
+        entryIndex: number;
+        exercise: "PU" | "DI";
+        reps: number;
+        presetLoadKg: number | null;
+        votes: JudgeVotes;
+      }>,
+    ) {
+      if (!state.current) return;
+      const { entryIndex, exercise, reps, presetLoadKg, votes } =
+        action.payload;
+      const entries = state.current.registration.entries;
+      const entry = entries[entryIndex];
+      if (!entry) return;
+
+      const durationSec =
+        state.current.meet.multirepConfig?.defaultAttemptDurationSec ?? 120;
+
+      if (!entry.exercises[exercise]) {
+        entry.exercises[exercise] = {
+          format: "multirep",
+          exercise,
+          attempts: [],
+        };
+      }
+      const ex = entry.exercises[exercise];
+      if (ex.format !== "multirep") return;
+
+      let att = ex.attempts.find((a) => a.sequence === 1);
+      if (!att) {
+        att = {
+          sequence: 1,
+          presetLoadKg,
+          reps,
+          judgeVotes: { ...PENDING_VOTES },
+          durationSec,
+        };
+        ex.attempts.push(att);
+      }
+
+      att.presetLoadKg = presetLoadKg;
+      att.reps = reps;
+      att.judgeVotes = votes;
+      att.durationSec = durationSec;
+
+      state.dirty = true;
+    },
   },
   extraReducers: (builder) => {
     // ─── Registration CRUD (Sprint 1 §5) ────────────────────────────────
@@ -346,5 +401,6 @@ export const {
   closeMeet,
   updateJudgingState,
   commitAttemptVotes,
+  commitMultirepAttempt,
 } = meetSlice.actions;
 export default meetSlice.reducer;
