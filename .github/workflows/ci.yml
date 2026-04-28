@@ -44,7 +44,11 @@ jobs:
         run: npm run typecheck
 
       - name: Unit tests
+        # --max-old-space-size=4096 prevents worker OOM crash when 23+ test files
+        # run in parallel (vitest uses Node worker_threads per file).
         run: npm run test -- --run
+        env:
+          NODE_OPTIONS: "--max-old-space-size=4096"
 
       - name: Lint
         run: npm run lint

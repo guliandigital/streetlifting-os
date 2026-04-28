@@ -10,12 +10,55 @@ release will be 1.0.0 once V1 reaches production-ready quality.
 
 ## [Unreleased]
 
-### Planned for 1.0.0 (V1 GA)
+### Planned for 1.1.0
 - Code-signing (Windows EV cert + Apple Developer ID)
 - Auto-updater keypair activation (replace placeholder pubkey)
-- Records module (per-competition best lifts per discipline × age × weight cat)
-- Full forecast implementation (D16 — kg-to-first-place projection)
+- Cross-competition records archive (V2 feature)
 - Real-tournament UAT + bug-bash
+
+---
+
+## [1.0.0] — 2026-04-28
+
+**V1 General Availability.** Full Classic + Multirep meet management workflow.
+
+### Added
+- **Records screen** (`/records`). Per-competition records grouped by
+  (discipline → sex → age-category → weight-category × exercise).
+  Classic records: best PU kg, best DI kg, best total. Multirep records:
+  most reps PU, most reps DI, most reps total. Print button. Empty state.
+  "🏅 Records" nav item in sidebar.
+- **Real forecast** (`src/logic/isf/forecast.ts`). `ClassicForecastService`
+  replaces stub for Classic entries:
+  - `predictedPlace` — current intra-group rank by total DESC / BW ASC.
+  - `kgToFirstPlace` — delta to leader's total + 1.25 kg minimum increment.
+  - `predictedCoefficient` — ISF points on current total.
+  - `predictedAbsolutePlace` — cross-category rank by ISF finalPoints.
+  `StubForecastService` retained for Multirep.
+- **Forecast columns in Results** — absolute-ranking tab now shows
+  Pred. Place and To-1st-place columns (computed live, not stored).
+
+### Tests
+- **412 unit tests** (up from 363 → 380 → 391 → 412).
+- `tests/records.test.ts` (19) — record computation, holder selection,
+  multi-exercise/discipline, total=0 exclusion, guest inclusion.
+- `tests/forecast.test.ts` (+13) — `ClassicForecastService` place, tiebreak,
+  kg-to-first, leader detection, absolute place, guest pass-through.
+
+### Fixed
+- Test runner OOM on Windows with 23+ test files: bumped `npm test` to use
+  `node --max-old-space-size=4096` and set `NODE_OPTIONS` in CI.
+
+### Known limitations
+- Auto-updater pubkey is a placeholder (`dW5zZXQ=`). To activate:
+  run `npx @tauri-apps/cli signer generate`, store private key as
+  `TAURI_SIGNING_PRIVATE_KEY` GitHub secret, replace pubkey in
+  `app/src-tauri/tauri.conf.json`.
+- Binaries unsigned (no code-signing certs). Windows SmartScreen /
+  macOS Gatekeeper dialogs expected — see `docs/installation-v1.md`.
+- ISF cross-competition records archive is V2 work.
+
+---
 
 ---
 
@@ -389,7 +432,8 @@ First public release. Sprint 1 of the V1 client (registration + weigh-in).
 - Save-file format is versioned independently via `stateVersion`; a major
   app-version bump does not necessarily change `stateVersion`.
 
-[Unreleased]: https://github.com/GulianDigital/streetlifting-os/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/GulianDigital/streetlifting-os/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/GulianDigital/streetlifting-os/compare/v0.5.0...v1.0.0
 [0.5.0]: https://github.com/GulianDigital/streetlifting-os/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/GulianDigital/streetlifting-os/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/GulianDigital/streetlifting-os/compare/v0.2.0...v0.3.0
