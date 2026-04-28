@@ -26,11 +26,40 @@ app/playwright-report/
 !.env.example
 *.pem
 *.key
+*.pfx
+*.p12
+*.cer
+*.crt
+*.jks
+*.keystore
+*.asc
+*.gpg
+*.pgp
 secrets/
+credentials.json
+service-account*.json
 
 # Tauri code-signing keys (NEVER commit private keys)
 *.tauri-signing.key
+*.tauri-signing.private
 tauri-private-key.txt
+tauri.signing.json
+*.minisign.key
+
+# SSH / cloud creds
+id_rsa*
+id_ed25519*
+id_ecdsa*
+.aws/
+.azure/
+.gcloud/
+
+# Editor/agent scratchpads that may capture pasted secrets
+.claude/
+.cursor/
+.copilot/
+COMMIT_MSG.txt
+PR_BODY.md
 
 # ─── IDE ────────────────────────────────────────────────────────────────────
 .vscode/*

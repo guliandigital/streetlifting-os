@@ -1,0 +1,31 @@
+Streetlifting OS
+Copyright (c) 2026 Gulyan Digital. All rights reserved.
+
+The product name "Streetlifting OS" and the associated logo are trademarks of
+Gulyan Digital. See LICENSE for terms of use; in particular, no rights are
+granted to source code, modification, redistribution, or commercial deployment.
+
+This product includes:
+
+  - Open-source NPM dependencies listed in app/package.json. Each dependency
+    is governed by its own license (mostly MIT / Apache-2.0 / BSD); see
+    individual node_modules/<pkg>/LICENSE files for details. None of these
+    licenses extend to the original work of Gulyan Digital.
+
+  - Open-source Cargo dependencies listed in app/src-tauri/Cargo.toml.
+    Equivalent terms apply.
+
+The repository references the following third-party works for clean-room
+comparison only. They are NOT distributed and are excluded from the public
+repository via .gitignore:
+
+  - OpenLifter (AGPL-3.0)        — architecture reference, no code reused.
+  - PowerGage (proprietary)       — workflow benchmark, no code reused.
+  - PowerTable (proprietary)      — UX benchmark + correctness counter-example.
+  - ISF Rules v5.1 (DOCX)         — rule text, kept local to maintainer machines.
+
+No third-party copyrighted code or rule text is bundled into the Software's
+source tree, build output, or distributed binaries. ISF rule application is
+implemented from the rules' factual content (rules are facts, not copyrightable
+expression), with binding interpretations attributed to ISF v5.1 §10.9 etc.
+in code comments.

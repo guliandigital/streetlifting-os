@@ -6,6 +6,12 @@ on:
   pull_request:
     branches: ["main"]
 
+# Least-privilege default token: this workflow only reads source and produces
+# ephemeral build output. Per-job permissions can escalate explicitly when
+# needed. (https://docs.github.com/actions/security-guides/automatic-token-authentication)
+permissions:
+  contents: read
+
 # Cancel superseded runs on the same ref to save Actions minutes.
 concurrency:
   group: ci-${{ github.ref }}

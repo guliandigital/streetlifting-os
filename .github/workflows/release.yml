@@ -6,6 +6,12 @@ on:
       - "v*.*.*"
   workflow_dispatch: {}
 
+# Default token scope is read-only at workflow level; the build-tauri job
+# escalates to `contents: write` for release-asset upload (job-level
+# permissions block below).
+permissions:
+  contents: read
+
 # Don't let two release builds for the same tag step on each other.
 concurrency:
   group: release-${{ github.ref }}
