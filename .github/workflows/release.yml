@@ -102,14 +102,23 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # macOS code-signing (deferred to v0.2.0+; secrets unset = unsigned build)
+          # ─── Auto-updater signing ────────────────────────────────────────
+          # Required for `bundle.createUpdaterArtifacts: true`. Tauri signs
+          # each updater artefact (`.sig` next to the bundle) with the Ed25519
+          # private key matching the `pubkey` baked into tauri.conf.json.
+          # Without these env vars the build fails with "minisign: no
+          # signing key configured".
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          # ─── OS code-signing (deferred — costs $$ + legal entity per D40.4) ──
+          # macOS code-signing — Apple Developer ID required ($99/yr).
           # APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           # APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           # APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
           # APPLE_ID: ${{ secrets.APPLE_ID }}
           # APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
           # APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          # Windows code-signing (deferred — see docs/release-process-v1.md §Code-signing)
+          # Windows code-signing — EV cert required (~$300/yr, USB token).
           # WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
           # WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
         with:

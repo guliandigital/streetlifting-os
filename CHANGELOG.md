@@ -10,9 +10,26 @@ release will be 1.0.0 once V1 reaches production-ready quality.
 
 ## [Unreleased]
 
-### Planned for 1.1.0
-- Code-signing (Windows EV cert + Apple Developer ID)
-- Auto-updater keypair activation (replace placeholder pubkey)
+### Added
+- **Auto-updater signing keypair activated.** The placeholder pubkey
+  (`dW5zZXQ=`) in `app/src-tauri/tauri.conf.json` is replaced with the
+  real Ed25519 / minisign public key generated 2026-04-28. The matching
+  private key lives at `~/.tauri/streetlifting-os.key` on the maintainer
+  host (gitignored via `*.key`) and is mirrored to the
+  `TAURI_SIGNING_PRIVATE_KEY` GitHub Actions secret. `release.yml` passes
+  it (and the optional `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`) to
+  `tauri-action`. `bundle.createUpdaterArtifacts` is now `true`, so each
+  per-OS bundle gets a sibling `.sig` file plus a `latest.json` is
+  uploaded to the release — exactly what the updater endpoint
+  (`https://github.com/GulianDigital/streetlifting-os/releases/latest/download/latest.json`)
+  expects. **Bridge note for users**: existing v1.1.0 installs cannot
+  auto-update (they have the placeholder pubkey baked in). The first
+  build cut after this change is the floor — v1.1.0 → that build is a
+  manual reinstall, but every future build chains through the updater.
+
+### Planned for next minor
+- Code-signing (Windows EV cert + Apple Developer ID — both deferred
+  pending D40.4 legal entity decision)
 - Cross-competition records archive (V2 feature)
 - Real-tournament UAT + bug-bash
 
