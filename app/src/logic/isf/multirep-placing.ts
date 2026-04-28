@@ -17,6 +17,8 @@ import type {
   Sex,
   AgeCategoryCode,
   MeetState,
+  MultirepAttempt,
+  MultirepResultContract,
 } from "@domain/models";
 import type { DisciplineCode } from "@domain/models";
 import { getMultirepReps } from "./result";
@@ -440,4 +442,90 @@ export function computeMultirepResults(
 ): MultirepResultGroup[] {
   const rows = computeMultirepRows(entries, meet, meetDate);
   return groupMultirepByCategory(rows, meet);
+}
+
+function findMultirepAttempt(
+  entry: Entry,
+  exercise: "PU" | "DI",
+): MultirepAttempt | undefined {
+  const ex = entry.exercises[exercise];
+  if (!ex || ex.format !== "multirep") return undefined;
+  return ex.attempts.find((a) => a.sequence === 1);
+}
+
+function multirepAttemptStatus(
+  attempt: MultirepAttempt | undefined,
+): MultirepAttemptStatus {
+  if (!attempt) return "not_started";
+  const status = attemptStatusFromVotes(attempt.judgeVotes);
+  return status === "pending"
+    ? "pending"
+    : status === "success"
+      ? "success"
+      : "fail";
+}
+
+/**
+ * Convert a UI/result row into the stable serializable Multirep contract.
+ */
+export function toMultirepResultContract(
+  row: MultirepResultRow,
+): MultirepResultContract {
+  const exercises: MultirepResultContract["exercises"] = [];
+
+  for (const exercise of ["PU", "DI"] as const) {
+    const attempt = findMultirepAttempt(row.entry, exercise);
+    const presetLoadKg =
+      exercise === "PU" ? row.presetLoadKgPu : row.presetLoadKgDi;
+    const reps = exercise === "PU" ? row.puReps : row.diReps;
+
+    if (attempt || presetLoadKg !== null || reps > 0) {
+      exercises.push({
+        exercise,
+        presetLoadKg,
+        reps,
+        noRepCount: attempt?.noRepCount ?? 0,
+        durationSec: attempt?.durationSec ?? 120,
+        status: multirepAttemptStatus(attempt),
+      });
+    }
+  }
+
+  return {
+    format: "multirep",
+    entryId: row.entry.id,
+    entryIndex: row.entryIndex,
+    athleteName: row.entry.name,
+    disciplineCode: row.entry.disciplineCode,
+    event: row.entry.event,
+    sex: row.entry.sex,
+    bodyweightKg: row.entry.bodyweightKg,
+    ageCategoryCode: row.resolvedAgeCategoryCode,
+    weightCategoryCode: row.resolvedWeightCategoryCode,
+    guest: row.entry.guest,
+    exercises,
+    puReps: row.puReps,
+    diReps: row.diReps,
+    totalReps: row.totalReps,
+    noRepCount: row.noRepCount,
+    isfCoefficient: row.isfCoefficient,
+    isfFinalPoints: row.isfFinalPoints,
+    place: row.place,
+    tiedWithPrev: row.tiedWithPrev,
+    vacantNextPlace: row.vacantNextPlace,
+    attemptStatus: row.attemptStatus,
+  };
+}
+
+/**
+ * Export/display integration point: returns stable contracts instead of UI rows.
+ */
+export function computeMultirepResultContracts(
+  entries: ReadonlyArray<Entry>,
+  meet: MeetState,
+  meetDate: string,
+): MultirepResultContract[] {
+  return computeMultirepResults(entries, meet, meetDate).flatMap((group) =>
+    group.rows.map(toMultirepResultContract),
+  );
 }

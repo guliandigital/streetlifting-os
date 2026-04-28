@@ -6,6 +6,7 @@
 
 import { describe, it, expect } from "vitest";
 import {
+  computeMultirepResultContracts,
   computeMultirepResults,
   computeMultirepRows,
 } from "@logic/isf/multirep-placing";
@@ -394,6 +395,22 @@ describe("multiple discipline groups", () => {
 // ─── Row fields ──────────────────────────────────────────────────────────────
 
 describe("computeMultirepRows — field population", () => {
+  it("noRepCount is reported separately and does not reduce accepted reps", () => {
+    const entry = buildMultirepEntry("NoRep", {
+      disciplineCode: "multirep_pu_8",
+      event: "PU",
+      exercises: {
+        PU: multirepExercise("PU", [multirepAttempt(12, VOTES_GOOD, 8, 4)]),
+      },
+    });
+
+    const rows = computeMultirepRows([entry], MEET, MEET_DATE);
+
+    expect(rows[0]?.puReps).toBe(12);
+    expect(rows[0]?.totalReps).toBe(12);
+    expect(rows[0]?.noRepCount).toBe(4);
+  });
+
   it("noRepCount: sum of noRepCount across exercises", () => {
     const entry = buildMultirepEntry("A", {
       disciplineCode: "multirep_2lift_16_24",
@@ -430,5 +447,93 @@ describe("computeMultirepRows — field population", () => {
     const rows = computeMultirepRows([entry], MEET, MEET_DATE);
     expect(typeof rows[0]?.isfCoefficient).toBe("number");
     expect(typeof rows[0]?.isfFinalPoints).toBe("number");
+  });
+
+  it("multirep ISF points use reps × coefficient without Classic additional points", () => {
+    const entry = buildMultirepEntry("Points", {
+      disciplineCode: "multirep_pu_8",
+      event: "PU",
+      bodyweightKg: 140,
+      exercises: {
+        PU: multirepExercise("PU", [multirepAttempt(10, VOTES_GOOD, 8)]),
+      },
+    });
+
+    const rows = computeMultirepRows([entry], MEET, MEET_DATE);
+
+    expect(rows[0]?.isfFinalPoints).toBeCloseTo(
+      rows[0]!.totalReps * rows[0]!.isfCoefficient,
+      8,
+    );
+  });
+});
+
+describe("Multirep result contract", () => {
+  it("returns export-ready contracts without embedding Entry objects", () => {
+    const entry = buildMultirepEntry("Contract", {
+      disciplineCode: "multirep_pu_8",
+      event: "PU",
+      exercises: {
+        PU: multirepExercise("PU", [multirepAttempt(9, VOTES_GOOD, 8, 1)]),
+      },
+    });
+
+    const contracts = computeMultirepResultContracts([entry], MEET, MEET_DATE);
+
+    expect(contracts).toHaveLength(1);
+    expect(contracts[0]).toMatchObject({
+      format: "multirep",
+      entryId: entry.id,
+      athleteName: "Contract",
+      disciplineCode: "multirep_pu_8",
+      event: "PU",
+      puReps: 9,
+      diReps: 0,
+      totalReps: 9,
+      noRepCount: 1,
+      place: 1,
+      attemptStatus: "success",
+    });
+    expect("entry" in contracts[0]!).toBe(false);
+    expect(contracts[0]?.exercises).toEqual([
+      {
+        exercise: "PU",
+        presetLoadKg: 8,
+        reps: 9,
+        noRepCount: 1,
+        durationSec: 120,
+        status: "success",
+      },
+    ]);
+  });
+
+  it("preserves tie metadata in the serializable contract", () => {
+    const a = buildMultirepEntry("A", {
+      disciplineCode: "multirep_pu_8",
+      event: "PU",
+      bodyweightKg: 80,
+      assignedWeightCategoryCode: "M_82_5",
+      exercises: { PU: multirepExercise("PU", [multirepAttempt(10, VOTES_GOOD)]) },
+    });
+    const b = buildMultirepEntry("B", {
+      disciplineCode: "multirep_pu_8",
+      event: "PU",
+      bodyweightKg: 80,
+      assignedWeightCategoryCode: "M_82_5",
+      exercises: { PU: multirepExercise("PU", [multirepAttempt(10, VOTES_GOOD)]) },
+    });
+    const c = buildMultirepEntry("C", {
+      disciplineCode: "multirep_pu_8",
+      event: "PU",
+      bodyweightKg: 80,
+      assignedWeightCategoryCode: "M_82_5",
+      exercises: { PU: multirepExercise("PU", [multirepAttempt(5, VOTES_GOOD)]) },
+    });
+
+    const contracts = computeMultirepResultContracts([a, b, c], MEET, MEET_DATE);
+
+    expect(contracts.map((r) => r.place)).toEqual([1, 1, 3]);
+    expect(contracts[1]?.tiedWithPrev).toBe(true);
+    expect(contracts.some((r) => r.vacantNextPlace)).toBe(true);
   });
 });

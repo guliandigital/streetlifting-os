@@ -38,6 +38,9 @@ export type {
   CalculatedResult,
   ForecastResult,
   IsfPointBreakdown,
+  MultirepAttemptResultStatus,
+  MultirepExerciseResultContract,
+  MultirepResultContract,
 } from "./calculated-result";
 
 export type {
