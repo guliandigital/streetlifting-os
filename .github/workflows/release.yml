@@ -77,7 +77,11 @@ jobs:
 
       - name: Install npm dependencies
         working-directory: app
-        run: npm ci --no-audit --no-fund
+        # --ignore-scripts avoids esbuild postinstall binary-validation failure
+        # on macOS runners (tsx@4.x bundles esbuild@0.27; its postinstall crashes
+        # on macOS 14 + Node 24 with "Unknown system error -88").  tsx itself
+        # works fine at runtime — only its postinstall is affected.
+        run: npm ci --no-audit --no-fund --ignore-scripts
 
       - name: Generate icons (PNG/ICO via sharp)
         working-directory: app
