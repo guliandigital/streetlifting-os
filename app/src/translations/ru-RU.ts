@@ -236,6 +236,10 @@ export const ruRU = {
       stop: "Стоп",
       seconds: "сек",
     },
+    audio: {
+      enabled: "Звук",
+      volume: "Громкость звука",
+    },
     votes: {
       left: "Левый",
       center: "Центр",

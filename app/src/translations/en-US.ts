@@ -237,6 +237,10 @@ export const enUS = {
       stop: "Stop",
       seconds: "sec",
     },
+    audio: {
+      enabled: "Sound",
+      volume: "Sound volume",
+    },
     votes: {
       left: "Left",
       center: "Center",

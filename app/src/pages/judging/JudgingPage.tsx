@@ -23,6 +23,8 @@ import {
   Tabs,
   NumberInput,
   Divider,
+  Switch,
+  Slider,
 } from "@mantine/core";
 import { useAppDispatch, useAppSelector } from "@store/index";
 import {
@@ -34,6 +36,7 @@ import {
   clearPendingVotes,
   setPendingReps,
 } from "@store/judging-slice";
+import { setAudioEnabled, setAudioVolume } from "@store/audio-slice";
 import {
   commitAttemptVotes,
   commitMultirepAttempt,
@@ -53,6 +56,7 @@ import { ISF_V51_DISCIPLINES } from "@domain/presets";
 import type { JudgeVotes } from "@domain/models";
 import { JudgeVoteCard } from "@components/judge-vote-card/JudgeVoteCard";
 import { TimerDisplay } from "@components/timer-display/TimerDisplay";
+import { audioService } from "@/services/audio/audio-service";
 
 // ─── Tab value types ─────────────────────────────────────────────────────────
 
@@ -66,6 +70,7 @@ export function JudgingPage() {
   const meet = useAppSelector((s) => s.meet.current);
   const entries = useAppSelector(selectEntries);
   const judging = useAppSelector((s) => s.judging);
+  const audioSettings = useAppSelector((s) => s.audio);
 
   // Which exercise tab is active — prefer first enabled exercise in meet config.
   const enabledDisciplines = meet?.meet.enabledDisciplineCodes ?? [];
@@ -157,28 +162,33 @@ export function JudgingPage() {
     return clearInterval_;
   }, [judging.timerRunning, dispatch, clearInterval_]);
 
-  // Beep when timer hits 0.
+  // Centralized audio cues for timer thresholds and timeout.
   const prevRunning = useRef(judging.timerRunning);
+  const prevTimerSeconds = useRef(judging.timerSecondsLeft);
   useEffect(() => {
+    if (prevRunning.current && judging.timerRunning) {
+      if (
+        prevTimerSeconds.current > 30 &&
+        judging.timerSecondsLeft === 30
+      ) {
+        audioService.playCue("timer_30_sec", audioSettings);
+      }
+      if (prevTimerSeconds.current > 3 && judging.timerSecondsLeft === 3) {
+        audioService.playCue("timer_3_sec", audioSettings);
+      }
+    }
+
     if (
       prevRunning.current &&
       !judging.timerRunning &&
       judging.timerSecondsLeft === 0
     ) {
-      try {
-        const ctx = new AudioContext();
-        const osc = ctx.createOscillator();
-        osc.type = "sine";
-        osc.frequency.value = 880;
-        osc.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.3);
-      } catch {
-        // Ignore if Web Audio not available.
-      }
+      audioService.playCue("timer_timeout", audioSettings);
     }
+
     prevRunning.current = judging.timerRunning;
-  }, [judging.timerRunning, judging.timerSecondsLeft]);
+    prevTimerSeconds.current = judging.timerSecondsLeft;
+  }, [audioSettings, judging.timerRunning, judging.timerSecondsLeft]);
 
   function handleStartTimer() {
     dispatch(startTimer(defaultDuration));
@@ -409,8 +419,6 @@ export function JudgingPage() {
     };
   }, [dispatch]);
 
-  if (!meet) return null;
-
   const pendingVotes: JudgeVotes = {
     left: judging.pendingLeft,
     center: judging.pendingCenter,
@@ -418,6 +426,16 @@ export function JudgingPage() {
   };
   const currentStatus = attemptStatusFromVotes(pendingVotes);
   const isSplit = isSplitDecision(pendingVotes);
+
+  const prevAttemptStatus = useRef(currentStatus);
+  useEffect(() => {
+    if (prevAttemptStatus.current !== "fail" && currentStatus === "fail") {
+      audioService.playCue("attempt_failed", audioSettings);
+    }
+    prevAttemptStatus.current = currentStatus;
+  }, [audioSettings, currentStatus]);
+
+  if (!meet) return null;
 
   const activeQueue = isMultirepTab ? filteredMultirepQueue : classicQueue;
   const activeItem = isMultirepTab ? multirepActiveItem : classicActiveItem;
@@ -697,6 +715,28 @@ export function JudgingPage() {
                         >
                           {t("judging.timer.stop")}
                         </Button>
+                        <Divider />
+                        <Switch
+                          size="sm"
+                          checked={audioSettings.enabled}
+                          label={t("judging.audio.enabled")}
+                          onChange={(event) =>
+                            dispatch(setAudioEnabled(event.currentTarget.checked))
+                          }
+                        />
+                        <Slider
+                          min={0}
+                          max={100}
+                          step={5}
+                          value={Math.round(audioSettings.volume * 100)}
+                          disabled={!audioSettings.enabled}
+                          label={(value) => `${value}%`}
+                          aria-label={t("judging.audio.volume")}
+                          onChange={(value) =>
+                            dispatch(setAudioVolume(value / 100))
+                          }
+                          w={140}
+                        />
                       </Stack>
                     </Group>
 
