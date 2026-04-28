@@ -10,14 +10,68 @@ release will be 1.0.0 once V1 reaches production-ready quality.
 
 ## [Unreleased]
 
-### Added since 0.2.0
-- Results screen (`/results`) — by-category grouped tables + absolute ISF-points ranking
-- Classic protocol CSV export (PowerTable-compatible column order, UTF-8 BOM)
-
-### Planned for 0.3.0 (Sprint 3)
-- Multirep module — preset config, 120 s timer, reps/no-rep entry, placing — blueprint v2 §15
-- Meet Setup screen — discipline/category/plate editors — blueprint v2 §11.2
+### Planned for 0.4.0
+- Meet Setup screen — discipline / category / plate editors — blueprint v2 §11.2
 - Auto-updater (Ed25519 keypair, Tauri updater endpoint)
+- ISF absolute-coefficient table from streetlifting.ru/points/ (replace stub returning 1.0)
+
+---
+
+## [0.3.0] — 2026-04-28
+
+Sprint 3 of the V1 client — full Multirep module + Results screen.
+
+### Added
+- **Results screen** (`/results`, guarded by `RequireMeet`). Three tabs:
+  - **По категориям / By Category** — Classic results grouped by
+    (sex × age-category × weight-category), tables with attempt columns
+    (green = success, red strikethrough = fail), gold/silver/bronze place
+    cells, guest rows in italic.
+  - **По ISF-очкам / By ISF Points** — flat absolute ranking across all
+    Classic non-guest entries sorted by `isfFinalPoints DESC`.
+  - **Многоповторный / Multirep** — Multirep results grouped by
+    (disciplineCode × sex × age-category × weight-category); shows PU reps,
+    DI reps, total reps, preset load, ISF points.
+  - Download CSV button — exports Classic + Multirep sections in one file
+    (UTF-8 BOM, PowerTable-compatible column order per findings v2 §4.3).
+- **`classic-placing.ts`** — pure placing service: `computeClassicRows`,
+  `assignPlaces` (tiebreak per ISF §7.10), `groupByCategory`, absolute group.
+- **`multirep-placing.ts`** — placing service for Multirep: `computeMultirepRows`,
+  `groupMultirepByCategory`, `computeMultirepResults`. Sorts by
+  `totalReps DESC → BW ASC → entryIndex ASC`.
+- **`multirep-queue.ts`** — pure queue for the Multirep judging panel.
+  Entries ordered by lot (entryIndex ASC); done attempts removed.
+  PUDI disciplines produce two queue items per entry (one per exercise).
+- **Multirep judging** in `/judging` — new tabs for each enabled Multirep
+  discipline code. 120 s timer. `NumberInput` for rep count. Confirm
+  dispatches `commitMultirepAttempt`. Queue panel shows reps badge.
+- **`commitMultirepAttempt`** action on `meet-slice` — creates or updates
+  the sequence=1 `MultirepAttempt`; looks up `presetLoadKg` from the ISF
+  catalog; sets `dirty = true`.
+- **`setPendingReps`** action on `judging-slice`; `clearPendingVotes` now
+  also clears `pendingReps`.
+- `csv-export-classic.ts`: added `exportMultirepProtocolCsv` for the Multirep
+  protocol section.
+- Full `multirep.*` + `results.multirepTab` + `judging.presetLoad` i18n keys
+  in both **ru-RU** and **en-US**.
+
+### Tests
+- **320 unit tests** (up from 167 → 279 → 320).
+- `tests/classic-placing.test.ts` (36) — Classic placing service.
+- `tests/multirep-placing.test.ts` (19) — Multirep placing service.
+- `tests/multirep-queue.test.ts` (17) — Multirep queue logic.
+- `tests/judging-slice.test.ts` (+5) — `setPendingReps`, `clearPendingVotes` clears reps.
+
+### Known limitations (updated)
+- **ISF coefficient stub.** `isfAbsCoef()` in `points.ts` returns `1.0` for
+  all inputs — structural pipeline is correct but absolute-point values are
+  placeholders until the coefficient table is scraped from
+  `streetlifting.ru/points/`. Sprint 4 work.
+- **No Meet Setup UI.** Discipline/category/plate editors are V2 (blueprint
+  v2 §11.2). Operators use the ISF v5.1 preset as-is.
+- **No code-signing / auto-updater.** Same as 0.2.0.
+
+---
 
 ---
 
@@ -223,6 +277,7 @@ First public release. Sprint 1 of the V1 client (registration + weigh-in).
 - Save-file format is versioned independently via `stateVersion`; a major
   app-version bump does not necessarily change `stateVersion`.
 
-[Unreleased]: https://github.com/GulianDigital/streetlifting-os/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/GulianDigital/streetlifting-os/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/GulianDigital/streetlifting-os/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/GulianDigital/streetlifting-os/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/GulianDigital/streetlifting-os/releases/tag/v0.1.0
