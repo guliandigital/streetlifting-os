@@ -23,6 +23,7 @@ import { Home } from "@pages/home/Home";
 import { RegistrationPage } from "@pages/registration/RegistrationPage";
 import { WeighInsPage } from "@pages/weigh-ins/WeighInsPage";
 import { JudgingPage } from "@pages/judging/JudgingPage";
+import { ResultsPage } from "@pages/results/ResultsPage";
 import { RequireMeet } from "@components/RequireMeet";
 import { useAppSelector } from "@store/index";
 
@@ -35,6 +36,7 @@ function NavLinks() {
     { to: "/registration", label: t("nav.registration"), needsMeet: true },
     { to: "/weigh-ins", label: t("nav.weighIns"), needsMeet: true },
     { to: "/judging", label: t("nav.judging"), needsMeet: true },
+    { to: "/results", label: t("nav.results"), needsMeet: true },
   ];
   return (
     <Group gap="md">
@@ -129,6 +131,14 @@ export function App() {
                   element={
                     <RequireMeet>
                       <JudgingPage />
+                    </RequireMeet>
+                  }
+                />
+                <Route
+                  path="/results"
+                  element={
+                    <RequireMeet>
+                      <ResultsPage />
                     </RequireMeet>
                   }
                 />
