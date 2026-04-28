@@ -13,4 +13,4 @@ import type { CurrentStateVersion } from "@domain/models";
 
 export const CURRENT_STATE_VERSION: CurrentStateVersion = "2";
 
-export const APP_RELEASE_VERSION = "0.1.0-sprint1";
+export const APP_RELEASE_VERSION = "0.3.0";
