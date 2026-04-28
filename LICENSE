@@ -1,0 +1,123 @@
+Streetlifting OS — Proprietary License
+========================================
+
+Copyright (c) 2026 Gulyan Digital. All rights reserved.
+
+This software, including its source code, compiled binaries, build artefacts,
+documentation, brand assets, designs, configuration files, and all related
+materials (collectively, "the Software"), is the exclusive property of
+Gulyan Digital and is protected by Russian and international copyright,
+trademark, and trade-secret laws.
+
+
+1. NO LICENSE GRANTED
+
+   No license, express or implied, by estoppel or otherwise, to any
+   intellectual property right is granted by this file or by the act of
+   making the source code accessible to a third party. Unless you have
+   received explicit written permission from Gulyan Digital in a separate
+   signed agreement, you are NOT permitted to:
+
+   a. use the Software (including running compiled binaries) for any
+      commercial, governmental, federation, or competition purpose;
+
+   b. copy, redistribute, publish, host, mirror, sell, lease, sublicense,
+      or otherwise make the Software available to any third party;
+
+   c. modify, adapt, translate, decompile, disassemble, reverse-engineer,
+      or create derivative works of the Software, in whole or in part;
+
+   d. remove, alter, or obscure any copyright, trademark, attribution,
+      "About" screen, or other proprietary notice present in the Software;
+
+   e. use the name "Streetlifting OS", any associated logo or mark, or any
+      marketing asset of Gulyan Digital for any purpose, including but not
+      limited to product positioning, marketplace listings, paid search, or
+      domain names; or
+
+   f. train, fine-tune, evaluate, or otherwise improve any machine-learning
+      model on the Software's source code, documentation, or any derivative
+      thereof.
+
+
+2. EVALUATION COURTESY (BINARIES ONLY)
+
+   Compiled binaries that Gulyan Digital chooses to publish via GitHub
+   Releases (or any other public distribution channel) may be downloaded and
+   run by individual end-users solely for non-commercial personal evaluation
+   of the product. This courtesy:
+
+   - is granted on a per-version basis and may be revoked at any time;
+   - covers ONLY the binary as published, never the underlying source code;
+   - does not authorise distribution of the binary, hosting it elsewhere,
+     bundling it into another product, or using it to run any sanctioned
+     competition; and
+   - is not a license under §1 above.
+
+   Federations, organisers, gyms, vendors, and any other commercial or
+   institutional users must obtain a separate written agreement before
+   running the Software at any event or for any business purpose.
+
+
+3. CONTRIBUTIONS
+
+   By submitting any patch, pull request, issue comment containing code
+   suggestions, design feedback, translation, or any other contribution
+   ("Contribution") to this repository, you irrevocably assign all
+   intellectual-property rights in that Contribution to Gulyan Digital,
+   or, at Gulyan Digital's sole option, grant Gulyan Digital a perpetual,
+   worldwide, royalty-free, sublicensable license to use, modify, and
+   redistribute the Contribution under any terms, including incorporation
+   into proprietary products. You represent that the Contribution is your
+   original work and that you have the authority to assign it.
+
+
+4. THIRD-PARTY MATERIALS
+
+   The repository may reference third-party materials kept locally for
+   clean-room comparison (e.g., AGPL-licensed prior art, commercial
+   competitor products, official rule books). Those materials are NOT
+   distributed with the Software, are excluded from the public repository
+   via .gitignore, and remain governed by their own respective licenses.
+   Nothing in this LICENSE grants any right to such third-party materials.
+
+   Open-source NPM/Cargo dependencies pulled in at build time are governed
+   by their respective licenses; this LICENSE applies to the original work
+   of Gulyan Digital only.
+
+
+5. WARRANTY DISCLAIMER
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+   OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, ACCURACY, AND
+   NONINFRINGEMENT. IN NO EVENT SHALL GULYAN DIGITAL OR ITS AGENTS BE
+   LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY (INCLUDING WITHOUT
+   LIMITATION DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+   CONSEQUENTIAL DAMAGES; LOSS OF DATA; LOSS OF PROFIT; OR BUSINESS
+   INTERRUPTION), WHETHER IN AN ACTION OF CONTRACT, TORT, STRICT LIABILITY,
+   OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE
+   OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+6. ENFORCEMENT
+
+   Unauthorised use, reproduction, or distribution of the Software is a
+   violation of applicable copyright law and may result in civil and
+   criminal penalties. Gulyan Digital reserves all enforcement remedies,
+   including injunctive relief, statutory damages, and recovery of legal
+   costs. Reports of suspected infringement may be sent to the contact
+   address listed in `SECURITY.md`.
+
+
+7. CONTACT
+
+   For licensing inquiries, partnership proposals, or permission requests,
+   contact Gulyan Digital via the address listed at the top of this
+   repository's README, or via the GitHub account that owns this repository.
+
+   The legal entity through which Gulyan Digital operates is being
+   formalised; this LICENSE binds the eventual entity once incorporated.
+
+
+All Rights Reserved.
