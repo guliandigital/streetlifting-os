@@ -40,6 +40,13 @@ export type {
   MultirepPreset,
   ScoringFormula,
 } from "./meet-state";
+export type {
+  RulesPack,
+  RulesPackCompatibility,
+  RulesPackId,
+  RulesPackRef,
+  RulesPackSignature,
+} from "./rules-pack";
 
 export type {
   CalculatedResult,

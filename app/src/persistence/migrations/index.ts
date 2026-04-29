@@ -14,10 +14,15 @@ import type { Migration } from "./types";
 import { MigrationError } from "./types";
 import { v1ToV2Migration } from "./v1-to-v2";
 import { v2ToV3Migration } from "./v2-to-v3";
+import { v3ToV4Migration } from "./v3-to-v4";
 import { CURRENT_STATE_VERSION } from "../version";
 import { versionEnvelopeSchema } from "../schema";
 
-export const ALL_MIGRATIONS: Migration[] = [v1ToV2Migration, v2ToV3Migration];
+export const ALL_MIGRATIONS: Migration[] = [
+  v1ToV2Migration,
+  v2ToV3Migration,
+  v3ToV4Migration,
+];
 
 export function runMigrations(rawJson: unknown): {
   migrated: unknown;

@@ -34,6 +34,23 @@ const ageCategoryCodeEnum = z.enum([
   "masters_m6",
 ]);
 
+const rulesPackSignatureSchema = z
+  .object({
+    algorithm: z.literal("ed25519"),
+    keyId: z.string(),
+    signature: z.string(),
+  })
+  .nullable();
+
+const rulesPackRefSchema = z.object({
+  id: z.string().min(1),
+  federation: z.string().min(1),
+  version: z.string().min(1),
+  source: z.enum(["builtin", "external"]),
+  sha256: z.string().nullable(),
+  signature: rulesPackSignatureSchema,
+});
+
 // ─── JudgeVotes (D15) ───────────────────────────────────────────────────────
 
 const judgeVoteSchema = z.union([z.boolean(), z.null()]);
@@ -201,6 +218,7 @@ const meetStateSchema = z.object({
   state: z.string(),
   city: z.string(),
   date: z.string(),
+  rulesPackRef: rulesPackRefSchema,
   competitionFormat: competitionFormatEnum,
   enabledDisciplineCodes: z.array(z.string()),
   divisions: z.array(divisionEnum),
@@ -260,7 +278,7 @@ const saveFileSignatureSchema = z
 
 export const saveFileSchema = z.object({
   versions: z.object({
-    stateVersion: z.literal("3"),
+    stateVersion: z.literal("4"),
     releaseVersion: z.string(),
   }),
   meet: meetStateSchema,

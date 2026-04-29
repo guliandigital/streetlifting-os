@@ -24,7 +24,11 @@ import {
   VOTES_NO,
 } from "./fixtures/builders";
 import type { MeetState } from "@domain/models";
-import { ISF_V51_WEIGHT_CATEGORIES, ISF_V51_AGE_CATEGORIES } from "@domain/presets";
+import {
+  ISF_V51_AGE_CATEGORIES,
+  ISF_V51_RULES_PACK_REF,
+  ISF_V51_WEIGHT_CATEGORIES,
+} from "@domain/presets";
 
 // ─── Shared test meet ────────────────────────────────────────────────────────
 
@@ -37,6 +41,7 @@ const TEST_MEET: MeetState = {
   state: "",
   city: "Moscow",
   date: MEET_DATE,
+  rulesPackRef: { ...ISF_V51_RULES_PACK_REF },
   competitionFormat: "classic",
   enabledDisciplineCodes: ["classic_2lift"],
   divisions: ["amateur"],

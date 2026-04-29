@@ -1,7 +1,7 @@
 /**
  * SaveFile envelope per blueprint v2 §10.
  *
- * stateVersion === "3" — bumped from v2 for V2 Athlete/Nomination identity split.
+ * stateVersion === "4" — bumped from v3 for pinned RulesPack references.
  *
  * V2-prep stub fields per D31 (decisions-v3): licenseTokenId / quotaAllocationId /
  * billedNominationIds[] / signature. Nullable in V1; backend-populated when V2 backend ships.
@@ -11,7 +11,7 @@ import type { Entry } from "./entry";
 import type { MeetState } from "./meet-state";
 import type { Athlete, Nomination } from "./athlete-nomination";
 
-export type CurrentStateVersion = "3";
+export type CurrentStateVersion = "4";
 
 export type RegistrationState = {
   /** V2 person-level identities. Legacy files get one athlete per historical entry. */

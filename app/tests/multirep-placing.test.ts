@@ -21,8 +21,9 @@ import {
 import type { MeetState } from "@domain/models";
 import {
   ISF_V51_AGE_CATEGORIES,
-  ISF_V51_WEIGHT_CATEGORIES,
   ISF_V51_MULTIREP_PRESETS,
+  ISF_V51_RULES_PACK_REF,
+  ISF_V51_WEIGHT_CATEGORIES,
 } from "@domain/presets";
 
 // ─── Test meet state ────────────────────────────────────────────────────────
@@ -35,6 +36,7 @@ function buildTestMeet(overrides: Partial<MeetState> = {}): MeetState {
     state: "",
     city: "Moscow",
     date: "2026-04-27",
+    rulesPackRef: { ...ISF_V51_RULES_PACK_REF },
     competitionFormat: "multirep",
     enabledDisciplineCodes: [
       "multirep_2lift_16_24",

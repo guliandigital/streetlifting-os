@@ -18,15 +18,17 @@ import {
 import {
   buildSyntheticV1SaveFile,
   buildSyntheticV2SaveFile,
+  buildSyntheticV3SaveFile,
 } from "./fixtures/save-file";
 
 describe("runMigrations — v1 → v2", () => {
   it("upgrades stateVersion to current", () => {
     const v1 = buildSyntheticV1SaveFile();
     const { migrated, appliedMigrations } = runMigrations(v1);
-    expect(appliedMigrations.length).toBe(2);
+    expect(appliedMigrations.length).toBe(3);
     expect(appliedMigrations[0]).toMatch(/v1→v2/);
     expect(appliedMigrations[1]).toMatch(/v2→v3/);
+    expect(appliedMigrations[2]).toMatch(/v3→v4/);
 
     const m = migrated as { versions: { stateVersion: string } };
     expect(m.versions.stateVersion).toBe(CURRENT_STATE_VERSION);
@@ -161,6 +163,7 @@ describe("runMigrations — v2 → v3", () => {
     const { migrated, appliedMigrations } = runMigrations(v2);
     expect(appliedMigrations).toEqual([
       expect.stringMatching(/v2→v3/),
+      expect.stringMatching(/v3→v4/),
     ]);
 
     const m = migrated as {
@@ -205,14 +208,48 @@ describe("runMigrations — v2 → v3", () => {
   });
 });
 
+describe("runMigrations — v3 → v4", () => {
+  it("pins legacy meets to built-in ISF v5.1 RulesPack", () => {
+    const v3 = buildSyntheticV3SaveFile();
+    const { migrated, appliedMigrations } = runMigrations(v3);
+    expect(appliedMigrations).toEqual([
+      expect.stringMatching(/v3→v4/),
+    ]);
+
+    const m = migrated as {
+      versions: { stateVersion: string };
+      meet: {
+        rulesPackRef: {
+          id: string;
+          federation: string;
+          version: string;
+          source: string;
+          sha256: string | null;
+          signature: unknown;
+        };
+      };
+    };
+
+    expect(m.versions.stateVersion).toBe(CURRENT_STATE_VERSION);
+    expect(m.meet.rulesPackRef).toEqual({
+      id: "isf:5.1",
+      federation: "ISF",
+      version: "5.1",
+      source: "builtin",
+      sha256: null,
+      signature: null,
+    });
+  });
+});
+
 describe("runMigrations — already current version", () => {
   it("returns input unchanged when stateVersion === current", () => {
-    const v3Input = {
-      versions: { stateVersion: "3", releaseVersion: "x" },
+    const v4Input = {
+      versions: { stateVersion: "4", releaseVersion: "x" },
       meet: {},
     };
-    const { migrated, appliedMigrations } = runMigrations(v3Input);
-    expect(migrated).toEqual(v3Input);
+    const { migrated, appliedMigrations } = runMigrations(v4Input);
+    expect(migrated).toEqual(v4Input);
     expect(appliedMigrations).toEqual([]);
   });
 });

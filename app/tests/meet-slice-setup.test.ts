@@ -46,6 +46,15 @@ describe("updateMeetBasics", () => {
     expect(store.getState().meet.dirty).toBe(true);
   });
 
+  it("pins new meets to the built-in ISF v5.1 RulesPack", () => {
+    expect(store.getState().meet.current?.meet.rulesPackRef).toMatchObject({
+      id: "isf:5.1",
+      federation: "ISF",
+      version: "5.1",
+      source: "builtin",
+    });
+  });
+
   it("updates formula", () => {
     store.dispatch(updateMeetBasics({ formula: "RESULT_X_COEFFICIENT" }));
     expect(store.getState().meet.current?.meet.formula).toBe("RESULT_X_COEFFICIENT");

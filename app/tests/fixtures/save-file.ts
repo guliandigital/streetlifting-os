@@ -8,12 +8,13 @@ import {
   ISF_V51_WEIGHT_CATEGORIES,
   ISF_V51_DEFAULT_PLATES,
   ISF_V51_MULTIREP_PRESETS,
+  ISF_V51_RULES_PACK_REF,
 } from "@domain/presets";
 
 export function buildEmptyV2SaveFile(): SaveFile {
   return {
     versions: {
-      stateVersion: "3",
+      stateVersion: "4",
       releaseVersion: "1.1.0",
     },
     meet: {
@@ -23,6 +24,7 @@ export function buildEmptyV2SaveFile(): SaveFile {
       state: "",
       city: "Krasnodar",
       date: "2026-04-26",
+      rulesPackRef: { ...ISF_V51_RULES_PACK_REF },
       competitionFormat: "classic",
       enabledDisciplineCodes: ["classic_2lift", "classic_pu", "classic_di"],
       divisions: ["amateur", "pro"],
@@ -60,6 +62,20 @@ export function buildEmptyV2SaveFile(): SaveFile {
       workTableSortMode: "by_weight_cat_then_name",
       showForecastColumns: false,
     },
+  };
+}
+
+export function buildSyntheticV3SaveFile(): unknown {
+  const current = buildEmptyV2SaveFile();
+  const meetWithoutRulesPack: Record<string, unknown> = { ...current.meet };
+  delete meetWithoutRulesPack["rulesPackRef"];
+  return {
+    ...current,
+    versions: {
+      stateVersion: "3",
+      releaseVersion: "1.1.0",
+    },
+    meet: meetWithoutRulesPack,
   };
 }
 

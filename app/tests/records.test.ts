@@ -20,8 +20,9 @@ import {
 import type { MeetState } from "@domain/models";
 import {
   ISF_V51_AGE_CATEGORIES,
-  ISF_V51_WEIGHT_CATEGORIES,
   ISF_V51_MULTIREP_PRESETS,
+  ISF_V51_RULES_PACK_REF,
+  ISF_V51_WEIGHT_CATEGORIES,
 } from "@domain/presets";
 
 // ─── Test meet ───────────────────────────────────────────────────────────────
@@ -35,6 +36,7 @@ const CLASSIC_MEET: MeetState = {
   state: "",
   city: "Moscow",
   date: MEET_DATE,
+  rulesPackRef: { ...ISF_V51_RULES_PACK_REF },
   competitionFormat: "classic",
   enabledDisciplineCodes: ["classic_2lift"],
   divisions: ["amateur"],

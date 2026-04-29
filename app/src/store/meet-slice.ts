@@ -27,6 +27,7 @@ import {
   ISF_V51_DEFAULT_PLATES,
   ISF_V51_MULTIREP_PRESETS,
   ISF_V51_DISCIPLINES,
+  ISF_V51_RULES_PACK_REF,
 } from "@domain/presets";
 import { CURRENT_STATE_VERSION, APP_RELEASE_VERSION } from "@/persistence";
 import {
@@ -74,6 +75,7 @@ function buildNewMeet(): SaveFile {
       state: "",
       city: "",
       date: today,
+      rulesPackRef: { ...ISF_V51_RULES_PACK_REF },
       competitionFormat: "classic",
       enabledDisciplineCodes: [
         "classic_2lift",

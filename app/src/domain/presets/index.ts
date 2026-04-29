@@ -23,3 +23,9 @@ export {
   type BodyweightLimits,
 } from "./bodyweight-limits";
 export { ISF_V51_TIMER_DEFAULTS } from "./timer-defaults";
+export {
+  BUILTIN_RULES_PACKS,
+  ISF_V51_RULES_PACK,
+  ISF_V51_RULES_PACK_REF,
+  resolveBuiltinRulesPack,
+} from "./rules-packs";

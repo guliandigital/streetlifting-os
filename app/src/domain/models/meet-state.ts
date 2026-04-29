@@ -11,6 +11,7 @@ import type { DisciplineCode } from "./discipline";
 import type { AgeCategory, AgeCategoryCode } from "./age-category";
 import type { WeightCategory } from "./weight-category";
 import type { Plate } from "./plate";
+import type { RulesPackRef } from "./rules-pack";
 
 export type ClassicLoadConfig = {
   useBeltLoading: boolean;
@@ -44,6 +45,9 @@ export type MeetState = {
   state: string;
   city: string;
   date: string;
+
+  /** Pinned rules artifact used to create/validate this meet. */
+  rulesPackRef: RulesPackRef;
 
   competitionFormat: CompetitionFormat;
   /** Per D24: discipline catalog selector for this meet. Empty = all enabled by default. */

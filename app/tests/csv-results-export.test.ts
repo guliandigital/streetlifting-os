@@ -8,6 +8,7 @@ import {
 import { computeClassicResults } from "../src/logic/isf/classic-placing";
 import {
   ISF_V51_AGE_CATEGORIES,
+  ISF_V51_RULES_PACK_REF,
   ISF_V51_WEIGHT_CATEGORIES,
 } from "../src/domain/presets";
 import type { MeetState } from "../src/domain/models";
@@ -28,6 +29,7 @@ const MEET: MeetState = {
   state: "Krasnodar",
   city: "Krasnodar",
   date: "2026-04-29",
+  rulesPackRef: { ...ISF_V51_RULES_PACK_REF },
   competitionFormat: "classic",
   enabledDisciplineCodes: [],
   divisions: ["amateur", "pro"],
