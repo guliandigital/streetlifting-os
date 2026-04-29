@@ -406,6 +406,27 @@ export const ruRU = {
     results: "РЕЗУЛЬТАТЫ",
     openScoreboard: "Открыть табло",
   },
+  display: {
+    kind: {
+      order: "ОЧЕРЕДЬ",
+      timer: "ТАЙМЕР",
+      plates: "БЛИНЫ",
+      broadcast: "ЭФИР",
+    },
+    currentLoad: "ТЕКУЩИЙ ВЕС",
+    noPlateLoad: "Блины не требуются",
+    remaining: "Осталось",
+    next: "ДАЛЬШЕ",
+    onPlatform: "НА ПОМОСТЕ",
+    running: "ИДЕТ",
+    ready: "ГОТОВ",
+    verdict: {
+      good30: "3:0 ЗАЧЁТ",
+      good21: "2:1 ЗАЧЁТ",
+      fail03: "0:3 НЕ ЗАЧЁТ",
+      fail12: "1:2 НЕ ЗАЧЁТ",
+    },
+  },
   print: {
     title: "Печатные формы",
     protocol: "Протокол",

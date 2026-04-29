@@ -41,6 +41,12 @@ import { MeetSetupPage } from "@pages/meet-setup/MeetSetupPage";
 import { FlightOrderPage } from "@pages/flight-order/FlightOrderPage";
 import { ScoreboardPage } from "@pages/scoreboard/ScoreboardPage";
 import { PrintPage } from "@pages/print/PrintPage";
+import {
+  DisplayBroadcastPage,
+  DisplayOrderPage,
+  DisplayPlatesPage,
+  DisplayTimerPage,
+} from "@pages/display/DisplayPages";
 import { RequireMeet } from "@components/RequireMeet";
 import { useAppSelector } from "@store/index";
 
@@ -122,6 +128,19 @@ function SidebarNav({ onNavigate }: SidebarNavProps) {
 function AppWithRouter() {
   const { t, i18n } = useTranslation();
   const [opened, setOpened] = useState(false);
+  const location = useLocation();
+
+  if (location.pathname.startsWith("/display/")) {
+    return (
+      <Routes>
+        <Route path="/display/scoreboard" element={<ScoreboardPage />} />
+        <Route path="/display/order" element={<DisplayOrderPage />} />
+        <Route path="/display/timer" element={<DisplayTimerPage />} />
+        <Route path="/display/plates" element={<DisplayPlatesPage />} />
+        <Route path="/display/broadcast" element={<DisplayBroadcastPage />} />
+      </Routes>
+    );
+  }
 
   return (
     <AppShell

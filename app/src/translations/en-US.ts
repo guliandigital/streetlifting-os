@@ -407,6 +407,27 @@ export const enUS = {
     results: "RESULTS",
     openScoreboard: "Open Scoreboard",
   },
+  display: {
+    kind: {
+      order: "ORDER",
+      timer: "TIMER",
+      plates: "PLATES",
+      broadcast: "BROADCAST",
+    },
+    currentLoad: "CURRENT LOAD",
+    noPlateLoad: "No plate load",
+    remaining: "Remaining",
+    next: "NEXT",
+    onPlatform: "ON PLATFORM",
+    running: "RUNNING",
+    ready: "READY",
+    verdict: {
+      good30: "3:0 GOOD",
+      good21: "2:1 GOOD",
+      fail03: "0:3 NO LIFT",
+      fail12: "1:2 NO LIFT",
+    },
+  },
   print: {
     title: "Print Forms",
     protocol: "Protocol",
