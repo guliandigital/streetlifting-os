@@ -53,6 +53,13 @@ export type {
   SportRankMetric,
   SportRankStandard,
 } from "./sport-rank";
+export type {
+  AttemptGroup,
+  AttemptGroupId,
+  SchedulePlan,
+  ScheduleStream,
+  StreamId,
+} from "./scheduling";
 
 export type {
   CalculatedResult,
