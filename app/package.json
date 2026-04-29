@@ -15,7 +15,8 @@
     "test:e2e": "playwright test",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.node.json",
     "lint": "eslint . --ext ts,tsx",
-    "icons:generate": "tsx scripts/generate-icons.ts"
+    "icons:generate": "tsx scripts/generate-icons.ts",
+    "release:validate-updater": "tsx scripts/validate-updater-config.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",

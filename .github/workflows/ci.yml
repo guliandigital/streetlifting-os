@@ -53,5 +53,8 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Validate updater release config
+        run: npm run release:validate-updater
+
       - name: Vite production build
         run: npm run build

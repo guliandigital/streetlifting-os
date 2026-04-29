@@ -134,7 +134,7 @@ jobs:
             - Linux: [docs/installation-v1.md#linux](https://github.com/GulianDigital/streetlifting-os/blob/main/docs/installation-v1.md#linux)
             - Browser PWA: <https://guliandigital.github.io/streetlifting-os/>
 
-            **Note:** binaries are unsigned in the v0.x series. See installation guides for the OS-specific "open anyway" flow (Windows SmartScreen, macOS Gatekeeper).
+            **Note:** updater artifacts are Ed25519-signed, but OS code-signing is still deferred. Windows SmartScreen and macOS Gatekeeper warnings are expected until Windows EV and Apple Developer ID certificates are connected.
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
