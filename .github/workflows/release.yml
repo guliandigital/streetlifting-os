@@ -119,10 +119,14 @@ jobs:
           except Exception:
               pass
 
+          key_path = os.path.join(os.environ["RUNNER_TEMP"], "tauri-updater-signing.key")
+          with open(key_path, "w", encoding="utf-8", newline="\n") as key_file:
+              key_file.write(value.rstrip("\n"))
+              key_file.write("\n")
+
           with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env_file:
-              env_file.write("TAURI_SIGNING_PRIVATE_KEY<<__TAURI_SIGNING_KEY__\n")
-              env_file.write(value.rstrip("\n"))
-              env_file.write("\n__TAURI_SIGNING_KEY__\n")
+              env_file.write(f"TAURI_SIGNING_PRIVATE_KEY={key_path}\n")
+              env_file.write(f"TAURI_SIGNING_PRIVATE_KEY_PATH={key_path}\n")
           PY
 
       - name: Build Tauri app + create draft release
