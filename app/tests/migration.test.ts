@@ -15,14 +15,18 @@ import {
   MigrationError,
   CURRENT_STATE_VERSION,
 } from "@/persistence";
-import { buildSyntheticV1SaveFile } from "./fixtures/save-file";
+import {
+  buildSyntheticV1SaveFile,
+  buildSyntheticV2SaveFile,
+} from "./fixtures/save-file";
 
 describe("runMigrations — v1 → v2", () => {
   it("upgrades stateVersion to current", () => {
     const v1 = buildSyntheticV1SaveFile();
     const { migrated, appliedMigrations } = runMigrations(v1);
-    expect(appliedMigrations.length).toBe(1);
+    expect(appliedMigrations.length).toBe(2);
     expect(appliedMigrations[0]).toMatch(/v1→v2/);
+    expect(appliedMigrations[1]).toMatch(/v2→v3/);
 
     const m = migrated as { versions: { stateVersion: string } };
     expect(m.versions.stateVersion).toBe(CURRENT_STATE_VERSION);
@@ -151,14 +155,64 @@ describe("runMigrations — v1 → v2", () => {
   });
 });
 
+describe("runMigrations — v2 → v3", () => {
+  it("adds athletes and nominations from legacy entries", () => {
+    const v2 = buildSyntheticV2SaveFile();
+    const { migrated, appliedMigrations } = runMigrations(v2);
+    expect(appliedMigrations).toEqual([
+      expect.stringMatching(/v2→v3/),
+    ]);
+
+    const m = migrated as {
+      versions: { stateVersion: string };
+      registration: {
+        athletes: Array<{
+          id: string;
+          name: string;
+          memberId?: string;
+          instagram?: string;
+        }>;
+        nominations: Array<{
+          id: string;
+          athleteId: string;
+          division: string;
+          team?: string;
+          assignedAgeCategoryCode?: string;
+          assignedWeightCategoryCode?: string;
+        }>;
+      };
+    };
+
+    expect(m.versions.stateVersion).toBe(CURRENT_STATE_VERSION);
+    expect(m.registration.athletes).toEqual([
+      expect.objectContaining({
+        id: "ath_ent-002",
+        name: "Petrov Petr",
+        memberId: "ISF-42",
+        instagram: "petrov",
+      }),
+    ]);
+    expect(m.registration.nominations).toEqual([
+      expect.objectContaining({
+        id: "nom_ent-002",
+        athleteId: "ath_ent-002",
+        division: "amateur",
+        team: "Team A",
+        assignedAgeCategoryCode: "open",
+        assignedWeightCategoryCode: "m_80_90",
+      }),
+    ]);
+  });
+});
+
 describe("runMigrations — already current version", () => {
   it("returns input unchanged when stateVersion === current", () => {
-    const v2Input = {
-      versions: { stateVersion: "2", releaseVersion: "x" },
+    const v3Input = {
+      versions: { stateVersion: "3", releaseVersion: "x" },
       meet: {},
     };
-    const { migrated, appliedMigrations } = runMigrations(v2Input);
-    expect(migrated).toEqual(v2Input);
+    const { migrated, appliedMigrations } = runMigrations(v3Input);
+    expect(migrated).toEqual(v3Input);
     expect(appliedMigrations).toEqual([]);
   });
 });

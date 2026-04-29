@@ -113,6 +113,42 @@ const entrySchema = z.object({
   }),
 });
 
+// ─── Athlete/Nomination (V2 identity split) ────────────────────────────────
+
+const athleteSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  sex: sexEnum,
+  birthDate: z.string().nullable(),
+  ageOverride: z.number().int().nullable(),
+  country: z.string().nullable(),
+  memberId: z.string().optional(),
+  instagram: z.string().optional(),
+});
+
+const nominationSchema = z.object({
+  id: z.string().min(1),
+  athleteId: z.string().min(1),
+  competitionFormat: competitionFormatEnum,
+  disciplineCode: z.string().min(1),
+  event: eventEnum,
+  day: z.number().int().positive(),
+  platform: z.number().int().positive(),
+  flight: z.string(),
+  division: divisionEnum,
+  team: z.string().optional(),
+  guest: z.boolean(),
+  notes: z.string().optional(),
+  bodyweightKg: z.number().positive().nullable(),
+  reweighKg: z.number().positive().nullable(),
+  assignedAgeCategoryCode: ageCategoryCodeEnum.optional(),
+  assignedWeightCategoryCode: z.string().optional(),
+  exercises: z.object({
+    PU: exerciseResultSchema.optional(),
+    DI: exerciseResultSchema.optional(),
+  }),
+});
+
 // ─── MeetState sub-shapes ──────────────────────────────────────────────────
 
 const plateSchema = z.object({
@@ -182,6 +218,8 @@ const meetStateSchema = z.object({
 // ─── Top-level SaveFile envelope ────────────────────────────────────────────
 
 const registrationStateSchema = z.object({
+  athletes: z.array(athleteSchema),
+  nominations: z.array(nominationSchema),
   entries: z.array(entrySchema),
   lastLotNumber: z.number().int().nonnegative(),
 });
@@ -222,7 +260,7 @@ const saveFileSignatureSchema = z
 
 export const saveFileSchema = z.object({
   versions: z.object({
-    stateVersion: z.literal("2"),
+    stateVersion: z.literal("3"),
     releaseVersion: z.string(),
   }),
   meet: meetStateSchema,

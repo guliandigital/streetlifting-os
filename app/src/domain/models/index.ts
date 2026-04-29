@@ -26,6 +26,13 @@ export type {
 } from "./attempts";
 
 export type { Entry } from "./entry";
+export type { Athlete, Nomination } from "./athlete-nomination";
+export {
+  athleteIdForEntry,
+  nominationIdForEntry,
+  splitEntry,
+  syncIdentityFromEntries,
+} from "./athlete-nomination";
 export type {
   MeetState,
   ClassicLoadConfig,

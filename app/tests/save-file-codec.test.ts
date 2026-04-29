@@ -69,7 +69,7 @@ describe("decode error handling", () => {
   it("throws SaveFileDecodeError when schema validation fails", () => {
     // Valid envelope, valid version, but missing required `meet` field
     const bad = JSON.stringify({
-      versions: { stateVersion: "2", releaseVersion: "x" },
+      versions: { stateVersion: "3", releaseVersion: "x" },
     });
     expect(() => decode(bad)).toThrow(SaveFileDecodeError);
     expect(() => decode(bad)).toThrow(/validation failed/);

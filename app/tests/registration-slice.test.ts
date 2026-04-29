@@ -60,12 +60,26 @@ describe("registration-slice CRUD", () => {
 
   it("addEntry appends an Entry with derived event/format", () => {
     store.dispatch(addEntry(draftA));
-    const entries = store.getState().meet.current!.registration.entries;
+    const registration = store.getState().meet.current!.registration;
+    const entries = registration.entries;
     expect(entries.length).toBe(1);
     expect(entries[0]?.name).toBe("Alice");
     expect(entries[0]?.competitionFormat).toBe("classic");
     expect(entries[0]?.event).toBe("PUDI");
     expect(entries[0]?.id).toBeTruthy();
+    expect(registration.athletes[0]).toMatchObject({
+      id: `ath_${entries[0]!.id}`,
+      name: "Alice",
+      sex: "F",
+      country: "RU",
+    });
+    expect(registration.nominations[0]).toMatchObject({
+      id: `nom_${entries[0]!.id}`,
+      athleteId: `ath_${entries[0]!.id}`,
+      disciplineCode: "classic_2lift",
+      division: "amateur",
+      bodyweightKg: 58.4,
+    });
   });
 
   it("addEntry monotonically increments lastLotNumber", () => {
@@ -91,6 +105,9 @@ describe("registration-slice CRUD", () => {
     expect(entries[0]?.name).toBe("Alice");
     expect(entries[1]?.name).toBe("Robert");
     expect(entries[1]?.bodyweightKg).toBe(85);
+    const registration = store.getState().meet.current!.registration;
+    expect(registration.athletes[1]?.name).toBe("Robert");
+    expect(registration.nominations[1]?.bodyweightKg).toBe(85);
   });
 
   it("updateEntry re-derives competitionFormat/event when disciplineCode changes", () => {
@@ -115,6 +132,8 @@ describe("registration-slice CRUD", () => {
     const entries = store.getState().meet.current!.registration.entries;
     expect(entries.length).toBe(1);
     expect(entries[0]?.name).toBe("Bob");
+    expect(store.getState().meet.current!.registration.athletes).toHaveLength(1);
+    expect(store.getState().meet.current!.registration.nominations).toHaveLength(1);
   });
 
   it("setBodyweight + setReweigh write through", () => {
@@ -125,6 +144,9 @@ describe("registration-slice CRUD", () => {
     const e = store.getState().meet.current!.registration.entries[0]!;
     expect(e.bodyweightKg).toBe(60);
     expect(e.reweighKg).toBe(60.1);
+    const nomination = store.getState().meet.current!.registration.nominations[0]!;
+    expect(nomination.bodyweightKg).toBe(60);
+    expect(nomination.reweighKg).toBe(60.1);
   });
 
   it("confirmWeighIn freezes assigned codes; null clears them", () => {
@@ -157,6 +179,8 @@ describe("registration-slice CRUD", () => {
     store.dispatch(bulkImportEntries({ drafts: [draftA, draftB, draftA] }));
     const reg = store.getState().meet.current!.registration;
     expect(reg.entries.length).toBe(3);
+    expect(reg.athletes.length).toBe(3);
+    expect(reg.nominations.length).toBe(3);
     expect(reg.lastLotNumber).toBe(3);
   });
 

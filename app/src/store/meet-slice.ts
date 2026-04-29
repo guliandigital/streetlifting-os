@@ -20,7 +20,7 @@ import type {
   ScoringFormula,
   DisciplineCode,
 } from "@domain/models";
-import { PENDING_VOTES } from "@domain/models";
+import { PENDING_VOTES, syncIdentityFromEntries } from "@domain/models";
 import {
   ISF_V51_AGE_CATEGORIES,
   ISF_V51_WEIGHT_CATEGORIES,
@@ -99,6 +99,8 @@ function buildNewMeet(): SaveFile {
       },
     },
     registration: {
+      athletes: [],
+      nominations: [],
       entries: [],
       lastLotNumber: 0,
     },
@@ -215,6 +217,11 @@ const meetSlice = createSlice({
       if (lastDeclarationAt !== undefined) {
         att.lastDeclarationAt = lastDeclarationAt;
       }
+
+      Object.assign(
+        state.current.registration,
+        syncIdentityFromEntries(state.current.registration.entries),
+      );
 
       state.dirty = true;
     },
@@ -396,6 +403,11 @@ const meetSlice = createSlice({
         att.noRepCount = noRepCount;
       }
 
+      Object.assign(
+        state.current.registration,
+        syncIdentityFromEntries(state.current.registration.entries),
+      );
+
       state.dirty = true;
     },
   },
@@ -406,6 +418,10 @@ const meetSlice = createSlice({
         if (!state.current) return;
         const entry = registrationHelpers.buildEntry(action.payload);
         state.current.registration.entries.push(entry);
+        Object.assign(
+          state.current.registration,
+          syncIdentityFromEntries(state.current.registration.entries),
+        );
         state.current.registration.lastLotNumber += 1;
         state.dirty = true;
       })
@@ -454,6 +470,10 @@ const meetSlice = createSlice({
           competitionFormat: meta.competitionFormat,
           event: meta.event,
         };
+        Object.assign(
+          state.current.registration,
+          syncIdentityFromEntries(state.current.registration.entries),
+        );
         state.dirty = true;
       })
       .addCase(removeEntry, (state, action) => {
@@ -461,6 +481,10 @@ const meetSlice = createSlice({
         const { id } = action.payload;
         state.current.registration.entries =
           state.current.registration.entries.filter((e) => e.id !== id);
+        Object.assign(
+          state.current.registration,
+          syncIdentityFromEntries(state.current.registration.entries),
+        );
         state.dirty = true;
       })
       .addCase(setBodyweight, (state, action) => {
@@ -469,6 +493,10 @@ const meetSlice = createSlice({
         const e = state.current.registration.entries.find((x) => x.id === id);
         if (!e) return;
         e.bodyweightKg = bodyweightKg;
+        Object.assign(
+          state.current.registration,
+          syncIdentityFromEntries(state.current.registration.entries),
+        );
         state.dirty = true;
       })
       .addCase(setReweigh, (state, action) => {
@@ -477,6 +505,10 @@ const meetSlice = createSlice({
         const e = state.current.registration.entries.find((x) => x.id === id);
         if (!e) return;
         e.reweighKg = reweighKg;
+        Object.assign(
+          state.current.registration,
+          syncIdentityFromEntries(state.current.registration.entries),
+        );
         state.dirty = true;
       })
       .addCase(confirmWeighIn, (state, action) => {
@@ -494,6 +526,10 @@ const meetSlice = createSlice({
         } else {
           e.assignedAgeCategoryCode = ageCategoryCode;
         }
+        Object.assign(
+          state.current.registration,
+          syncIdentityFromEntries(state.current.registration.entries),
+        );
         state.dirty = true;
       })
       .addCase(bulkImportEntries, (state, action) => {
@@ -503,6 +539,10 @@ const meetSlice = createSlice({
           state.current.registration.entries.push(entry);
           state.current.registration.lastLotNumber += 1;
         }
+        Object.assign(
+          state.current.registration,
+          syncIdentityFromEntries(state.current.registration.entries),
+        );
         state.dirty = true;
       })
       .addCase(applyLotAssignment, (state, action) => {
@@ -523,6 +563,10 @@ const meetSlice = createSlice({
           return a.idx - b.idx;
         });
         state.current.registration.entries = indexed.map((x) => x.e);
+        Object.assign(
+          state.current.registration,
+          syncIdentityFromEntries(state.current.registration.entries),
+        );
         state.current.registration.lastLotNumber = lastLotNumber;
         state.dirty = true;
       });

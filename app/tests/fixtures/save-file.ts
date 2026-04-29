@@ -13,7 +13,7 @@ import {
 export function buildEmptyV2SaveFile(): SaveFile {
   return {
     versions: {
-      stateVersion: "2",
+      stateVersion: "3",
       releaseVersion: "1.1.0",
     },
     meet: {
@@ -44,6 +44,8 @@ export function buildEmptyV2SaveFile(): SaveFile {
       },
     },
     registration: {
+      athletes: [],
+      nominations: [],
       entries: [],
       lastLotNumber: 0,
     },
@@ -57,6 +59,51 @@ export function buildEmptyV2SaveFile(): SaveFile {
       locale: "ru-RU",
       workTableSortMode: "by_weight_cat_then_name",
       showForecastColumns: false,
+    },
+  };
+}
+
+/**
+ * Build a raw legacy v2 save-file shape: valid v2 Entry projection, but no
+ * Athlete/Nomination arrays. Used for v2→v3 migration tests.
+ */
+export function buildSyntheticV2SaveFile(): unknown {
+  const current = buildEmptyV2SaveFile();
+  return {
+    ...current,
+    versions: {
+      stateVersion: "2",
+      releaseVersion: "1.1.0",
+    },
+    registration: {
+      entries: [
+        {
+          id: "ent-002",
+          competitionFormat: "classic",
+          disciplineCode: "classic_2lift",
+          event: "PUDI",
+          day: 1,
+          platform: 1,
+          flight: "A",
+          name: "Petrov Petr",
+          sex: "M",
+          birthDate: "1992-03-04",
+          ageOverride: null,
+          division: "amateur",
+          team: "Team A",
+          memberId: "ISF-42",
+          guest: false,
+          instagram: "petrov",
+          notes: "Seeded",
+          country: "RU",
+          bodyweightKg: 82.4,
+          reweighKg: null,
+          assignedAgeCategoryCode: "open",
+          assignedWeightCategoryCode: "m_80_90",
+          exercises: {},
+        },
+      ],
+      lastLotNumber: 1,
     },
   };
 }

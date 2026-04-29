@@ -1,7 +1,7 @@
 /**
  * SaveFile envelope per blueprint v2 §10.
  *
- * stateVersion === "2" — bumped from v1 for D15 (judgeVotes) and other v2 fields.
+ * stateVersion === "3" — bumped from v2 for V2 Athlete/Nomination identity split.
  *
  * V2-prep stub fields per D31 (decisions-v3): licenseTokenId / quotaAllocationId /
  * billedNominationIds[] / signature. Nullable in V1; backend-populated when V2 backend ships.
@@ -9,10 +9,16 @@
 
 import type { Entry } from "./entry";
 import type { MeetState } from "./meet-state";
+import type { Athlete, Nomination } from "./athlete-nomination";
 
-export type CurrentStateVersion = "2";
+export type CurrentStateVersion = "3";
 
 export type RegistrationState = {
+  /** V2 person-level identities. Legacy files get one athlete per historical entry. */
+  athletes: Athlete[];
+  /** V2 meet-scoped registrations/results. */
+  nominations: Nomination[];
+  /** UI-compatible projection kept during the V2 transition. */
   entries: Entry[];
   /** Last lot-number assigned (for monotonic increment when adding new entries). */
   lastLotNumber: number;
