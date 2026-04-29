@@ -125,7 +125,6 @@ jobs:
               key_file.write("\n")
 
           with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env_file:
-              env_file.write(f"TAURI_SIGNING_PRIVATE_KEY={key_path}\n")
               env_file.write(f"TAURI_SIGNING_PRIVATE_KEY_PATH={key_path}\n")
           PY
 
