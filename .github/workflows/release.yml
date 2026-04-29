@@ -106,12 +106,14 @@ jobs:
           python - <<'PY'
           import base64
           import os
+          import re
 
           raw = os.environ.get("INPUT_TAURI_SIGNING_PRIVATE_KEY", "")
           value = raw
 
           try:
-              decoded = base64.b64decode(raw, validate=True).decode("utf-8")
+              compact = re.sub(r"\s+", "", raw)
+              decoded = base64.b64decode(compact, validate=True).decode("utf-8")
               if decoded.startswith("untrusted comment:") and "secret key" in decoded.splitlines()[0]:
                   value = decoded
           except Exception:
