@@ -58,3 +58,6 @@ jobs:
 
       - name: Vite production build
         run: npm run build
+
+      - name: Validate PWA artifact
+        run: npm run pwa:validate

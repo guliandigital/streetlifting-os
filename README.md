@@ -4,7 +4,7 @@ Open-source, offline-first software for running streetlifting & calisthenics mee
 
 → **<https://streetlifting.app>** — landing, downloads, project page
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) [![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20macOS%20%7C%20Linux-blue)](#downloads) [![Tests](https://img.shields.io/badge/tests-428%20passing-brightgreen)](#status) [![Version](https://img.shields.io/badge/version-1.1.1-blue)](CHANGELOG.md)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) [![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20macOS%20%7C%20Linux-blue)](#downloads) [![Tests](https://img.shields.io/badge/tests-436%20passing-brightgreen)](#status) [![Version](https://img.shields.io/badge/version-1.1.1-blue)](CHANGELOG.md)
 
 ---
 
@@ -38,7 +38,7 @@ Existing commercial tools (PowerTable, PowerGage) are Russian-market 1С product
 
 ## Status
 
-**v1.1.1** — current stable release. V1 GA shipped in **1.0.0** (2026-04-28); follow-up **1.1.x** releases hardened distribution and operations. **428 unit tests** pass across 24 test files. TypeScript strict, ESLint clean. The full meet workflow works end-to-end on Windows / macOS / Linux.
+**v1.1.1** — current stable release. V1 GA shipped in **1.0.0** (2026-04-28); follow-up **1.1.x** releases hardened distribution and operations. **436 unit tests** pass across 25 test files. TypeScript strict, ESLint clean. The full meet workflow works end-to-end on Windows / macOS / Linux.
 
 Recent milestones:
 - **1.0.0** — full Classic + Multirep meet workflow, records screen, real Classic forecast

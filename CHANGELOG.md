@@ -10,6 +10,15 @@ release will be 1.0.0 once V1 reaches production-ready quality.
 
 ## [Unreleased]
 
+### Added
+- Added `npm run pwa:validate` to verify the generated browser PWA artifact
+  before CI or GitHub Pages publish it.
+
+### CI
+- GitHub Pages deployment now fails before upload if the built PWA is missing
+  `index.html`, manifest, service worker files, app assets, manifest icons, or
+  the expected `/streetlifting-os/` base-path asset references.
+
 ### Documentation
 - Restored GitHub Pages production PWA deployment after making the repository
   public again; `.github/workflows/pages.yml` now deploys on every push to

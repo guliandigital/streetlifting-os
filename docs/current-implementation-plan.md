@@ -72,6 +72,7 @@ Current publication state:
 - GitHub Releases remain the production desktop distribution channel.
 - Tauri updater artifacts are signed and published through GitHub Releases.
 - GitHub Pages PWA deployment is restored for the now-public repository and runs from `.github/workflows/pages.yml` on every push to `main`.
+- CI and Pages deploy both validate the generated PWA artifact before publication (`npm run pwa:validate`).
 - Browser PWA URL: `https://guliandigital.github.io/streetlifting-os/`.
 
 ## 3. Lessons from PowerTable and PowerGage

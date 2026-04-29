@@ -61,6 +61,7 @@ Before tagging, all of the following must be true:
       ```sh
       cd app
       VITE_PUBLIC_BASE=/streetlifting-os/ npm run build
+      VITE_PUBLIC_BASE=/streetlifting-os/ npm run pwa:validate
       npx serve dist  # spot-check the offline manifest
       ```
 - [ ] **No unrelated uncommitted changes** in `git status`.
@@ -303,6 +304,12 @@ Verify:
 2. `https://guliandigital.github.io/streetlifting-os/` returns HTTP 200.
 3. The app loads nested routes and the PWA manifest/service worker is fetched
    from `/streetlifting-os/`.
+
+The workflow runs `npm run pwa:validate` after build. This gate fails the
+deployment before upload if `index.html`, `manifest.webmanifest`, generated
+service worker files, app assets, or manifest icons are missing or if the
+artifact uses root-relative `/assets/` paths while deploying under
+`/streetlifting-os/`.
 
 ### 7.2 Private-repo alternative
 

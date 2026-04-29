@@ -46,6 +46,12 @@ jobs:
           VITE_PUBLIC_BASE: /streetlifting-os/
         run: npm run build
 
+      - name: Validate PWA artifact
+        working-directory: app
+        env:
+          VITE_PUBLIC_BASE: /streetlifting-os/
+        run: npm run pwa:validate
+
       - name: Setup Pages
         # The Pages site is provisioned once through the GitHub Pages API
         # (build_type=workflow). Runtime deploys should only configure the
