@@ -109,23 +109,16 @@ jobs:
           import re
 
           raw = os.environ.get("INPUT_TAURI_SIGNING_PRIVATE_KEY", "")
-          value = raw
+          value = re.sub(r"\s+", "", raw)
 
           try:
-              compact = re.sub(r"\s+", "", raw)
-              decoded = base64.b64decode(compact, validate=True).decode("utf-8")
-              if decoded.startswith("untrusted comment:") and "secret key" in decoded.splitlines()[0]:
-                  value = decoded
+              if raw.startswith("untrusted comment:") and "secret key" in raw.splitlines()[0]:
+                  value = base64.b64encode(raw.encode("utf-8")).decode("ascii")
           except Exception:
               pass
 
-          key_path = os.path.join(os.environ["RUNNER_TEMP"], "tauri-updater-signing.key")
-          with open(key_path, "w", encoding="utf-8", newline="\n") as key_file:
-              key_file.write(value.rstrip("\n"))
-              key_file.write("\n")
-
           with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env_file:
-              env_file.write(f"TAURI_SIGNING_PRIVATE_KEY_PATH={key_path}\n")
+              env_file.write(f"TAURI_SIGNING_PRIVATE_KEY={value}\n")
           PY
 
       - name: Build Tauri app + create draft release
