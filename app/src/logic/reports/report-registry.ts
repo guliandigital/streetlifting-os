@@ -1,20 +1,28 @@
 import type { Entry } from "@domain/models";
 import type { ClassicResultGroup } from "@logic/isf/classic-placing";
 import type { MultirepResultGroup } from "@logic/isf/multirep-placing";
+import type { CompetitionRecord } from "@logic/isf/records";
+import type { TeamScore } from "@logic/isf/team-scoring";
 
 export type ReportOutputFormat = "print" | "csv" | "view";
 export type ReportStatus = "ready" | "empty" | "planned";
 
+export type ReportDefinitionId =
+  | "official-protocol"
+  | "athlete-cards"
+  | "blank-sheet"
+  | "diplomas"
+  | "awards-ceremony"
+  | "classic-csv"
+  | "multirep-csv"
+  | "openpowerlifting-export"
+  | "team-protocol"
+  | "record-certificates"
+  | "weigh-in-order"
+  | "medal-count";
+
 export type ReportDefinition = {
-  id:
-    | "official-protocol"
-    | "athlete-cards"
-    | "blank-sheet"
-    | "diplomas"
-    | "awards-ceremony"
-    | "classic-csv"
-    | "multirep-csv"
-    | "openpowerlifting-export";
+  id: ReportDefinitionId;
   labelKey: string;
   outputFormat: ReportOutputFormat;
   scope: "meet" | "entries" | "results" | "awards";
@@ -101,6 +109,42 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
     exportOnly: true,
     official: false,
   },
+  {
+    id: "team-protocol",
+    labelKey: "reports.teamProtocol",
+    outputFormat: "print",
+    scope: "results",
+    printOnly: true,
+    exportOnly: false,
+    official: true,
+  },
+  {
+    id: "record-certificates",
+    labelKey: "reports.recordCertificates",
+    outputFormat: "print",
+    scope: "results",
+    printOnly: true,
+    exportOnly: false,
+    official: true,
+  },
+  {
+    id: "weigh-in-order",
+    labelKey: "reports.weighInOrder",
+    outputFormat: "print",
+    scope: "entries",
+    printOnly: true,
+    exportOnly: false,
+    official: false,
+  },
+  {
+    id: "medal-count",
+    labelKey: "reports.medalCount",
+    outputFormat: "print",
+    scope: "results",
+    printOnly: true,
+    exportOnly: false,
+    official: true,
+  },
 ];
 
 export function countClassicAwardRows(groups: ClassicResultGroup[]): number {
@@ -121,15 +165,26 @@ export function countMultirepAwardRows(groups: MultirepResultGroup[]): number {
   );
 }
 
+export type BuildReportRegistryInput = {
+  entries: ReadonlyArray<Entry>;
+  classicGroups: ClassicResultGroup[];
+  multirepGroups: MultirepResultGroup[];
+  /** Team scores from `computeTeamScores`. Empty array if no teams are registered. */
+  teamScores?: ReadonlyArray<TeamScore>;
+  /** New competition records from `computeRecords`. Empty array if none. */
+  records?: ReadonlyArray<CompetitionRecord>;
+  /** Number of medal-count rows that will print (across team + country buckets). */
+  medalCountRowCount?: number;
+};
+
 export function buildReportRegistry({
   entries,
   classicGroups,
   multirepGroups,
-}: {
-  entries: ReadonlyArray<Entry>;
-  classicGroups: ClassicResultGroup[];
-  multirepGroups: MultirepResultGroup[];
-}): ReportRegistryItem[] {
+  teamScores = [],
+  records = [],
+  medalCountRowCount = 0,
+}: BuildReportRegistryInput): ReportRegistryItem[] {
   const classicAwards = countClassicAwardRows(classicGroups);
   const multirepAwards = countMultirepAwardRows(multirepGroups);
   const awardCount = classicAwards + multirepAwards;
@@ -140,6 +195,7 @@ export function buildReportRegistry({
         : sum + group.rows.length,
     0,
   );
+  const newRecordCount = records.filter((r) => r.isNew).length;
 
   return REPORT_DEFINITIONS.map((definition) => {
     const itemCount =
@@ -149,13 +205,22 @@ export function buildReportRegistry({
           ? multirepGroups.reduce((sum, group) => sum + group.rows.length, 0)
           : definition.id === "openpowerlifting-export"
             ? classicResultCount
-          : definition.id === "athlete-cards"
-            ? entries.length
-            : definition.id === "blank-sheet"
-              ? 1
-              : definition.id === "diplomas" || definition.id === "awards-ceremony"
-                ? awardCount
-                : 0;
+            : definition.id === "athlete-cards"
+              ? entries.length
+              : definition.id === "blank-sheet"
+                ? 1
+                : definition.id === "diplomas" ||
+                    definition.id === "awards-ceremony"
+                  ? awardCount
+                  : definition.id === "team-protocol"
+                    ? teamScores.length
+                    : definition.id === "record-certificates"
+                      ? newRecordCount
+                      : definition.id === "weigh-in-order"
+                        ? entries.length
+                        : definition.id === "medal-count"
+                          ? medalCountRowCount
+                          : 0;
 
     return {
       ...definition,

@@ -11,6 +11,8 @@ This document supersedes roadmap sections in historical V1 planning docs when th
 
 Those documents remain useful as requirements and research archives. The active product plan below is the source of truth for what we build next.
 
+For the strategic framing behind these phases — why we are replacing PowerTable / PowerGage rather than cloning them, and why the architecture is role-driven rather than time-axis driven — see `docs/strategy/positioning-vs-powertable.md`.
+
 For parallel V1.x implementation work, use `docs/integration-contracts-v1.md` as the shared source of truth for domain models, save-file persistence, result calculation, and migration boundaries.
 
 Deployment documentation source of truth:
@@ -64,8 +66,12 @@ Remaining V1.x hardening:
 
 - Windows EV code-signing certificate;
 - Apple Developer ID signing/notarization;
+- tournament readiness checklist screen — pre-flight gate before judging starts: discipline + rules pack confirmed, categories defined, plates and bar configured, judges and platforms assigned, streams/groups planned, registration closed, weigh-ins complete, baseline records imported, save-file persisted and backed up. Without this screen, real-meet UAT will fail on human-process gaps rather than software defects;
+- minimum report set for real-meet UAT — the existing report registry covers official protocol, athlete cards, blank sheet, diplomas, awards ceremony (planned), Classic CSV, Multirep CSV, and OpenPowerlifting export; for ISF UAT we additionally need the **team protocol** (team scoring is computed but has no print form), **record certificates** for newly set records, **weigh-in order printout**, and a **medal-count summary**. These are added as registry entries in V1.x without restructuring the registry into the full V2 report center;
 - real-tournament UAT and bug bash;
 - post-signing installer and updater smoke tests on Windows, macOS, Linux.
+
+The full V2 report center (filters, federation templates, multi-language outputs, scoped re-runs) remains a V2 deliverable. V1.x only adds the four reports above as concrete entries in the existing registry.
 
 Current publication state:
 
@@ -197,13 +203,15 @@ Deliverables:
 
 ## 6. Immediate next implementation order
 
-1. Finish V1.x hardening: signing, notarization, UAT, smoke tests.
-2. Design V2 data split: `Athlete`, `Nomination`, `Stream`, `Group`, `ReportDefinition`.
-3. Extract the current ISF preset into an internal RulesPack-compatible shape.
-4. Implement report registry and awards ceremony before broad federation onboarding.
-5. Implement import duplicate resolution before athlete passport.
-6. Implement entitlement token and reconciliation before paid rollout.
-7. Implement local publisher/display routes before remote judge URLs.
+1. Ship the V1.x pre-UAT additions: tournament readiness checklist screen and the four missing report-registry entries (team protocol, record certificates, weigh-in order, medal-count summary).
+2. Finish V1.x distribution hardening: signing, notarization, smoke tests on Win/macOS/Linux.
+3. Run real-tournament UAT and bug bash; freeze scope to fixes only until UAT passes.
+4. Design V2 data split: `Athlete`, `Nomination`, `Stream`, `Group`, `ReportDefinition`.
+5. Extract the current ISF preset into an internal RulesPack-compatible shape.
+6. Implement the full V2 report center (filters, federation templates, multi-language) and awards ceremony before broad federation onboarding.
+7. Implement import duplicate resolution before athlete passport.
+8. Implement entitlement token and reconciliation before paid rollout.
+9. Implement local publisher/display routes before remote judge URLs — this is the architectural unlock for role-split clients (judge remotes, presenter screen, hall scoreboard, OBS overlay) per `docs/strategy/positioning-vs-powertable.md` §3.
 
 ## 7. One-line summary
 

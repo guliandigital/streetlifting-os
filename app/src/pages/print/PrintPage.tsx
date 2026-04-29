@@ -2,10 +2,14 @@
  * PrintPage — /print
  *
  * Dedicated print forms:
- *   1. Протокол / Protocol    — full results table
+ *   1. Протокол / Protocol — full results table
  *   2. Карточки атлетов / Athlete Cards — 2-per-A4, attempt spaces
  *   3. Пустографка / Blank Sheet — blank judging sheet
  *   4. Грамоты / Diplomas — one per category winner (places 1-3), A5 size
+ *   5. Командный протокол / Team Protocol — team scoring with contributors
+ *   6. Сертификаты рекордов / Record Certificates — one per new record
+ *   7. Порядок взвешивания / Weigh-in Order — by day/platform/flight
+ *   8. Медальный зачёт / Medal Count — by team and country
  *
  * @media print CSS hides tabs + button and shows only the relevant content.
  */
@@ -28,6 +32,7 @@ import { useAppSelector } from "@store/index";
 import { selectEntries } from "@store/registration-slice";
 import {
   computeClassicResults,
+  computeClassicRows,
 } from "@logic/isf/classic-placing";
 import type { ClassicResultGroup } from "@logic/isf/classic-placing";
 import { computeMultirepResults } from "@logic/isf/multirep-placing";
@@ -37,6 +42,20 @@ import {
   type ReportRegistryItem,
 } from "@logic/reports/report-registry";
 import { exportOpenPowerliftingCsv } from "@logic/isf/csv-export-classic";
+import { computeTeamScores, type TeamScore } from "@logic/isf/team-scoring";
+import { computeRecords } from "@logic/isf/records";
+import {
+  buildRecordCertificates,
+  type RecordCertificate,
+} from "@logic/reports/record-certificates";
+import {
+  buildWeighInOrder,
+  type WeighInOrderGroup,
+} from "@logic/reports/weigh-in-order";
+import {
+  buildMedalCountReport,
+  type MedalCountReport,
+} from "@logic/reports/medal-count";
 import type { Entry } from "@domain/models";
 
 // ─── Print CSS ────────────────────────────────────────────────────────────────
@@ -549,6 +568,397 @@ function DiplomasContent({
   );
 }
 
+// ─── Team Protocol tab ────────────────────────────────────────────────────────
+
+function TeamProtocolContent({
+  teamScores,
+  meetName,
+  meetDate,
+}: {
+  teamScores: TeamScore[];
+  meetName: string;
+  meetDate: string;
+}) {
+  const { t } = useTranslation();
+  if (teamScores.length === 0) {
+    return (
+      <Text c="dimmed" ta="center" py="xl">
+        {t("print.team.empty")}
+      </Text>
+    );
+  }
+  return (
+    <Stack gap="md">
+      <Stack gap={2}>
+        <Text fw={700} size="md">
+          {t("print.team.title")}
+        </Text>
+        <Text size="xs" c="dimmed">
+          {meetName} · {meetDate}
+        </Text>
+      </Stack>
+      <Table withTableBorder withColumnBorders fz="xs" striped>
+        <Table.Thead>
+          <Table.Tr>
+            <Table.Th>{t("results.place")}</Table.Th>
+            <Table.Th>{t("print.team.team")}</Table.Th>
+            <Table.Th>{t("print.team.totalPoints")}</Table.Th>
+            <Table.Th>{t("print.team.contributors")}</Table.Th>
+            <Table.Th>{t("print.team.athleteCount")}</Table.Th>
+          </Table.Tr>
+        </Table.Thead>
+        <Table.Tbody>
+          {teamScores.map((ts) => (
+            <Table.Tr key={ts.teamName}>
+              <Table.Td>
+                <Text size="xs" fw={600}>
+                  {ts.place}
+                </Text>
+              </Table.Td>
+              <Table.Td>
+                <Text size="xs" fw={500}>
+                  {ts.teamName}
+                </Text>
+              </Table.Td>
+              <Table.Td>
+                <Text size="xs" fw={700}>
+                  {ts.totalPoints.toFixed(2)}
+                </Text>
+              </Table.Td>
+              <Table.Td>
+                <Stack gap={0}>
+                  {ts.contributors.map((c) => (
+                    <Text size="xs" key={c.entry.id}>
+                      {c.entry.name} — {c.points.toFixed(2)}
+                    </Text>
+                  ))}
+                </Stack>
+              </Table.Td>
+              <Table.Td>
+                <Text size="xs">{ts.athleteCount}</Text>
+              </Table.Td>
+            </Table.Tr>
+          ))}
+        </Table.Tbody>
+      </Table>
+    </Stack>
+  );
+}
+
+// ─── Record Certificates tab ──────────────────────────────────────────────────
+
+function RecordCertificateCard({
+  cert,
+  meetName,
+  meetDate,
+}: {
+  cert: RecordCertificate;
+  meetName: string;
+  meetDate: string;
+}) {
+  const { t } = useTranslation();
+  return (
+    <div
+      style={{
+        border: "3px solid #1971c2",
+        borderRadius: 8,
+        padding: "20px 24px",
+        pageBreakInside: "avoid",
+        breakInside: "avoid",
+        display: "flex",
+        flexDirection: "column",
+        gap: 12,
+        minHeight: 280,
+      }}
+    >
+      <Group justify="space-between" align="flex-start">
+        <Text fw={900} size="xs" c="var(--mantine-color-blue-7)">
+          Streetlifting OS
+        </Text>
+        <Stack gap={2} align="center" style={{ flex: 1 }}>
+          <Text fw={900} size="xl" ta="center" c="var(--mantine-color-blue-7)">
+            {t("print.records.certificate")}
+          </Text>
+          <Text size="xs" c="dimmed" ta="center">
+            {meetName} · {meetDate}
+          </Text>
+        </Stack>
+        <div style={{ width: 48 }} />
+      </Group>
+
+      <Divider />
+
+      <Text size="md" fw={600} ta="center">
+        🏅 {t("print.records.newRecord")}
+      </Text>
+
+      <Text size="xs" c="dimmed" ta="center" tt="uppercase">
+        {t("print.awardedTo")}
+      </Text>
+      <Text size="xl" fw={900} ta="center">
+        {cert.record.holder.name}
+      </Text>
+
+      <Text size="sm" c="dimmed" ta="center">
+        {cert.record.disciplineCode} · {cert.exerciseLabel} ·{" "}
+        {cert.categoryLabel}
+      </Text>
+
+      <Text size="lg" fw={700} ta="center" c="var(--mantine-color-blue-7)">
+        {cert.resultLabel}
+      </Text>
+
+      <Divider mt="auto" />
+
+      <Group justify="space-between" mt={8}>
+        <Text size="xs" c="dimmed">
+          ________________________________
+        </Text>
+        <Text size="xs" c="dimmed">
+          {t("print.signatureStamp")}
+        </Text>
+        <Text size="xs" c="dimmed">
+          ________________________________
+        </Text>
+      </Group>
+    </div>
+  );
+}
+
+function RecordCertificatesContent({
+  certificates,
+  meetName,
+  meetDate,
+}: {
+  certificates: RecordCertificate[];
+  meetName: string;
+  meetDate: string;
+}) {
+  const { t } = useTranslation();
+  if (certificates.length === 0) {
+    return (
+      <Text c="dimmed" ta="center" py="xl">
+        {t("print.records.empty")}
+      </Text>
+    );
+  }
+
+  const pairs: Array<[RecordCertificate, RecordCertificate | null]> = [];
+  for (let i = 0; i < certificates.length; i += 2) {
+    pairs.push([certificates[i]!, certificates[i + 1] ?? null]);
+  }
+
+  return (
+    <Stack gap="lg">
+      {pairs.map(([a, b], i) => (
+        <div
+          key={i}
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: 16,
+            pageBreakAfter: "always",
+            breakAfter: "page",
+          }}
+        >
+          <RecordCertificateCard
+            cert={a}
+            meetName={meetName}
+            meetDate={meetDate}
+          />
+          {b && (
+            <RecordCertificateCard
+              cert={b}
+              meetName={meetName}
+              meetDate={meetDate}
+            />
+          )}
+        </div>
+      ))}
+    </Stack>
+  );
+}
+
+// ─── Weigh-in Order tab ───────────────────────────────────────────────────────
+
+function WeighInOrderContent({
+  groups,
+  meetName,
+  meetDate,
+}: {
+  groups: WeighInOrderGroup[];
+  meetName: string;
+  meetDate: string;
+}) {
+  const { t } = useTranslation();
+  if (groups.length === 0) {
+    return (
+      <Text c="dimmed" ta="center" py="xl">
+        {t("print.weighInOrder.empty")}
+      </Text>
+    );
+  }
+  return (
+    <Stack gap="lg">
+      <Stack gap={2}>
+        <Text fw={700} size="md">
+          {t("print.weighInOrder.title")}
+        </Text>
+        <Text size="xs" c="dimmed">
+          {meetName} · {meetDate}
+        </Text>
+      </Stack>
+      {groups.map((g) => (
+        <Stack gap="xs" key={`${g.day}-${g.platform}-${g.flight}`}>
+          <Text fw={600} size="sm">
+            {t("print.weighInOrder.groupLabel", {
+              day: g.day,
+              platform: g.platform,
+              flight: g.flight,
+            })}
+          </Text>
+          <Table withTableBorder withColumnBorders fz="xs" striped>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th style={{ minWidth: 32 }}>
+                  {t("flightOrder.lot")}
+                </Table.Th>
+                <Table.Th style={{ minWidth: 160 }}>
+                  {t("results.name")}
+                </Table.Th>
+                <Table.Th>{t("registration.columns.sex")}</Table.Th>
+                <Table.Th>{t("registration.columns.discipline")}</Table.Th>
+                <Table.Th>{t("results.weightCat")}</Table.Th>
+                <Table.Th style={{ minWidth: 70 }}>
+                  {t("results.bodyweight")}
+                </Table.Th>
+                <Table.Th style={{ minWidth: 80 }}>
+                  {t("print.weighInOrder.signature")}
+                </Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {g.rows.map((r) => (
+                <Table.Tr key={r.entry.id} style={{ height: 28 }}>
+                  <Table.Td>
+                    <Text size="xs">{r.lot}</Text>
+                  </Table.Td>
+                  <Table.Td>
+                    <Text size="xs">{r.entry.name}</Text>
+                  </Table.Td>
+                  <Table.Td>
+                    <Text size="xs">{r.entry.sex}</Text>
+                  </Table.Td>
+                  <Table.Td>
+                    <Text size="xs">{r.entry.disciplineCode}</Text>
+                  </Table.Td>
+                  <Table.Td>
+                    <Text size="xs">
+                      {r.entry.assignedWeightCategoryCode ?? "–"}
+                    </Text>
+                  </Table.Td>
+                  <Table.Td>
+                    <Text size="xs">{r.entry.bodyweightKg ?? ""}</Text>
+                  </Table.Td>
+                  <Table.Td />
+                </Table.Tr>
+              ))}
+            </Table.Tbody>
+          </Table>
+        </Stack>
+      ))}
+    </Stack>
+  );
+}
+
+// ─── Medal Count tab ──────────────────────────────────────────────────────────
+
+function MedalCountContent({
+  report,
+  meetName,
+  meetDate,
+}: {
+  report: MedalCountReport;
+  meetName: string;
+  meetDate: string;
+}) {
+  const { t } = useTranslation();
+  const empty = report.byTeam.length === 0 && report.byCountry.length === 0;
+  if (empty) {
+    return (
+      <Text c="dimmed" ta="center" py="xl">
+        {t("print.medalCount.empty")}
+      </Text>
+    );
+  }
+
+  function renderTable(title: string, rows: MedalCountReport["byTeam"]) {
+    if (rows.length === 0) return null;
+    return (
+      <Stack gap="xs">
+        <Text fw={600} size="sm">
+          {title}
+        </Text>
+        <Table withTableBorder withColumnBorders fz="xs" striped>
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>{t("results.place")}</Table.Th>
+              <Table.Th>{title}</Table.Th>
+              <Table.Th>🥇</Table.Th>
+              <Table.Th>🥈</Table.Th>
+              <Table.Th>🥉</Table.Th>
+              <Table.Th>{t("print.medalCount.total")}</Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            {rows.map((r) => (
+              <Table.Tr key={`${title}-${r.label}`}>
+                <Table.Td>
+                  <Text size="xs" fw={600}>
+                    {r.place}
+                  </Text>
+                </Table.Td>
+                <Table.Td>
+                  <Text size="xs">{r.label}</Text>
+                </Table.Td>
+                <Table.Td>
+                  <Text size="xs">{r.gold}</Text>
+                </Table.Td>
+                <Table.Td>
+                  <Text size="xs">{r.silver}</Text>
+                </Table.Td>
+                <Table.Td>
+                  <Text size="xs">{r.bronze}</Text>
+                </Table.Td>
+                <Table.Td>
+                  <Text size="xs" fw={700}>
+                    {r.total}
+                  </Text>
+                </Table.Td>
+              </Table.Tr>
+            ))}
+          </Table.Tbody>
+        </Table>
+      </Stack>
+    );
+  }
+
+  return (
+    <Stack gap="lg">
+      <Stack gap={2}>
+        <Text fw={700} size="md">
+          {t("print.medalCount.title")}
+        </Text>
+        <Text size="xs" c="dimmed">
+          {meetName} · {meetDate}
+        </Text>
+      </Stack>
+      {renderTable(t("print.medalCount.byTeam"), report.byTeam)}
+      {renderTable(t("print.medalCount.byCountry"), report.byCountry)}
+    </Stack>
+  );
+}
+
 function downloadCsv(filename: string, csv: string) {
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
@@ -579,14 +989,46 @@ export function PrintPage() {
     return computeMultirepResults(entries, meet.meet, meetDate);
   }, [meet, entries, meetDate]);
 
+  const teamScores = useMemo<TeamScore[]>(() => {
+    if (!meet) return [];
+    const rows = computeClassicRows(entries, meet.meet, meetDate);
+    return computeTeamScores(rows);
+  }, [meet, entries, meetDate]);
+
+  const records = useMemo(() => {
+    if (!meet) return [];
+    return computeRecords(entries, meet.meet, meetDate);
+  }, [meet, entries, meetDate]);
+
+  const recordCertificates = useMemo<RecordCertificate[]>(
+    () =>
+      buildRecordCertificates(records, {
+        kgUnitLabel: t("print.kg"),
+      }),
+    [records, t],
+  );
+
+  const weighInOrder = useMemo<WeighInOrderGroup[]>(
+    () => buildWeighInOrder(entries),
+    [entries],
+  );
+
+  const medalCount = useMemo<MedalCountReport>(
+    () => buildMedalCountReport(classicGroups, multirepGroups),
+    [classicGroups, multirepGroups],
+  );
+
   const reportRegistry = useMemo(
     () =>
       buildReportRegistry({
         entries,
         classicGroups,
         multirepGroups,
+        teamScores,
+        records,
+        medalCountRowCount: medalCount.byTeam.length + medalCount.byCountry.length,
       }),
-    [entries, classicGroups, multirepGroups],
+    [entries, classicGroups, multirepGroups, teamScores, records, medalCount],
   );
 
   const printEntries = useMemo(
@@ -643,6 +1085,10 @@ export function PrintPage() {
             <Tabs.Tab value="athleteCards">{t("print.athleteCards")}</Tabs.Tab>
             <Tabs.Tab value="blankSheet">{t("print.blankSheet")}</Tabs.Tab>
             <Tabs.Tab value="diplomas">{t("print.diplomas")}</Tabs.Tab>
+            <Tabs.Tab value="teamProtocol">{t("print.team.tab")}</Tabs.Tab>
+            <Tabs.Tab value="recordCerts">{t("print.records.tab")}</Tabs.Tab>
+            <Tabs.Tab value="weighInOrder">{t("print.weighInOrder.tab")}</Tabs.Tab>
+            <Tabs.Tab value="medalCount">{t("print.medalCount.tab")}</Tabs.Tab>
           </Tabs.List>
 
           <Tabs.Panel value="reports" className="print-section">
@@ -671,6 +1117,38 @@ export function PrintPage() {
             <DiplomasContent
               classicGroups={classicGroups}
               multirepGroups={multirepGroups}
+              meetName={meetName}
+              meetDate={meetDate}
+            />
+          </Tabs.Panel>
+
+          <Tabs.Panel value="teamProtocol" className="print-section">
+            <TeamProtocolContent
+              teamScores={teamScores}
+              meetName={meetName}
+              meetDate={meetDate}
+            />
+          </Tabs.Panel>
+
+          <Tabs.Panel value="recordCerts" className="print-section">
+            <RecordCertificatesContent
+              certificates={recordCertificates}
+              meetName={meetName}
+              meetDate={meetDate}
+            />
+          </Tabs.Panel>
+
+          <Tabs.Panel value="weighInOrder" className="print-section">
+            <WeighInOrderContent
+              groups={weighInOrder}
+              meetName={meetName}
+              meetDate={meetDate}
+            />
+          </Tabs.Panel>
+
+          <Tabs.Panel value="medalCount" className="print-section">
+            <MedalCountContent
+              report={medalCount}
               meetName={meetName}
               meetDate={meetDate}
             />
