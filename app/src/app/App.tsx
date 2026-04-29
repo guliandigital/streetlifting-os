@@ -41,6 +41,7 @@ import { MeetSetupPage } from "@pages/meet-setup/MeetSetupPage";
 import { FlightOrderPage } from "@pages/flight-order/FlightOrderPage";
 import { ScoreboardPage } from "@pages/scoreboard/ScoreboardPage";
 import { PrintPage } from "@pages/print/PrintPage";
+import { AwardsCeremonyPage } from "@pages/awards/AwardsCeremonyPage";
 import {
   DisplayBroadcastPage,
   DisplayOrderPage,
@@ -75,6 +76,7 @@ function SidebarNav({ onNavigate }: SidebarNavProps) {
     { to: "/records", label: t("nav.records"), emoji: "🏅", needsMeet: true },
     { to: "/scoreboard", label: t("nav.scoreboard"), emoji: "📺", needsMeet: false },
     { to: "/print", label: t("nav.print"), emoji: "🖨️", needsMeet: true },
+    { to: "/awards", label: t("nav.awards"), emoji: "🏅", needsMeet: true },
   ];
 
   const bottomItems = [
@@ -257,6 +259,14 @@ function AppWithRouter() {
             element={
               <RequireMeet>
                 <PrintPage />
+              </RequireMeet>
+            }
+          />
+          <Route
+            path="/awards"
+            element={
+              <RequireMeet>
+                <AwardsCeremonyPage />
               </RequireMeet>
             }
           />

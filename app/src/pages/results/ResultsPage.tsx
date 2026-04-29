@@ -44,8 +44,7 @@ import type {
 import { computeTeamScores } from "@logic/isf/team-scoring";
 import type { TeamScore } from "@logic/isf/team-scoring";
 import {
-  exportClassicProtocolCsv,
-  exportMultirepProtocolCsv,
+  exportResultsProtocolCsv,
 } from "@logic/isf/csv-export-classic";
 import { ISF_V51_DISCIPLINES } from "@domain/presets";
 
@@ -541,10 +540,12 @@ export function ResultsPage() {
   }, [multirepGroups]);
 
   function handleDownloadCsv() {
-    let csv = exportClassicProtocolCsv(groups, meetName, meetDate);
-    if (hasMultirepDisciplines && multirepGroups.length > 0) {
-      csv += "\n\n" + exportMultirepProtocolCsv(multirepGroups, meetName, meetDate);
-    }
+    const csv = exportResultsProtocolCsv(
+      groups,
+      hasMultirepDisciplines ? multirepGroups : [],
+      meetName,
+      meetDate,
+    );
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");

@@ -22,6 +22,7 @@ import {
   Group,
   Stack,
   Divider,
+  Badge,
 } from "@mantine/core";
 import { useAppSelector } from "@store/index";
 import { selectEntries } from "@store/registration-slice";
@@ -29,6 +30,13 @@ import {
   computeClassicResults,
 } from "@logic/isf/classic-placing";
 import type { ClassicResultGroup } from "@logic/isf/classic-placing";
+import { computeMultirepResults } from "@logic/isf/multirep-placing";
+import type { MultirepResultGroup } from "@logic/isf/multirep-placing";
+import {
+  buildReportRegistry,
+  type ReportRegistryItem,
+} from "@logic/reports/report-registry";
+import { exportOpenPowerliftingCsv } from "@logic/isf/csv-export-classic";
 import type { Entry } from "@domain/models";
 
 // ─── Print CSS ────────────────────────────────────────────────────────────────
@@ -44,10 +52,79 @@ const PRINT_STYLE = `
 
 // ─── Protocol tab ─────────────────────────────────────────────────────────────
 
-function ProtocolContent({ groups }: { groups: ClassicResultGroup[] }) {
+function ReportsRegistryContent({
+  items,
+  onDownloadOpenPowerlifting,
+}: {
+  items: ReportRegistryItem[];
+  onDownloadOpenPowerlifting: () => void;
+}) {
   const { t } = useTranslation();
 
-  if (groups.length === 0) {
+  return (
+    <Table withTableBorder withColumnBorders fz="sm">
+      <Table.Thead>
+        <Table.Tr>
+          <Table.Th>{t("reports.report")}</Table.Th>
+          <Table.Th>{t("reports.scope")}</Table.Th>
+          <Table.Th>{t("reports.format")}</Table.Th>
+          <Table.Th>{t("reports.items")}</Table.Th>
+          <Table.Th>{t("reports.status")}</Table.Th>
+          <Table.Th>{t("reports.action")}</Table.Th>
+        </Table.Tr>
+      </Table.Thead>
+      <Table.Tbody>
+        {items.map((item) => (
+          <Table.Tr key={item.id}>
+            <Table.Td>
+              <Text size="sm" fw={500}>{t(item.labelKey)}</Text>
+            </Table.Td>
+            <Table.Td><Text size="sm">{t(`reports.scopeValue.${item.scope}`)}</Text></Table.Td>
+            <Table.Td><Text size="sm">{t(`reports.formatValue.${item.outputFormat}`)}</Text></Table.Td>
+            <Table.Td><Text size="sm">{item.itemCount}</Text></Table.Td>
+            <Table.Td>
+              <Badge
+                color={
+                  item.status === "ready"
+                    ? "green"
+                    : item.status === "planned"
+                      ? "yellow"
+                      : "gray"
+                }
+                variant="light"
+              >
+                {t(`reports.statusValue.${item.status}`)}
+              </Badge>
+            </Table.Td>
+            <Table.Td>
+              {item.id === "openpowerlifting-export" && (
+                <Button
+                  size="xs"
+                  variant="light"
+                  disabled={item.status !== "ready"}
+                  onClick={onDownloadOpenPowerlifting}
+                >
+                  {t("reports.download")}
+                </Button>
+              )}
+            </Table.Td>
+          </Table.Tr>
+        ))}
+      </Table.Tbody>
+    </Table>
+  );
+}
+
+function ProtocolContent({
+  classicGroups,
+  multirepGroups,
+}: {
+  classicGroups: ClassicResultGroup[];
+  multirepGroups: MultirepResultGroup[];
+}) {
+  const { t } = useTranslation();
+
+  if (classicGroups.length === 0 && multirepGroups.length === 0) {
     return (
       <Text c="dimmed" ta="center" py="xl">
         {t("results.noResults")}
@@ -57,7 +134,7 @@ function ProtocolContent({ groups }: { groups: ClassicResultGroup[] }) {
 
   return (
     <Stack gap="xl">
-      {groups.map((group) => (
+      {classicGroups.map((group) => (
         <Stack gap="xs" key={group.label}>
           <Text fw={700} size="md">
             {group.label}
@@ -110,6 +187,51 @@ function ProtocolContent({ groups }: { groups: ClassicResultGroup[] }) {
           </Table>
         </Stack>
       ))}
+      {multirepGroups.map((group) => (
+        <Stack gap="xs" key={group.label}>
+          <Text fw={700} size="md">
+            {group.label}
+          </Text>
+          <Table withTableBorder withColumnBorders fz="xs" striped>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>{t("results.place")}</Table.Th>
+                <Table.Th>{t("results.name")}</Table.Th>
+                <Table.Th>{t("results.team")}</Table.Th>
+                <Table.Th>{t("results.weightCat")}</Table.Th>
+                <Table.Th>{t("results.bodyweight")}</Table.Th>
+                <Table.Th>{t("multirep.puLoad")}</Table.Th>
+                <Table.Th>{t("multirep.puReps")}</Table.Th>
+                <Table.Th>{t("multirep.diLoad")}</Table.Th>
+                <Table.Th>{t("multirep.diReps")}</Table.Th>
+                <Table.Th>{t("multirep.totalReps")}</Table.Th>
+                <Table.Th>{t("results.coef")}</Table.Th>
+                <Table.Th>{t("results.isfPoints")}</Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {group.rows.map((row) => (
+                <Table.Tr key={row.entry.id}>
+                  <Table.Td>
+                    <Text size="xs">{row.entry.guest ? t("results.guest") : (row.place ?? "–")}</Text>
+                  </Table.Td>
+                  <Table.Td><Text size="xs">{row.entry.name}</Text></Table.Td>
+                  <Table.Td><Text size="xs">{row.entry.team ?? "–"}</Text></Table.Td>
+                  <Table.Td><Text size="xs">{row.resolvedWeightCategoryCode ?? "–"}</Text></Table.Td>
+                  <Table.Td><Text size="xs">{row.entry.bodyweightKg ?? "–"}</Text></Table.Td>
+                  <Table.Td><Text size="xs">{row.presetLoadKgPu ?? "–"}</Text></Table.Td>
+                  <Table.Td><Text size="xs" fw={600}>{row.puReps}</Text></Table.Td>
+                  <Table.Td><Text size="xs">{row.presetLoadKgDi ?? "–"}</Text></Table.Td>
+                  <Table.Td><Text size="xs" fw={600}>{row.diReps}</Text></Table.Td>
+                  <Table.Td><Text size="xs" fw={700}>{row.totalReps}</Text></Table.Td>
+                  <Table.Td><Text size="xs">{row.isfCoefficient.toFixed(3)}</Text></Table.Td>
+                  <Table.Td><Text size="xs">{row.isfFinalPoints.toFixed(2)}</Text></Table.Td>
+                </Table.Tr>
+              ))}
+            </Table.Tbody>
+          </Table>
+        </Stack>
+      ))}
     </Stack>
   );
 }
@@ -118,7 +240,7 @@ function ProtocolContent({ groups }: { groups: ClassicResultGroup[] }) {
 
 function AthleteCardItem({ entry }: { entry: Entry }) {
   const { t } = useTranslation();
-  const attempts = ["R1", "R2", "R3"];
+  const attempts = entry.competitionFormat === "multirep" ? ["MR"] : ["R1", "R2", "R3"];
 
   return (
     <div
@@ -270,12 +392,9 @@ function DiplomaCard({
     >
       {/* Logo + Title */}
       <Group justify="space-between" align="flex-start">
-        <img
-          src="/icon-64.png"
-          alt="logo"
-          style={{ width: 48, height: 48, objectFit: "contain" }}
-          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-        />
+        <Text fw={900} size="xs" c="var(--mantine-color-red-7)">
+          Streetlifting OS
+        </Text>
         <Stack gap={2} align="center" style={{ flex: 1 }}>
           <Text fw={900} size="xl" ta="center" c="var(--mantine-color-red-7)">
             {t("print.diploma")}
@@ -331,14 +450,17 @@ function DiplomaCard({
 }
 
 function DiplomasContent({
-  groups,
+  classicGroups,
+  multirepGroups,
   meetName,
   meetDate,
 }: {
-  groups: ClassicResultGroup[];
+  classicGroups: ClassicResultGroup[];
+  multirepGroups: MultirepResultGroup[];
   meetName: string;
   meetDate: string;
 }) {
+  const { t } = useTranslation();
   const diplomas: Array<{
     place: 1 | 2 | 3;
     athleteName: string;
@@ -347,7 +469,7 @@ function DiplomasContent({
     result: string;
   }> = [];
 
-  for (const group of groups) {
+  for (const group of classicGroups) {
     // Skip absolute group
     if (group.sex === null && group.ageCategoryCode === null) continue;
 
@@ -359,6 +481,20 @@ function DiplomasContent({
           discipline: row.entry.disciplineCode,
           category: group.label,
           result: row.total > 0 ? `${row.total} кг` : "–",
+        });
+      }
+    }
+  }
+
+  for (const group of multirepGroups) {
+    for (const row of group.rows) {
+      if (row.place === 1 || row.place === 2 || row.place === 3) {
+        diplomas.push({
+          place: row.place,
+          athleteName: row.entry.name,
+          discipline: row.entry.disciplineCode,
+          category: group.label,
+          result: row.totalReps > 0 ? `${row.totalReps} ${t("multirep.reps")}` : "–",
         });
       }
     }
@@ -413,6 +549,16 @@ function DiplomasContent({
   );
 }
 
+function downloadCsv(filename: string, csv: string) {
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export function PrintPage() {
@@ -423,15 +569,49 @@ export function PrintPage() {
   const meetDate = meet?.meet.date ?? new Date().toISOString().slice(0, 10);
   const meetName = meet?.meet.name ?? "Meet";
 
-  const groups = useMemo<ClassicResultGroup[]>(() => {
+  const classicGroups = useMemo<ClassicResultGroup[]>(() => {
     if (!meet) return [];
     return computeClassicResults(entries, meet.meet, meetDate);
   }, [meet, entries, meetDate]);
 
-  const classicEntries = useMemo(
-    () => entries.filter((e) => e.competitionFormat === "classic"),
+  const multirepGroups = useMemo<MultirepResultGroup[]>(() => {
+    if (!meet) return [];
+    return computeMultirepResults(entries, meet.meet, meetDate);
+  }, [meet, entries, meetDate]);
+
+  const reportRegistry = useMemo(
+    () =>
+      buildReportRegistry({
+        entries,
+        classicGroups,
+        multirepGroups,
+      }),
+    [entries, classicGroups, multirepGroups],
+  );
+
+  const printEntries = useMemo(
+    () => entries.filter((e) => e.competitionFormat === "classic" || e.competitionFormat === "multirep"),
     [entries],
   );
+
+  function handleDownloadOpenPowerlifting() {
+    if (!meet) return;
+
+    const csv = exportOpenPowerliftingCsv(classicGroups, {
+      meetName,
+      meetDate,
+      federation: meet.meet.federation || "ISF",
+      parentFederation: "ISF",
+      meetCountry: meet.meet.country,
+      meetState: meet.meet.state,
+      sanctioned: "Yes",
+    });
+
+    downloadCsv(
+      `${meetName.replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-|-$/g, "") || "meet"}-openpowerlifting.csv`,
+      csv,
+    );
+  }
 
   return (
     <>
@@ -458,18 +638,29 @@ export function PrintPage() {
 
         <Tabs defaultValue="protocol">
           <Tabs.List mb="md" className="no-print">
+            <Tabs.Tab value="reports">{t("reports.title")}</Tabs.Tab>
             <Tabs.Tab value="protocol">{t("print.protocol")}</Tabs.Tab>
             <Tabs.Tab value="athleteCards">{t("print.athleteCards")}</Tabs.Tab>
             <Tabs.Tab value="blankSheet">{t("print.blankSheet")}</Tabs.Tab>
             <Tabs.Tab value="diplomas">{t("print.diplomas")}</Tabs.Tab>
           </Tabs.List>
 
+          <Tabs.Panel value="reports" className="print-section">
+            <ReportsRegistryContent
+              items={reportRegistry}
+              onDownloadOpenPowerlifting={handleDownloadOpenPowerlifting}
+            />
+          </Tabs.Panel>
+
           <Tabs.Panel value="protocol" className="print-section print-active">
-            <ProtocolContent groups={groups} />
+            <ProtocolContent
+              classicGroups={classicGroups}
+              multirepGroups={multirepGroups}
+            />
           </Tabs.Panel>
 
           <Tabs.Panel value="athleteCards" className="print-section">
-            <AthleteCardsContent entries={classicEntries} />
+            <AthleteCardsContent entries={printEntries} />
           </Tabs.Panel>
 
           <Tabs.Panel value="blankSheet" className="print-section">
@@ -478,7 +669,8 @@ export function PrintPage() {
 
           <Tabs.Panel value="diplomas" className="print-section">
             <DiplomasContent
-              groups={groups}
+              classicGroups={classicGroups}
+              multirepGroups={multirepGroups}
               meetName={meetName}
               meetDate={meetDate}
             />
