@@ -9,6 +9,7 @@ import type { AgeCategoryCode, AgeCategory } from "./age-category";
 import type { Discipline } from "./discipline";
 import type { Division } from "./enums";
 import type { ClassicLoadConfig, MultirepConfig, ScoringFormula } from "./meet-state";
+import type { SportRankStandard } from "./sport-rank";
 import type { WeightCategory } from "./weight-category";
 
 export type RulesPackId = `${string}:${string}`;
@@ -54,4 +55,5 @@ export type RulesPack = RulesPackRef & {
   scoring: {
     mastersMultipliers: Partial<Record<AgeCategoryCode, number>>;
   };
+  sportRankStandards: ReadonlyArray<SportRankStandard>;
 };

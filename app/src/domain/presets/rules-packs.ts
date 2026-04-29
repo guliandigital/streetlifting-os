@@ -56,6 +56,8 @@ export const ISF_V51_RULES_PACK: RulesPack = {
   scoring: {
     mastersMultipliers: Object.fromEntries(ISF_V51_MASTERS_MULTIPLIERS),
   },
+  // Loaded from federation standards data in V2; no fabricated norms here.
+  sportRankStandards: [],
 };
 
 export const BUILTIN_RULES_PACKS: ReadonlyArray<RulesPack> = [

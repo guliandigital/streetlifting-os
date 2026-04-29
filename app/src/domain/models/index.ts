@@ -47,6 +47,12 @@ export type {
   RulesPackRef,
   RulesPackSignature,
 } from "./rules-pack";
+export type {
+  SportRankAchievement,
+  SportRankEvaluationInput,
+  SportRankMetric,
+  SportRankStandard,
+} from "./sport-rank";
 
 export type {
   CalculatedResult,
