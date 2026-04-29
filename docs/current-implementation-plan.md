@@ -5,11 +5,18 @@ Status: canonical implementation roadmap after V1 GA and the PowerTable / PowerG
 
 This document supersedes roadmap sections in historical V1 planning docs when they conflict:
 
-- `docs/tz-v1.md`
-- `docs/openlifter-isf-implementation-blueprint-v2.md`
-- `docs/reference-comparison-v1.md`
+- `docs/tz-v1.md` — historical V1 terms of reference.
+- `docs/openlifter-isf-implementation-blueprint-v2.md` — historical V1 implementation blueprint.
+- `docs/reference-comparison-v1.md` — historical comparison from the V1 planning phase.
 
 Those documents remain useful as requirements and research archives. The active product plan below is the source of truth for what we build next.
+
+For parallel V1.x implementation work, use `docs/integration-contracts-v1.md` as the shared source of truth for domain models, save-file persistence, result calculation, and migration boundaries.
+
+Deployment documentation source of truth:
+
+- `.github/workflows/pages.yml` documents the current GitHub Pages blocker for a private repository on a Free plan.
+- `docs/release-process-v1.md` documents release publishing, updater signing, and the recovery options for restoring the production PWA/Pages deployment.
 
 ## 1. Product direction
 
@@ -59,6 +66,13 @@ Remaining V1.x hardening:
 - Apple Developer ID signing/notarization;
 - real-tournament UAT and bug bash;
 - post-signing installer and updater smoke tests on Windows, macOS, Linux.
+
+Current publication state:
+
+- GitHub Releases remain the production desktop distribution channel.
+- Tauri updater artifacts are signed and published through GitHub Releases.
+- GitHub Pages PWA deployment is intentionally manual-only because the repo is private and GitHub Pages for private repositories requires a paid GitHub plan.
+- Restoring the browser PWA requires one of the options documented in `docs/release-process-v1.md` §7.
 
 ## 3. Lessons from PowerTable and PowerGage
 

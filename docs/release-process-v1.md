@@ -1,8 +1,9 @@
-# Release process — v0.x (V1 client)
+# Release process — V1.x client
 
 Audience: maintainer (currently sole — Гулян / Gulyan Digital).
 Scope: how to cut and publish a public release of Streetlifting OS during the
-V1 sprint phase (0.1.0 → 0.x.y). After 1.0.0 GA this document gets revised.
+V1.x production-hardening phase. This covers GitHub Releases, Tauri updater
+artifacts, Ed25519 updater signing, and deferred OS code-signing.
 
 ---
 
@@ -10,9 +11,8 @@ V1 sprint phase (0.1.0 → 0.x.y). After 1.0.0 GA this document gets revised.
 
 | Version line | Meaning |
 |---|---|
-| `0.X.0` | Sprint completion (Sprint 1 = 0.1.0, Sprint 2 = 0.2.0, …) |
-| `0.X.Y` (Y > 0) | Patch — bug fixes, no new sprint scope |
 | `1.0.0` | V1 General Availability |
+| `1.X.Y` | V1.x hardening — release, signing, UAT, packaging fixes |
 | `2.0.0` | V2 launch (backend, RulesPack, multi-federation) |
 
 Save-file `stateVersion` is independent of the app version. V1 ships
@@ -31,6 +31,11 @@ Before tagging, all of the following must be true:
   - `app/src-tauri/tauri.conf.json` → `"version"`
 - [ ] **`CHANGELOG.md` updated** — new section under `## [X.Y.Z] — YYYY-MM-DD`.
 - [ ] **`docs/installation-v1.md` reviewed** if installer behaviour changed.
+- [ ] **Updater config validates**:
+      ```sh
+      cd app
+      npm run release:validate-updater
+      ```
 - [ ] **All tests green** locally:
       ```sh
       cd app
@@ -58,21 +63,25 @@ Before tagging, all of the following must be true:
       VITE_PUBLIC_BASE=/streetlifting-os/ npm run build
       npx serve dist  # spot-check the offline manifest
       ```
-- [ ] **No uncommitted changes** in `git status`.
+- [ ] **No unrelated uncommitted changes** in `git status`.
+- [ ] **Release secrets are present** in GitHub repository settings:
+  - required now: `TAURI_SIGNING_PRIVATE_KEY`;
+  - optional now: `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` if the key is password-protected;
+  - deferred until OS signing: Apple / Windows / Linux signing secrets in §5.
 
 ---
 
 ## 2. Tagging and pushing
 
 ```sh
-git tag -a v0.X.Y -m "Streetlifting OS v0.X.Y"
+git tag -a v1.X.Y -m "Streetlifting OS v1.X.Y"
 git push origin main
-git push origin v0.X.Y
+git push origin v1.X.Y
 ```
 
 The `v*.*.*` tag triggers `.github/workflows/release.yml` (Windows + macOS
 universal + Linux matrix). Each runner produces its bundle artefacts and
-uploads them to a draft GitHub Release named `Streetlifting OS v0.X.Y`.
+uploads them to a draft GitHub Release named `Streetlifting OS v1.X.Y`.
 
 Build time ≈ 15–25 min wall-clock on free GitHub-hosted runners.
 
@@ -84,11 +93,13 @@ When the workflow finishes:
 
 1. Open the **Releases** page → the new draft.
 2. Confirm the asset list contains:
-   - `Streetlifting OS_0.X.Y_x64-setup.exe` — NSIS installer
-   - `Streetlifting OS_0.X.Y_x64_en-US.msi` — MSI installer
-   - `Streetlifting OS_0.X.Y_universal.dmg` — macOS universal
-   - `Streetlifting OS_0.X.Y_amd64.AppImage` — Linux portable
-   - `streetlifting-os_0.X.Y_amd64.deb` — Debian/Ubuntu
+   - `Streetlifting OS_1.X.Y_x64-setup.exe` — NSIS installer
+   - `Streetlifting OS_1.X.Y_x64_en-US.msi` — MSI installer
+   - `Streetlifting OS_1.X.Y_universal.dmg` — macOS universal
+   - `Streetlifting OS_1.X.Y_amd64.AppImage` — Linux portable
+   - `streetlifting-os_1.X.Y_amd64.deb` — Debian/Ubuntu
+   - `latest.json` — Tauri updater manifest
+   - `.sig` files for updater-capable bundles
 3. Download at least the Windows MSI and verify it installs cleanly on a
    fresh Windows VM (or a colleague's machine).
 4. If you have macOS / Linux access, smoke-test those bundles too.
@@ -103,18 +114,43 @@ When the workflow finishes:
 - [ ] Update `app/README.md` if the install instructions changed.
 - [ ] Announce in the maintainers' channel (Telegram).
 - [ ] Open issues for any regressions found during smoke-tests.
-- [ ] Bump `app/package.json` → `0.X.(Y+1)-dev` on `main` (optional —
+- [ ] Bump `app/package.json` → `1.X.(Y+1)-dev` on `main` (optional —
       tracking only).
 
 ---
 
-## 5. Code-signing — current state and roadmap
+## 5. Secrets, certificates, and signing state
 
-**v0.x ships unsigned binaries.** Users have to bypass SmartScreen / Gatekeeper
-manually (see `docs/installation-v1.md`). Real signing is deferred until the
-project earns enough revenue to justify the certificate cost.
+**Current state in v1.1.1:** Tauri updater artifacts are Ed25519-signed. OS
+installers are still unsigned, so users may have to bypass SmartScreen /
+Gatekeeper manually (see `docs/installation-v1.md`). Real OS code-signing is
+deferred until Windows EV and Apple Developer ID certificates are procured.
 
-### 5.1 Windows — EV code-signing certificate
+### 5.1 Tauri updater — required now
+
+Required GitHub Actions secrets:
+
+- `TAURI_SIGNING_PRIVATE_KEY` — private half of the Tauri/minisign updater
+  keypair. Paste the raw key content; do not base64-wrap it unless Tauri's
+  tooling changes its input contract.
+- `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` — optional. Set only if the private key
+  was generated with a password.
+
+Public material committed to the repo:
+
+- `app/src-tauri/tauri.conf.json` → `plugins.updater.pubkey`.
+- `app/src-tauri/tauri.conf.json` → `plugins.updater.endpoints`.
+
+Never commit:
+
+- the private key file;
+- `.key`, `.pfx`, `.p12`, `.asc`, `.gpg`, `.pgp`, `.jks`, `.keystore`;
+- screenshots or logs containing the private key.
+
+The root `.gitignore` intentionally blocks common private-key and certificate
+extensions, including Tauri/minisign private-key filenames.
+
+### 5.2 Windows — EV code-signing certificate
 
 Cost: ~$300–500 / year. Providers: DigiCert, Sectigo (formerly Comodo),
 GlobalSign. EV certs come on a USB token; "regular" OV certs are cheaper but
@@ -132,7 +168,7 @@ When an EV cert is in place:
 4. Tauri-action picks them up automatically when present
    (the env-vars are pre-wired, currently commented out in `release.yml`).
 
-### 5.2 macOS — Apple Developer ID
+### 5.3 macOS — Apple Developer ID
 
 Cost: $99 / year. Requires Apple Developer Account. Process:
 
@@ -151,7 +187,7 @@ Cost: $99 / year. Requires Apple Developer Account. Process:
 5. Tauri-action signs + notarises automatically when these are present.
 6. First notarisation can take 5–30 min — Apple's queue.
 
-### 5.3 Linux — GPG signature for DEB / AppImage
+### 5.4 Linux — GPG signature for DEB / AppImage
 
 Free. Generate a key once:
 
@@ -169,36 +205,129 @@ Publish the public key in the README and on `streetlifting.app`.
 
 ---
 
-## 6. Auto-updater — deferred to 0.2.0
+## 6. Auto-updater — active in v1.1.1
 
-V0.1.0 does **not** wire `tauri-plugin-updater`. Reasons:
+The updater chain is active:
 
-1. Updater requires an Ed25519 keypair (`tauri signer generate`) — can't
-   generate without Rust tooling on the maintainer's machine yet.
-2. No update server exists (V2 backend territory — D31).
+- `app/src-tauri/tauri.conf.json` has `bundle.createUpdaterArtifacts: true`.
+- `app/src-tauri/tauri.conf.json` has the Ed25519/minisign public key.
+- `app/src-tauri/tauri.conf.json` points at GitHub Releases
+  `latest.json`.
+- `.github/workflows/release.yml` passes `TAURI_SIGNING_PRIVATE_KEY` and
+  `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` to `tauri-action`.
+- `app/src-tauri/src/lib.rs` registers `tauri_plugin_updater`.
+- `app/package.json` includes `@tauri-apps/plugin-updater`.
+- CI runs `npm run release:validate-updater` to catch missing updater config.
 
-When 0.2.0 lands and Rust is installed locally:
+The current endpoint is:
+
+```text
+https://github.com/GulianDigital/streetlifting-os/releases/latest/download/latest.json
+```
+
+This keeps V1 independent of a custom update backend. A future V2 endpoint can
+replace it only after a separate production-deploy decision.
+
+### 6.1 Generate or rotate the updater key
+
+Only do this on a maintainer-controlled machine. Key rotation breaks
+auto-update for users who installed older versions because they trust the old
+public key baked into their app. Those users must reinstall manually.
 
 ```sh
 cd app/src-tauri
-cargo install tauri-cli --version "^2.1"
-cargo tauri signer generate -w ../../../tauri-private-key.txt
-# → prints a public key to stdout. Copy it into tauri.conf.json:
-#   "plugins": { "updater": { "endpoints": [...], "pubkey": "<paste>" } }
-# Add tauri-plugin-updater = "2.0" to Cargo.toml.
-# Register in lib.rs: .plugin(tauri_plugin_updater::Builder::new().build())
-# In TS: import { check } from "@tauri-apps/plugin-updater"; check().catch(() => {});
-# Set GH Actions secret TAURI_SIGNING_PRIVATE_KEY = contents of the file
-# (base64 not required — Tauri reads it raw).
-# NEVER commit tauri-private-key.txt — it's already in .gitignore.
+npx @tauri-apps/cli signer generate -w ~/.tauri/streetlifting-os.key
 ```
 
-Endpoint URL placeholder: `https://updates.streetlifting.app/{{target}}/{{current_version}}`.
-Real backend behind it = V2 work (D31).
+Then:
+
+1. Copy only the printed public key into
+   `app/src-tauri/tauri.conf.json` → `plugins.updater.pubkey`.
+2. Store the private-key file content in the GitHub Actions secret
+   `TAURI_SIGNING_PRIVATE_KEY`.
+3. If a password was used, store it in
+   `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`.
+4. Run:
+   ```sh
+   cd app
+   npm run release:validate-updater
+   ```
+5. Cut a release and verify the draft contains `latest.json` and `.sig`
+   artifacts before publishing.
 
 ---
 
-## 7. Troubleshooting CI builds
+## 7. GitHub Pages / production PWA recovery
+
+Current state: `.github/workflows/pages.yml` is intentionally `workflow_dispatch`
+only. The repository was made private after the v0.1.0 release, and GitHub
+Pages for private repositories requires GitHub Pro / Team / Enterprise. On a
+Free plan, recreating Pages for this private repo fails with:
+
+```text
+422 "Your current plan does not support GitHub Pages for this repository."
+```
+
+Do not restore the `push: branches: [main]` trigger until one of these recovery
+paths is chosen.
+
+### Option A — make the repository public again
+
+Use this if open-source visibility is acceptable and the PWA should stay on
+GitHub Pages at `https://guliandigital.github.io/streetlifting-os/`.
+
+1. Settings → General → Change repository visibility → Public.
+2. Recreate the Pages site once:
+   ```sh
+   gh api -X POST repos/GulianDigital/streetlifting-os/pages -f build_type=workflow
+   ```
+3. In `.github/workflows/pages.yml`, restore:
+   ```yaml
+   on:
+     push:
+       branches: [main]
+     workflow_dispatch: {}
+   ```
+4. Run the workflow manually once and verify the deployed PWA loads with
+   `VITE_PUBLIC_BASE=/streetlifting-os/`.
+5. Update README download/PWA text if the public URL changes.
+
+### Option B — keep private repo and upgrade GitHub plan
+
+Use this if the repo must remain private and GitHub Pages is still the preferred
+hosting path.
+
+1. Upgrade the owner account/org to GitHub Pro, Team, or Enterprise.
+2. Settings → Pages → Source = GitHub Actions.
+3. Run `.github/workflows/pages.yml` manually.
+4. After the first successful deploy, restore the `push` trigger shown in
+   Option A.
+
+### Option C — move production PWA to external static hosting
+
+Use this if GitHub Pages should remain disabled. Recommended target for V1.x is
+Cloudflare Pages or a static bucket behind `streetlifting.app`.
+
+1. Keep `.github/workflows/pages.yml` manual-only or remove it in a dedicated
+   docs/deploy PR.
+2. Add a separate static deploy workflow that builds from `app/` with:
+   ```sh
+   npm ci --no-audit --no-fund
+   npm run icons:generate
+   VITE_PUBLIC_BASE=/ npm run build
+   ```
+3. Publish `app/dist` to the chosen production host.
+4. Point `streetlifting.app` at that host and verify PWA install/offline cache.
+5. Update README, `docs/installation-v1.md`, and release notes with the new
+   browser URL.
+
+The lowest-risk immediate recovery is Option A if the repo can be public.
+The lowest-risk private recovery is Option B because it keeps the existing
+workflow and `/streetlifting-os/` base path unchanged.
+
+---
+
+## 8. Troubleshooting CI builds
 
 ### Linux build fails on `webkit2gtk`
 
@@ -221,7 +350,7 @@ check status manually.
 
 ### Windows MSI demands admin
 
-`tauri.conf.json` → `bundle.windows.nsis.installMode` must be `"perUser"`.
+`tauri.conf.json` → `bundle.windows.nsis.installMode` must be `"currentUser"`.
 The MSI target itself ignores this (MSIs are per-machine by Windows
 convention) — direct users to `Streetlifting OS_X.Y.Z_x64-setup.exe` (NSIS)
 when they don't have admin rights.
@@ -229,22 +358,23 @@ when they don't have admin rights.
 ### `tauri-action` can't find icons
 
 Run `npm run icons:generate` BEFORE `tauri-action` in the workflow.
-On macOS runners also run `npx @tauri-apps/cli icon ../docs/brand/logo-placeholder.svg`
-to generate a real `.icns` (sharp can only fake one).
+On macOS runners also run
+`npx @tauri-apps/cli icon <path-to-vector-logo.svg>` when a production vector
+logo source is available to generate a real `.icns` (sharp can only fake one).
 
 ---
 
-## 8. Manual hot-fix release
+## 9. Manual hot-fix release
 
 For an urgent patch when `main` already contains unrelated WIP:
 
 ```sh
-git checkout v0.X.0
-git checkout -b hotfix/0.X.1
+git checkout v1.X.0
+git checkout -b hotfix/1.X.1
 # … fix …
-git tag v0.X.1
-git push origin hotfix/0.X.1
-git push origin v0.X.1
+git tag v1.X.1
+git push origin hotfix/1.X.1
+git push origin v1.X.1
 ```
 
 The release workflow is keyed on tags, not branches — tagging the hotfix
@@ -252,7 +382,7 @@ branch produces a release as normal. Then merge the hotfix back into `main`.
 
 ---
 
-## 9. Rollback
+## 10. Rollback
 
 GitHub Releases can be unpublished but not un-shipped — once a binary is
 downloaded by even one user it exists in the wild. **Don't release if you're
@@ -260,6 +390,6 @@ not sure.** If a critical regression slips through:
 
 1. Edit the release on GitHub → mark as "pre-release" so it stops being the
    "latest" link.
-2. Add a "⚠ KNOWN BUG — use v0.X.(Y-1)" warning at the top of the release notes.
-3. Cut a hotfix release per §8 ASAP.
+2. Add a "KNOWN BUG — use v1.X.(Y-1)" warning at the top of the release notes.
+3. Cut a hotfix release per §9 ASAP.
 4. Never delete a release outright; users may have bookmarked it.

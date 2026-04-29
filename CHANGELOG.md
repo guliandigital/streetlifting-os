@@ -10,6 +10,14 @@ release will be 1.0.0 once V1 reaches production-ready quality.
 
 ## [Unreleased]
 
+### Documentation
+- Clarified that `docs/current-implementation-plan.md` is the active roadmap,
+  historical planning docs remain archives, and GitHub Pages/PWA publication is
+  blocked while the private repository stays on a GitHub Free plan.
+- Added production PWA recovery options to `docs/release-process-v1.md`:
+  public repo + GitHub Pages, private repo + paid GitHub plan, or external
+  static hosting under `streetlifting.app`.
+
 ### Planned for next minor
 - Code-signing (Windows EV cert + Apple Developer ID — both deferred
   pending D40.4 legal entity decision)
