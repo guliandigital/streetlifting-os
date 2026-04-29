@@ -15,8 +15,8 @@ For parallel V1.x implementation work, use `docs/integration-contracts-v1.md` as
 
 Deployment documentation source of truth:
 
-- `.github/workflows/pages.yml` documents the current GitHub Pages blocker for a private repository on a Free plan.
-- `docs/release-process-v1.md` documents release publishing, updater signing, and the recovery options for restoring the production PWA/Pages deployment.
+- `.github/workflows/pages.yml` is the active production PWA deploy workflow for GitHub Pages.
+- `docs/release-process-v1.md` documents release publishing, updater signing, and Pages recovery/troubleshooting.
 
 ## 1. Product direction
 
@@ -71,8 +71,8 @@ Current publication state:
 
 - GitHub Releases remain the production desktop distribution channel.
 - Tauri updater artifacts are signed and published through GitHub Releases.
-- GitHub Pages PWA deployment is intentionally manual-only because the repo is private and GitHub Pages for private repositories requires a paid GitHub plan.
-- Restoring the browser PWA requires one of the options documented in `docs/release-process-v1.md` §7.
+- GitHub Pages PWA deployment is restored for the now-public repository and runs from `.github/workflows/pages.yml` on every push to `main`.
+- Browser PWA URL: `https://guliandigital.github.io/streetlifting-os/`.
 
 ## 3. Lessons from PowerTable and PowerGage
 

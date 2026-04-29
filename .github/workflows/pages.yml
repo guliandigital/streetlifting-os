@@ -1,19 +1,8 @@
 name: Deploy PWA to GitHub Pages
 
-# DISABLED — the repository was switched from public to private after the
-# v0.1.0 release, and the GitHub Pages site was removed automatically.
-# GitHub Pages requires a paid plan (Pro / Team / Enterprise) for private
-# repositories — on Free, `POST /repos/.../pages` returns:
-#   422 "Your current plan does not support GitHub Pages for this repository."
-#
-# Re-enable when EITHER:
-#   1. The repo is made public again (Settings → General → Change visibility),
-#      then `gh api -X POST repos/<owner>/<repo>/pages -f build_type=workflow`
-#      to re-create the Pages site;
-#   2. The account is upgraded to GitHub Pro or above, and Pages enabled in
-#      Settings → Pages → Source = GitHub Actions.
-# Then restore the `push: branches: [main]` trigger below.
 on:
+  push:
+    branches: [main]
   workflow_dispatch: {}
 
 permissions:
@@ -58,11 +47,9 @@ jobs:
         run: npm run build
 
       - name: Setup Pages
-        # The Pages site was created at v0.1.0 (Settings → Pages → Source =
-        # "GitHub Actions"). Don't try to recreate it on every run — the action
-        # 404s on Get Pages and the GITHUB_TOKEN cannot Create Pages without
-        # repo-admin scope, so the workflow fails. Use `enablement: false`
-        # (the default) to assume the existing config.
+        # The Pages site is provisioned once through the GitHub Pages API
+        # (build_type=workflow). Runtime deploys should only configure the
+        # existing site and upload the current PWA artifact.
         uses: actions/configure-pages@v5
 
       - name: Upload Pages artifact

@@ -257,73 +257,69 @@ Then:
 
 ---
 
-## 7. GitHub Pages / production PWA recovery
+## 7. GitHub Pages / production PWA
 
-Current state: `.github/workflows/pages.yml` is intentionally `workflow_dispatch`
-only. The repository was made private after the v0.1.0 release, and GitHub
-Pages for private repositories requires GitHub Pro / Team / Enterprise. On a
-Free plan, recreating Pages for this private repo fails with:
+Current state: GitHub Pages is active again for the now-public repository.
+The production PWA URL is:
 
 ```text
-422 "Your current plan does not support GitHub Pages for this repository."
+https://guliandigital.github.io/streetlifting-os/
 ```
 
-Do not restore the `push: branches: [main]` trigger until one of these recovery
-paths is chosen.
+`.github/workflows/pages.yml` deploys automatically on every push to `main`
+and can also be run manually with `workflow_dispatch`.
 
-### Option A — make the repository public again
+Important constraints:
 
-Use this if open-source visibility is acceptable and the PWA should stay on
-GitHub Pages at `https://guliandigital.github.io/streetlifting-os/`.
+- GitHub Pages for private repositories requires GitHub Pro / Team /
+  Enterprise. On a Free plan, a private repo returns:
+  ```text
+  422 "Your current plan does not support GitHub Pages for this repository."
+  ```
+- If the repository is made private again on a Free plan, Pages will stop
+  working and the browser PWA must move to an external static host or the
+  account must be upgraded.
+- The GitHub Pages build must keep `VITE_PUBLIC_BASE=/streetlifting-os/`
+  because the project site is served under the repository path.
 
-1. Settings → General → Change repository visibility → Public.
-2. Recreate the Pages site once:
-   ```sh
-   gh api -X POST repos/GulianDigital/streetlifting-os/pages -f build_type=workflow
-   ```
-3. In `.github/workflows/pages.yml`, restore:
-   ```yaml
-   on:
-     push:
-       branches: [main]
-     workflow_dispatch: {}
-   ```
-4. Run the workflow manually once and verify the deployed PWA loads with
-   `VITE_PUBLIC_BASE=/streetlifting-os/`.
-5. Update README download/PWA text if the public URL changes.
+### 7.1 Provisioning / recovery
 
-### Option B — keep private repo and upgrade GitHub plan
+If the Pages site is ever deleted, recreate it once while the repository is
+public or on a paid plan:
 
-Use this if the repo must remain private and GitHub Pages is still the preferred
-hosting path.
+```sh
+gh api -X POST repos/GulianDigital/streetlifting-os/pages -f build_type=workflow
+```
 
-1. Upgrade the owner account/org to GitHub Pro, Team, or Enterprise.
-2. Settings → Pages → Source = GitHub Actions.
-3. Run `.github/workflows/pages.yml` manually.
-4. After the first successful deploy, restore the `push` trigger shown in
-   Option A.
+Then run:
 
-### Option C — move production PWA to external static hosting
+```sh
+gh workflow run pages.yml --ref main
+```
 
-Use this if GitHub Pages should remain disabled. Recommended target for V1.x is
-Cloudflare Pages or a static bucket behind `streetlifting.app`.
+Verify:
 
-1. Keep `.github/workflows/pages.yml` manual-only or remove it in a dedicated
-   docs/deploy PR.
-2. Add a separate static deploy workflow that builds from `app/` with:
-   ```sh
-   npm ci --no-audit --no-fund
-   npm run icons:generate
-   VITE_PUBLIC_BASE=/ npm run build
-   ```
-3. Publish `app/dist` to the chosen production host.
-4. Point `streetlifting.app` at that host and verify PWA install/offline cache.
-5. Update README, `docs/installation-v1.md`, and release notes with the new
-   browser URL.
+1. The `Deploy PWA to GitHub Pages` workflow finishes successfully.
+2. `https://guliandigital.github.io/streetlifting-os/` returns HTTP 200.
+3. The app loads nested routes and the PWA manifest/service worker is fetched
+   from `/streetlifting-os/`.
 
-The lowest-risk immediate recovery is Option A if the repo can be public.
-The lowest-risk private recovery is Option B because it keeps the existing
-workflow and `/streetlifting-os/` base path unchanged.
+### 7.2 Private-repo alternative
+
+If the repository must become private again without upgrading GitHub, do not
+keep GitHub Pages as the production PWA channel. Move the browser build to an
+external static host, such as Cloudflare Pages or the existing
+`streetlifting.app` nginx host:
+
+```sh
+cd app
+npm ci --no-audit --no-fund
+npm run icons:generate
+VITE_PUBLIC_BASE=/ npm run build
+```
+
+Publish `app/dist` to the chosen static host and update README,
+`docs/installation-v1.md`, and release notes with the new browser URL.
 
 ---
 

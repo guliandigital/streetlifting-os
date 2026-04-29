@@ -68,10 +68,10 @@ Each release builds installers for all three platforms — see the [latest relea
 - **macOS** — universal DMG (Intel + Apple Silicon)
 - **Linux** — AppImage / DEB
 
-Browser PWA publication is currently blocked while the repository is private on
-a GitHub Free plan. The historical Pages URL was
-<https://guliandigital.github.io/streetlifting-os/> and will work offline once
-restored and loaded. Until Pages is restored, use the desktop release bundles.
+Browser PWA publication is restored through GitHub Pages:
+<https://guliandigital.github.io/streetlifting-os/>. The PWA is a browser
+fallback for operators who cannot install the desktop bundle; once opened, it
+can work offline from the service-worker cache.
 
 Per-OS install instructions, including SmartScreen / Gatekeeper bypass for the (currently unsigned) binaries: [docs/installation-v1.md](docs/installation-v1.md).
 

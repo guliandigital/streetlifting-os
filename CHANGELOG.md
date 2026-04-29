@@ -11,12 +11,14 @@ release will be 1.0.0 once V1 reaches production-ready quality.
 ## [Unreleased]
 
 ### Documentation
+- Restored GitHub Pages production PWA deployment after making the repository
+  public again; `.github/workflows/pages.yml` now deploys on every push to
+  `main`.
 - Clarified that `docs/current-implementation-plan.md` is the active roadmap,
   historical planning docs remain archives, and GitHub Pages/PWA publication is
-  blocked while the private repository stays on a GitHub Free plan.
-- Added production PWA recovery options to `docs/release-process-v1.md`:
-  public repo + GitHub Pages, private repo + paid GitHub plan, or external
-  static hosting under `streetlifting.app`.
+  active for the public repository.
+- Updated `docs/release-process-v1.md` with the active Pages state and the
+  fallback path if the repository must become private again.
 
 ### Planned for next minor
 - Code-signing (Windows EV cert + Apple Developer ID — both deferred
