@@ -12,6 +12,55 @@ release will be 1.0.0 once V1 reaches production-ready quality.
 
 ---
 
+## [1.3.0] — 2026-04-30
+
+V1.x pre-UAT additions, anchored to the role-driven, full-replacement-for-PowerTable
+positioning framing in [`docs/strategy/positioning-vs-powertable.md`](docs/strategy/positioning-vs-powertable.md).
+Goal: a meet client honest enough to survive a real ISF tournament before the V2
+backend phase begins.
+
+### Added
+- **Tournament readiness checklist at `/readiness`** — pre-flight gate before
+  judging starts. Twelve structured checks (meet metadata, rules pack,
+  categories, plates, entries, weigh-ins, lots, save-file). Severity split
+  into blockers vs warnings; `Start judging` is disabled until every blocker
+  clears. Each check carries a one-line hint and a direct `Fix` button into
+  the page that resolves it.
+- **Team protocol print form** — leverages existing `computeTeamScores`,
+  prints place / team / total points / scoring contributors / total in team.
+- **Record certificates print form** — A5 certificate per `CompetitionRecord`
+  set during the meet, with athlete name, discipline, exercise, category, and
+  formatted result.
+- **Weigh-in order printout** — secretariat queue grouped by
+  (day × platform × flight), with lot, name, sex, discipline, weight category,
+  bodyweight, and a signature column.
+- **Medal-count summary** — by team and by country, with podium tally
+  (gold / silver / bronze / total) and stable tie + vacancy place assignment.
+
+### Changed
+- `report-registry` now exposes the four new reports alongside the existing
+  registry entries, with item counts derived from team scores, new records,
+  registered entries, and medal-count rows respectively. The full V2 report
+  center (filters, federation templates, multi-language outputs) remains a
+  V2 deliverable.
+- Sidebar navigation gains a `✅ Readiness` entry positioned between
+  `Flight Order` and `Judging`.
+
+### Documentation
+- Added [`docs/strategy/positioning-vs-powertable.md`](docs/strategy/positioning-vs-powertable.md)
+  capturing the role-driven framing, what we deliberately do not copy from
+  PowerTable / PowerGage, and the V1.x backlog that flows from it.
+- Updated [`docs/current-implementation-plan.md`](docs/current-implementation-plan.md)
+  V1.x backlog with the readiness checklist and the four new reports as
+  UAT-blockers, and reordered the immediate-next steps.
+
+### Tests
+- Added 28 vitest cases across four new test files
+  (`readiness-checklist`, `medal-count`, `weigh-in-order`,
+  `record-certificates`). Full suite: 488 passing across 33 files.
+
+---
+
 ## [1.2.0] — 2026-04-30
 
 ### Added
