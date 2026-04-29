@@ -98,6 +98,31 @@ jobs:
         working-directory: app
         run: npx @tauri-apps/cli icon ../docs/brand/logo-placeholder.svg
 
+      - name: Normalize updater signing key
+        shell: bash
+        env:
+          INPUT_TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+        run: |
+          python - <<'PY'
+          import base64
+          import os
+
+          raw = os.environ.get("INPUT_TAURI_SIGNING_PRIVATE_KEY", "")
+          value = raw
+
+          try:
+              decoded = base64.b64decode(raw, validate=True).decode("utf-8")
+              if decoded.startswith("untrusted comment:") and "secret key" in decoded.splitlines()[0]:
+                  value = decoded
+          except Exception:
+              pass
+
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env_file:
+              env_file.write("TAURI_SIGNING_PRIVATE_KEY<<__TAURI_SIGNING_KEY__\n")
+              env_file.write(value.rstrip("\n"))
+              env_file.write("\n__TAURI_SIGNING_KEY__\n")
+          PY
+
       - name: Build Tauri app + create draft release
         uses: tauri-apps/tauri-action@v0
         env:
@@ -108,7 +133,7 @@ jobs:
           # private key matching the `pubkey` baked into tauri.conf.json.
           # Without these env vars the build fails with "minisign: no
           # signing key configured".
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ env.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
           # ─── OS code-signing (deferred — costs $$ + legal entity per D40.4) ──
           # macOS code-signing — Apple Developer ID required ($99/yr).

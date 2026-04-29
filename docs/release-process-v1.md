@@ -132,8 +132,9 @@ deferred until Windows EV and Apple Developer ID certificates are procured.
 Required GitHub Actions secrets:
 
 - `TAURI_SIGNING_PRIVATE_KEY` — private half of the Tauri/minisign updater
-  keypair. Paste the raw key content; do not base64-wrap it unless Tauri's
-  tooling changes its input contract.
+  keypair. Raw key content is preferred. For compatibility with the current
+  maintainer workstation backup format, `release.yml` also accepts a base64
+  wrapper if it decodes to a minisign/rsign secret key.
 - `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` — optional. Set only if the private key
   was generated with a password.
 
