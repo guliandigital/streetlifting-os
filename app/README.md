@@ -109,7 +109,7 @@ Header aliases tolerated: case-insensitive, snake_case (e.g. `Bodyweight_Kg` →
 ```bash
 cd app
 npm install
-npm run icons:generate   # placeholder PNG/ICO/ICNS from docs/brand/logo-placeholder.svg
+npm run icons:generate   # refresh PNG/ICO assets from ../logo
 
 # Web / PWA mode
 npm run dev              # Vite dev server (browser at http://127.0.0.1:1420)
@@ -123,14 +123,14 @@ npm run tauri:dev        # Live-reload desktop dev window
 npm run tauri:build      # Per-OS installer in src-tauri/target/release/bundle/
 ```
 
-The Tauri CLI also produces a real macOS `.icns` (sharp's stub is a renamed PNG):
+The Tauri CLI can produce a production macOS `.icns` when a true vector source is available:
 
 ```bash
 cd app
-npx @tauri-apps/cli icon ../docs/brand/logo-placeholder.svg
+npx @tauri-apps/cli icon <path-to-vector-logo.svg>
 ```
 
-Run that on a macOS host before `tauri:build` if you're cutting a Mac release locally. The Release CI workflow does it automatically.
+The committed raster logo pack is used by `npm run icons:generate`. Run the Tauri CLI command only after preparing a true vector source for a Mac release.
 
 ### Release process
 

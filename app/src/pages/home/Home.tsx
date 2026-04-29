@@ -21,11 +21,11 @@ import {
   SimpleGrid,
   Progress,
   List,
-  Badge,
   Divider,
 } from "@mantine/core";
 import { useTranslation } from "react-i18next";
 
+import { BrandLogo } from "@components/BrandLogo";
 import { useAppDispatch, useAppSelector } from "@store/index";
 import {
   newMeet as newMeetAction,
@@ -213,13 +213,7 @@ export function Home() {
         {!meet && (
           <Card withBorder shadow="sm" p="xl">
             <Stack gap="md" align="center">
-              {/* ISF logo placeholder */}
-              <Badge color="red" size="xl" variant="filled" radius="sm">
-                ISF v5.1
-              </Badge>
-              <Title order={2} ta="center">
-                Streetlifting OS
-              </Title>
+              <BrandLogo variant="vertical" h={104} maw={280} />
               <Text c="dimmed" ta="center">
                 {t("app.tagline")}
               </Text>

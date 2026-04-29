@@ -48,6 +48,7 @@ import {
   DisplayPlatesPage,
   DisplayTimerPage,
 } from "@pages/display/DisplayPages";
+import { BrandLogo } from "@components/BrandLogo";
 import { RequireMeet } from "@components/RequireMeet";
 import { useAppSelector } from "@store/index";
 
@@ -128,7 +129,7 @@ function SidebarNav({ onNavigate }: SidebarNavProps) {
 // ─── App shell ────────────────────────────────────────────────────────────────
 
 function AppWithRouter() {
-  const { t, i18n } = useTranslation();
+  const { i18n } = useTranslation();
   const [opened, setOpened] = useState(false);
   const location = useLocation();
 
@@ -160,9 +161,8 @@ function AppWithRouter() {
               hiddenFrom="sm"
               size="sm"
             />
-            <Text fw={700} size="lg">
-              {t("app.name")}
-            </Text>
+            <BrandLogo h={28} w={174} visibleFrom="xs" />
+            <BrandLogo h={30} w={30} variant="symbol" hiddenFrom="xs" />
             <Badge color="red" variant="light">
               ISF v5.1
             </Badge>

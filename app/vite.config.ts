@@ -23,13 +23,22 @@ export default defineConfig(() => ({
     VitePWA({
       disable: isTauriBuild,
       registerType: "autoUpdate",
-      includeAssets: ["favicon.ico", "apple-touch-icon.png", "icon.svg"],
+      includeAssets: [
+        "favicon.ico",
+        "apple-touch-icon.png",
+        "icon-64.png",
+        "brand/logo-horizontal-dark.png",
+        "brand/logo-horizontal-light.png",
+        "brand/logo-symbol-dark.png",
+        "brand/logo-symbol-light.png",
+        "brand/open-graph-white.png",
+      ],
       manifest: {
         name: "Streetlifting OS",
         short_name: "Streetlifting OS",
         description:
           "Offline-first ISF Streetlifting & Calisthenics meet client",
-        theme_color: "#C8102E",
+        theme_color: "#05090B",
         background_color: "#FFFFFF",
         display: "standalone",
         start_url: ".",
