@@ -10,7 +10,20 @@ release will be 1.0.0 once V1 reaches production-ready quality.
 
 ## [Unreleased]
 
+---
+
+## [1.2.0] — 2026-04-30
+
 ### Added
+- Added the Streetlifting OS brand/logo asset pack across the browser PWA,
+  generated public icons, and Tauri desktop bundle icons.
+- Added the Athlete/Nomination split foundation so athlete identity can stay
+  separate from per-meet entry data before backend onboarding.
+- Added RulesPack loading and per-meet pinning foundations with compatibility
+  checks for future federation-specific rules.
+- Added duplicate-resolution import planning for safer registration imports.
+- Added sport-rank computation foundations.
+- Added stream/group scheduling and duration estimation foundations.
 - Added `npm run pwa:validate` to verify the generated browser PWA artifact
   before CI or GitHub Pages publish it.
 
@@ -20,6 +33,8 @@ release will be 1.0.0 once V1 reaches production-ready quality.
   the expected `/streetlifting-os/` base-path asset references.
 
 ### Documentation
+- Updated public production PWA references to `https://streetlifting.app/`,
+  with GitHub Pages retained as the public fallback channel.
 - Restored GitHub Pages production PWA deployment after making the repository
   public again; `.github/workflows/pages.yml` now deploys on every push to
   `main`.
@@ -491,7 +506,8 @@ First public release. Sprint 1 of the V1 client (registration + weigh-in).
 - Save-file format is versioned independently via `stateVersion`; a major
   app-version bump does not necessarily change `stateVersion`.
 
-[Unreleased]: https://github.com/GulianDigital/streetlifting-os/compare/v1.1.1...HEAD
+[Unreleased]: https://github.com/GulianDigital/streetlifting-os/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/GulianDigital/streetlifting-os/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/GulianDigital/streetlifting-os/compare/v1.0.0...v1.1.1
 [1.0.0]: https://github.com/GulianDigital/streetlifting-os/compare/v0.5.0...v1.0.0
 [0.5.0]: https://github.com/GulianDigital/streetlifting-os/compare/v0.4.0...v0.5.0

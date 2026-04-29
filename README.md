@@ -4,7 +4,7 @@ Open-source, offline-first software for running streetlifting & calisthenics mee
 
 → **<https://streetlifting.app>** — landing, downloads, project page
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) [![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20macOS%20%7C%20Linux-blue)](#downloads) [![Tests](https://img.shields.io/badge/tests-436%20passing-brightgreen)](#status) [![Version](https://img.shields.io/badge/version-1.1.1-blue)](CHANGELOG.md)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) [![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20macOS%20%7C%20Linux-blue)](#downloads) [![Tests](https://img.shields.io/badge/tests-460%20passing-brightgreen)](#status) [![Version](https://img.shields.io/badge/version-1.2.0-blue)](CHANGELOG.md)
 
 ---
 
@@ -38,12 +38,13 @@ Existing commercial tools (PowerTable, PowerGage) are Russian-market 1С product
 
 ## Status
 
-**v1.1.1** — current stable release. V1 GA shipped in **1.0.0** (2026-04-28); follow-up **1.1.x** releases hardened distribution and operations. **436 unit tests** pass across 25 test files. TypeScript strict, ESLint clean. The full meet workflow works end-to-end on Windows / macOS / Linux.
+**v1.2.0** — current stable release. V1 GA shipped in **1.0.0** (2026-04-28); follow-up **1.1.x** releases hardened distribution and operations, and **1.2.0** starts the V2 foundation work. **460 unit tests** pass across 29 test files. TypeScript strict, ESLint clean. The full meet workflow works end-to-end on Windows / macOS / Linux.
 
 Recent milestones:
 - **1.0.0** — full Classic + Multirep meet workflow, records screen, real Classic forecast
 - **1.1.0** — team scoring, public scoreboard, print forms
 - **1.1.1** — auto-updater signing chain activated (`tauri.conf.json` pubkey + updater artifacts)
+- **1.2.0** — brand assets, Athlete/Nomination split, RulesPack pinning, import duplicate-resolution planning, sport-rank and scheduling foundations
 
 Remaining V1.x gates before declaring the product fully production-hardened:
 - Code-signing (Windows EV cert + Apple Developer ID) — eliminates SmartScreen / Gatekeeper warnings on install
@@ -68,7 +69,8 @@ Each release builds installers for all three platforms — see the [latest relea
 - **macOS** — universal DMG (Intel + Apple Silicon)
 - **Linux** — AppImage / DEB
 
-Browser PWA publication is restored through GitHub Pages:
+Browser PWA production is available at <https://streetlifting.app/>. GitHub
+Pages remains available as a public fallback at
 <https://guliandigital.github.io/streetlifting-os/>. The PWA is a browser
 fallback for operators who cannot install the desktop bundle; once opened, it
 can work offline from the service-worker cache.

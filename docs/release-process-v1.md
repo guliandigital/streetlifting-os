@@ -258,17 +258,23 @@ Then:
 
 ---
 
-## 7. GitHub Pages / production PWA
+## 7. Production PWA
 
-Current state: GitHub Pages is active again for the now-public repository.
-The production PWA URL is:
+Current state: the production PWA is published to the external nginx host:
+
+```text
+https://streetlifting.app/
+```
+
+GitHub Pages is also active for the now-public repository and remains the
+public fallback URL:
 
 ```text
 https://guliandigital.github.io/streetlifting-os/
 ```
 
-`.github/workflows/pages.yml` deploys automatically on every push to `main`
-and can also be run manually with `workflow_dispatch`.
+`.github/workflows/pages.yml` deploys the fallback automatically on every push
+to `main` and can also be run manually with `workflow_dispatch`.
 
 Important constraints:
 
@@ -278,12 +284,12 @@ Important constraints:
   422 "Your current plan does not support GitHub Pages for this repository."
   ```
 - If the repository is made private again on a Free plan, Pages will stop
-  working and the browser PWA must move to an external static host or the
-  account must be upgraded.
+  working. Keep `https://streetlifting.app/` as the production PWA channel or
+  upgrade the GitHub account.
 - The GitHub Pages build must keep `VITE_PUBLIC_BASE=/streetlifting-os/`
   because the project site is served under the repository path.
 
-### 7.1 Provisioning / recovery
+### 7.1 GitHub Pages provisioning / recovery
 
 If the Pages site is ever deleted, recreate it once while the repository is
 public or on a paid plan:
@@ -311,12 +317,10 @@ service worker files, app assets, or manifest icons are missing or if the
 artifact uses root-relative `/assets/` paths while deploying under
 `/streetlifting-os/`.
 
-### 7.2 Private-repo alternative
+### 7.2 streetlifting.app nginx publish
 
-If the repository must become private again without upgrading GitHub, do not
-keep GitHub Pages as the production PWA channel. Move the browser build to an
-external static host, such as Cloudflare Pages or the existing
-`streetlifting.app` nginx host:
+Build the production browser artifact with a root base before publishing it to
+the `streetlifting.app` nginx host:
 
 ```sh
 cd app

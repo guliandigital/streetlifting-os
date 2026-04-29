@@ -153,7 +153,7 @@ Save-files default to `~/.local/share/Streetlifting OS/meets/`.
 
 If you can't install software (locked-down work laptop, kiosk mode, etc.):
 
-1. Open <https://guliandigital.github.io/streetlifting-os/> in
+1. Open <https://streetlifting.app/> in
    **Chrome / Edge / Firefox** (Yandex.Browser blocks `localhost` via
    Protect; the hosted PWA works fine in all major browsers).
 2. (Optional) Install as a PWA — in Chrome, an install prompt appears in
