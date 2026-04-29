@@ -13,6 +13,7 @@
 import { promises as fs } from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
+import sharp from "sharp";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -36,6 +37,11 @@ async function ensureDir(dir: string): Promise<void> {
 
 async function copyAsset(from: string, to: string): Promise<void> {
   await fs.copyFile(from, to);
+  console.log("Wrote", path.relative(REPO_ROOT, to));
+}
+
+async function writeRgbaPng(from: string, to: string): Promise<void> {
+  await sharp(from).ensureAlpha().png({ colorType: 6 }).toFile(to);
   console.log("Wrote", path.relative(REPO_ROOT, to));
 }
 
@@ -81,23 +87,23 @@ async function main(): Promise<void> {
   );
 
   // Tauri Linux PNGs
-  await copyAsset(
+  await writeRgbaPng(
     path.join(FAVICON_DIR, "favicon_light_on_black_32x32.png"),
     path.join(TAURI_ICONS, "32x32.png"),
   );
-  await copyAsset(
+  await writeRgbaPng(
     path.join(FAVICON_DIR, "favicon_light_on_black_128x128.png"),
     path.join(TAURI_ICONS, "128x128.png"),
   );
-  await copyAsset(
+  await writeRgbaPng(
     path.join(FAVICON_DIR, "favicon_light_on_black_256x256.png"),
     path.join(TAURI_ICONS, "128x128@2x.png"),
   );
-  await copyAsset(
+  await writeRgbaPng(
     path.join(FAVICON_DIR, "favicon_light_on_black_256x256.png"),
     path.join(TAURI_ICONS, "256x256.png"),
   );
-  await copyAsset(
+  await writeRgbaPng(
     path.join(FAVICON_DIR, "favicon_light_on_black_512x512.png"),
     path.join(TAURI_ICONS, "512x512.png"),
   );
@@ -108,7 +114,7 @@ async function main(): Promise<void> {
     path.join(TAURI_ICONS, "icon.ico"),
   );
 
-  await copyAsset(
+  await writeRgbaPng(
     path.join(FAVICON_DIR, "favicon_light_on_black_512x512.png"),
     path.join(TAURI_ICONS, "icon.icns"),
   );
