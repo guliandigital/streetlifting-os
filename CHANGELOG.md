@@ -10,6 +10,42 @@ release will be 1.0.0 once V1 reaches production-ready quality.
 
 ## [Unreleased]
 
+### Added
+- **Schedule export — print + CSV download.** New buttons on the
+  `/schedule` page give federations both paper run-of-show (the
+  estimation-config card is hidden in print, day-platform-stream cards
+  remain) and a machine-readable CSV (one row per attempt-group with
+  day / platform / flight / discipline / exercise / format / athlete
+  count / estimated seconds + human duration). Pure-logic exporter
+  covered by 6 new vitest cases.
+- **Awards ceremony auto-advance interval is configurable.** The
+  hardcoded 6 s pace is now a `NumberInput` next to the Voice
+  announcer toggle, clamped to [2 s, 60 s]. Operators running long
+  ceremonies (lots of categories) can stretch the interval; quick
+  ones can speed it up.
+- **Awards keyboard shortcuts: `Home` / `End`** jump to first /
+  last award. Existing `←` / `→` / `Space` / `F` / `Esc` continue to
+  work. The keydown handler now ignores keys while focus is in an
+  editable control, so typing into the new interval input does not
+  accidentally fire navigation.
+- **About page refreshed for v1.4.0.** New "What's new" card lists
+  the seven highlights of the bridge release; keyboard shortcuts
+  table is split into Judging + Awards ceremony sections; version
+  badge dynamically reflects `APP_RELEASE_VERSION`; release date
+  badge added.
+
+### Fixed
+- **Single source of truth for `APP_RELEASE_VERSION`.** Three
+  files held independently-drifting copies of the version constant
+  (`AboutPage.tsx="0.5.0"`, `Home.tsx="0.5.0"`, `App.tsx="1.4.0"`,
+  `persistence/version.ts="1.1.0"`). The persistence module wins —
+  every consumer now imports `APP_RELEASE_VERSION` from
+  `@/persistence`, including the test fixture for the save-file
+  codec round-trip. Side effect of the bug: new save-files created
+  on v1.2/v1.3/v1.4 desktop builds were tagged `releaseVersion:
+  "1.1.0"` because the codec read the stale persistence constant;
+  now they correctly tag the running build.
+
 ---
 
 ## [1.4.0] — 2026-04-30

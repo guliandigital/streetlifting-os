@@ -36,10 +36,9 @@ import {
   saveToFile,
   loadFromFile,
   SaveFileDecodeError,
+  APP_RELEASE_VERSION,
 } from "@/persistence";
 import { countWeighedIn, countAttemptsDone, countAttemptsTotal } from "./home-stats";
-
-const APP_RELEASE_VERSION = "0.5.0";
 
 declare global {
   interface Window {

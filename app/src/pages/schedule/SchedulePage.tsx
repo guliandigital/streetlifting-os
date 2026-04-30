@@ -41,7 +41,27 @@ import {
   formatDurationCompact,
   type DurationLocale,
 } from "@logic/isf/duration-format";
+import { exportSchedulePlanCsv } from "@logic/reports/csv-export-schedule";
 import type { AttemptGroup, ScheduleStream } from "@domain/models";
+
+const PRINT_STYLE = `
+.print-only { display: none; }
+@media print {
+  .no-print { display: none !important; }
+  .print-only { display: block !important; }
+  @page { margin: 12mm; }
+}
+`;
+
+function downloadCsv(filename: string, csv: string): void {
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 type StreamWithGroups = {
   stream: ScheduleStream;
@@ -112,15 +132,53 @@ export function SchedulePage() {
     ? formatDurationCompact(plan.totalEstimatedDurationSec, locale)
     : "—";
 
+  function meetSlug(): string {
+    const name = meet?.meet.name ?? "meet";
+    return name.replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-|-$/g, "") || "meet";
+  }
+
+  function handleDownloadCsv(): void {
+    if (!plan) return;
+    const csv = exportSchedulePlanCsv(plan);
+    downloadCsv(`${meetSlug()}-schedule.csv`, csv);
+  }
+
   return (
-    <Container size="xl" py="md">
-      <Stack gap="lg">
-        <Stack gap={4}>
+    <>
+      <style>{PRINT_STYLE}</style>
+      <Container size="xl" py="md">
+        <Stack gap="lg">
+        <Group justify="space-between" align="flex-start" className="no-print">
+          <Stack gap={4}>
+            <Title order={2}>{t("schedule.title")}</Title>
+            <Text size="sm" c="dimmed">
+              {t("schedule.subtitle")}
+            </Text>
+          </Stack>
+          <Group gap="sm">
+            <Button
+              variant="default"
+              size="sm"
+              onClick={handleDownloadCsv}
+              disabled={!plan || plan.streams.length === 0}
+            >
+              {t("schedule.downloadCsv")}
+            </Button>
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => window.print()}
+              disabled={!plan || plan.streams.length === 0}
+            >
+              {t("schedule.print")}
+            </Button>
+          </Group>
+        </Group>
+
+        <div className="print-only">
           <Title order={2}>{t("schedule.title")}</Title>
-          <Text size="sm" c="dimmed">
-            {t("schedule.subtitle")}
-          </Text>
-        </Stack>
+          <Text size="sm">{meet.meet.name} · {meet.meet.date}</Text>
+        </div>
 
         <Card withBorder padding="md">
           <Group justify="space-between">
@@ -146,7 +204,7 @@ export function SchedulePage() {
           </Group>
         </Card>
 
-        <Card withBorder padding="md">
+        <Card withBorder padding="md" className="no-print">
           <Stack gap="sm">
             <Text fw={600} size="sm">
               {t("schedule.estimationConfig")}
@@ -317,7 +375,8 @@ export function SchedulePage() {
               ))}
           </Stack>
         )}
-      </Stack>
-    </Container>
+        </Stack>
+      </Container>
+    </>
   );
 }

@@ -10,12 +10,13 @@ import {
   ISF_V51_MULTIREP_PRESETS,
   ISF_V51_RULES_PACK_REF,
 } from "@domain/presets";
+import { APP_RELEASE_VERSION } from "@/persistence";
 
 export function buildEmptyV2SaveFile(): SaveFile {
   return {
     versions: {
       stateVersion: "4",
-      releaseVersion: "1.1.0",
+      releaseVersion: APP_RELEASE_VERSION,
     },
     meet: {
       name: "Test Meet",
@@ -73,7 +74,7 @@ export function buildSyntheticV3SaveFile(): unknown {
     ...current,
     versions: {
       stateVersion: "3",
-      releaseVersion: "1.1.0",
+      releaseVersion: APP_RELEASE_VERSION,
     },
     meet: meetWithoutRulesPack,
   };
@@ -89,7 +90,7 @@ export function buildSyntheticV2SaveFile(): unknown {
     ...current,
     versions: {
       stateVersion: "2",
-      releaseVersion: "1.1.0",
+      releaseVersion: APP_RELEASE_VERSION,
     },
     registration: {
       entries: [

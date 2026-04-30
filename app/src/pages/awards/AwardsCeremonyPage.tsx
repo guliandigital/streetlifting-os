@@ -24,6 +24,7 @@ import {
   Button,
   Container,
   Group,
+  NumberInput,
   SegmentedControl,
   Stack,
   Switch,
@@ -46,7 +47,9 @@ import { openAwardsPublisher } from "@/services/awards-broadcast";
 import { audioService } from "@/services/audio/audio-service";
 import { AwardsFullscreenOverlay } from "./AwardsFullscreen";
 
-const AUTO_ADVANCE_MS = 6000;
+const DEFAULT_AUTO_ADVANCE_SEC = 6;
+const MIN_AUTO_ADVANCE_SEC = 2;
+const MAX_AUTO_ADVANCE_SEC = 60;
 
 export function AwardsCeremonyPage() {
   const { t, i18n } = useTranslation();
@@ -58,6 +61,9 @@ export function AwardsCeremonyPage() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [fullscreen, setFullscreen] = useState(false);
   const [autoAdvance, setAutoAdvance] = useState(false);
+  const [autoAdvanceSec, setAutoAdvanceSec] = useState<number>(
+    DEFAULT_AUTO_ADVANCE_SEC,
+  );
 
   const meetDate = meet?.meet.date ?? new Date().toISOString().slice(0, 10);
   const meetName = meet?.meet.name ?? "Meet";
@@ -89,6 +95,17 @@ export function AwardsCeremonyPage() {
   // Keyboard navigation — works in both compact and fullscreen modes.
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
+      // Ignore navigation keys while focus is in an editable control
+      // (NumberInput in the compact toolbar, future search field, etc.).
+      const target = event.target as HTMLElement | null;
+      const tag = target?.tagName;
+      const editable =
+        tag === "INPUT" ||
+        tag === "TEXTAREA" ||
+        tag === "SELECT" ||
+        target?.isContentEditable === true;
+      if (editable) return;
+
       if (event.key === "ArrowRight" || event.key === " ") {
         event.preventDefault();
         setActiveIndex((idx) =>
@@ -98,6 +115,14 @@ export function AwardsCeremonyPage() {
       if (event.key === "ArrowLeft") {
         event.preventDefault();
         setActiveIndex((idx) => Math.max(idx - 1, 0));
+      }
+      if (event.key === "Home") {
+        event.preventDefault();
+        setActiveIndex(0);
+      }
+      if (event.key === "End") {
+        event.preventDefault();
+        setActiveIndex(Math.max(awards.length - 1, 0));
       }
       if (event.key === "f" || event.key === "F") {
         event.preventDefault();
@@ -118,14 +143,19 @@ export function AwardsCeremonyPage() {
   // Auto-advance ticker in fullscreen mode.
   useEffect(() => {
     if (!fullscreen || !autoAdvance || awards.length === 0) return;
+    const intervalMs =
+      Math.min(
+        Math.max(autoAdvanceSec, MIN_AUTO_ADVANCE_SEC),
+        MAX_AUTO_ADVANCE_SEC,
+      ) * 1000;
     const id = window.setInterval(() => {
       setActiveIndex((idx) => {
         if (idx >= awards.length - 1) return idx;
         return idx + 1;
       });
-    }, AUTO_ADVANCE_MS);
+    }, intervalMs);
     return () => window.clearInterval(id);
-  }, [fullscreen, autoAdvance, awards.length]);
+  }, [fullscreen, autoAdvance, awards.length, autoAdvanceSec]);
 
   // Voice announcer — speaks the active award when the operator is in
   // fullscreen mode. Speaking outside fullscreen would be surprising
@@ -212,6 +242,22 @@ export function AwardsCeremonyPage() {
                   audioService.cancelVoice();
                 }
               }}
+            />
+            <NumberInput
+              size="xs"
+              label={t("awards.autoAdvanceSec")}
+              value={autoAdvanceSec}
+              onChange={(v) =>
+                setAutoAdvanceSec(
+                  typeof v === "number"
+                    ? v
+                    : Number(v) || DEFAULT_AUTO_ADVANCE_SEC,
+                )
+              }
+              min={MIN_AUTO_ADVANCE_SEC}
+              max={MAX_AUTO_ADVANCE_SEC}
+              step={1}
+              w={110}
             />
             <SegmentedControl
               value={order}

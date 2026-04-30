@@ -1,8 +1,6 @@
 /**
- * AboutPage — Sprint 5.
- *
- * Displays app version, ISF rules version, calculation correctness facts,
- * keyboard shortcuts reference, links, and legal notice.
+ * AboutPage — application overview, version, what's new, keyboard shortcuts,
+ * correctness facts, and legal notice.
  */
 
 import {
@@ -19,9 +17,11 @@ import {
   List,
 } from "@mantine/core";
 import { useTranslation } from "react-i18next";
+import { APP_RELEASE_VERSION } from "@/persistence";
 
-export const APP_RELEASE_VERSION = "0.5.0";
 const ISF_RULES_VERSION = "v5.1 (effective 2025-08-01)";
+
+const RELEASE_DATE = "2026-04-30";
 
 export function AboutPage() {
   const { t } = useTranslation();
@@ -39,8 +39,30 @@ export function AboutPage() {
             <Badge color="red" variant="light" size="lg">
               {t("about.rules")}: {ISF_RULES_VERSION}
             </Badge>
+            <Badge color="gray" variant="light" size="lg">
+              {RELEASE_DATE}
+            </Badge>
           </Group>
         </Stack>
+
+        {/* What's new */}
+        <Card withBorder shadow="sm">
+          <Stack gap="sm">
+            <Title order={3}>{t("about.whatsNew.title")}</Title>
+            <Text size="sm" c="dimmed">
+              {t("about.whatsNew.subtitle")}
+            </Text>
+            <List spacing="xs" size="sm">
+              <List.Item>{t("about.whatsNew.schedule")}</List.Item>
+              <List.Item>{t("about.whatsNew.awardsParity")}</List.Item>
+              <List.Item>{t("about.whatsNew.voiceAnnouncer")}</List.Item>
+              <List.Item>{t("about.whatsNew.broadcastSync")}</List.Item>
+              <List.Item>{t("about.whatsNew.duplicateDetection")}</List.Item>
+              <List.Item>{t("about.whatsNew.csvExports")}</List.Item>
+              <List.Item>{t("about.whatsNew.readiness")}</List.Item>
+            </List>
+          </Stack>
+        </Card>
 
         {/* Calculation correctness */}
         <Card withBorder shadow="sm">
@@ -59,6 +81,9 @@ export function AboutPage() {
         <Card withBorder shadow="sm">
           <Stack gap="sm">
             <Title order={3}>{t("about.shortcuts.title")}</Title>
+            <Text size="xs" c="dimmed" fw={600}>
+              {t("about.shortcuts.judgingHeader")}
+            </Text>
             <Table striped highlightOnHover withTableBorder withColumnBorders>
               <Table.Thead>
                 <Table.Tr>
@@ -101,6 +126,36 @@ export function AboutPage() {
                 </Table.Tr>
               </Table.Tbody>
             </Table>
+
+            <Text size="xs" c="dimmed" fw={600} mt="sm">
+              {t("about.shortcuts.awardsHeader")}
+            </Text>
+            <Table striped highlightOnHover withTableBorder withColumnBorders>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>Key</Table.Th>
+                  <Table.Th>Action</Table.Th>
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                <Table.Tr>
+                  <Table.Td><Text ff="monospace">F</Text></Table.Td>
+                  <Table.Td>{t("about.shortcuts.awardsFullscreen")}</Table.Td>
+                </Table.Tr>
+                <Table.Tr>
+                  <Table.Td><Text ff="monospace">←  /  →</Text></Table.Td>
+                  <Table.Td>{t("about.shortcuts.awardsPrevNext")}</Table.Td>
+                </Table.Tr>
+                <Table.Tr>
+                  <Table.Td><Text ff="monospace">Space</Text></Table.Td>
+                  <Table.Td>{t("about.shortcuts.awardsAdvance")}</Table.Td>
+                </Table.Tr>
+                <Table.Tr>
+                  <Table.Td><Text ff="monospace">Esc</Text></Table.Td>
+                  <Table.Td>{t("about.shortcuts.awardsExitFullscreen")}</Table.Td>
+                </Table.Tr>
+              </Table.Tbody>
+            </Table>
           </Stack>
         </Card>
 
@@ -110,11 +165,18 @@ export function AboutPage() {
             <Title order={4}>Links</Title>
             <Group gap="md">
               <Anchor
-                href="https://github.com/GulianDigital/streetlifting-os"
+                href="https://github.com/guliandigital/streetlifting-os"
                 target="_blank"
                 rel="noopener noreferrer"
               >
                 GitHub Repository
+              </Anchor>
+              <Anchor
+                href="https://github.com/guliandigital/streetlifting-os/releases/latest"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Latest release
               </Anchor>
               <Anchor
                 href="https://isfederation.org"
@@ -138,7 +200,7 @@ export function AboutPage() {
         </Text>
 
         <Text size="xs" c="dimmed">
-          © 2026 Gulyan Digital LLC · Streetlifting OS v{APP_RELEASE_VERSION}
+          © 2026 Gulyan Digital · Streetlifting OS v{APP_RELEASE_VERSION}
         </Text>
       </Stack>
     </Container>
