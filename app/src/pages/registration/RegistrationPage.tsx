@@ -459,6 +459,7 @@ export function RegistrationPage() {
         <CsvImportModal
           opened={csvOpen}
           enabledDisciplineCodes={enabledDisciplineCodes}
+          existingEntries={entries}
           onClose={() => setCsvOpen(false)}
           onCommit={handleCsvCommit}
         />

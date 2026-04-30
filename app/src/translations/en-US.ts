@@ -255,6 +255,18 @@ export const enUS = {
       noFile: "No file picked",
       successToast: "Imported: {{n}}",
       errorsToast: "With errors: {{n}}",
+      duplicateAlertTitle: "Possible duplicates: {{n}}",
+      duplicateAlertBody:
+        "Some rows match already-registered athletes or repeat within the file. Pick an import mode.",
+      duplicateMode: "Mode:",
+      modeImportAll: "Import all ({{n}})",
+      modeSkipDuplicates: "Skip duplicates ({{n}})",
+      duplicateReason: {
+        memberId: "by member-id",
+        nameBirthDate: "by name + birth date",
+        nameSexCountry: "by name + sex + country",
+        sameImportBatch: "duplicate within file",
+      },
     },
     csvExport: {
       successToast: "Exported: {{n}}",

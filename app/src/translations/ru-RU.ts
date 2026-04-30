@@ -254,6 +254,18 @@ export const ruRU = {
       noFile: "Файл не выбран",
       successToast: "Импортировано: {{n}}",
       errorsToast: "С ошибками: {{n}}",
+      duplicateAlertTitle: "Возможные дубликаты: {{n}}",
+      duplicateAlertBody:
+        "Часть строк совпадает с уже зарегистрированными или повторяется внутри файла. Выберите режим импорта.",
+      duplicateMode: "Режим:",
+      modeImportAll: "Импортировать все ({{n}})",
+      modeSkipDuplicates: "Пропустить дубликаты ({{n}})",
+      duplicateReason: {
+        memberId: "по member-id",
+        nameBirthDate: "по ФИО + дата рождения",
+        nameSexCountry: "по ФИО + пол + страна",
+        sameImportBatch: "дубль внутри файла",
+      },
     },
     csvExport: {
       successToast: "Экспортировано: {{n}}",

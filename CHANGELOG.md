@@ -11,6 +11,19 @@ release will be 1.0.0 once V1 reaches production-ready quality.
 ## [Unreleased]
 
 ### Added
+- **Duplicate detection in the CSV import modal.** The pure-logic
+  `buildImportDuplicatePlan` (in place since the V2 foundation
+  groundwork) is now wired into the operator-facing flow on the
+  Registration page. After parsing the CSV, the modal shows a yellow
+  alert listing rows that match an already-registered athlete (by
+  member-id, name+birth-date, or name+sex+country) or repeat within
+  the imported file. Each suspected duplicate carries its match-reason
+  badge with high/medium confidence colour. Operator picks an import
+  mode: `Import all (N)` (current behaviour, creates duplicates) or
+  `Skip duplicates (M)` (only auto-create rows that have no matches).
+  Per-row "merge into existing" UX is V2.5+ work — for now skip-or-take
+  covers the common UAT case (federation imports a roster that
+  partially overlaps with already-registered athletes).
 - **Awards ceremony cross-tab sync via BroadcastChannel.** Operator
   drives the ceremony from `/awards`; a second tab opened to
   `/display/awards` (new route, mounted outside AppShell so it

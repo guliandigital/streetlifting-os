@@ -1,11 +1,18 @@
 /**
  * CSV import modal for registration page.
  *
- * Operator picks a file → we parse via papaparse, show preview + errors,
- * commit on confirm.
+ * Operator picks a file → we parse via papaparse, show preview + errors +
+ * duplicate-detection plan, commit on confirm. Duplicate detection (per
+ * `@logic/isf/import-duplicates`) catches:
+ *   - matches against existing entries by member-id, name+birth-date,
+ *     or name+sex+country
+ *   - matches within the same import batch (e.g. accidentally repeated
+ *     rows in the spreadsheet)
+ * Operator can choose to import all rows (creating duplicates) or skip
+ * the flagged rows. Per-row "merge into existing" UX is V2.5+.
  */
 
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Modal,
@@ -17,29 +24,63 @@ import {
   Code,
   ScrollArea,
   Table,
+  SegmentedControl,
+  Badge,
 } from "@mantine/core";
 
 import { parseRegistrationCsv } from "@logic/isf/csv-import";
-import type { ImportResult } from "@logic/isf/csv-import";
-import type { DisciplineCode } from "@domain/models";
+import type { ImportResult, ImportedEntryDraft } from "@logic/isf/csv-import";
+import {
+  buildImportDuplicatePlan,
+  type ImportDuplicateMatch,
+} from "@logic/isf/import-duplicates";
+import type { DisciplineCode, Entry } from "@domain/models";
 
 export type CsvImportModalProps = {
   opened: boolean;
   enabledDisciplineCodes: ReadonlyArray<DisciplineCode>;
+  /** Already-registered entries used for duplicate detection. */
+  existingEntries: ReadonlyArray<Entry>;
   onClose: () => void;
-  onCommit: (result: ImportResult) => void;
+  /**
+   * Receives the (possibly filtered) result the operator chose to commit.
+   * `drafts` matches the `mode`: full list when "all", duplicates removed
+   * when "skipDuplicates".
+   */
+  onCommit: (result: ImportResult & { drafts: ImportedEntryDraft[] }) => void;
 };
 
+type ImportMode = "all" | "skipDuplicates";
+
+function reasonLabel(
+  reason: ImportDuplicateMatch["reason"],
+  t: (k: string) => string,
+): string {
+  switch (reason) {
+    case "member_id":
+      return t("registration.csvImport.duplicateReason.memberId");
+    case "name_birth_date":
+      return t("registration.csvImport.duplicateReason.nameBirthDate");
+    case "name_sex_country":
+      return t("registration.csvImport.duplicateReason.nameSexCountry");
+    case "same_import_batch":
+      return t("registration.csvImport.duplicateReason.sameImportBatch");
+  }
+}
+
 export function CsvImportModal(props: CsvImportModalProps) {
-  const { opened, enabledDisciplineCodes, onClose, onCommit } = props;
+  const { opened, enabledDisciplineCodes, existingEntries, onClose, onCommit } =
+    props;
   const { t } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [fileName, setFileName] = useState<string | null>(null);
   const [result, setResult] = useState<ImportResult | null>(null);
+  const [mode, setMode] = useState<ImportMode>("all");
 
   function reset() {
     setFileName(null);
     setResult(null);
+    setMode("all");
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
@@ -48,7 +89,28 @@ export function CsvImportModal(props: CsvImportModalProps) {
     const text = await file.text();
     const parsed = parseRegistrationCsv(text, enabledDisciplineCodes);
     setResult(parsed);
+    setMode("all");
   }
+
+  const duplicatePlan = useMemo(
+    () =>
+      result
+        ? buildImportDuplicatePlan(existingEntries, result.drafts)
+        : null,
+    [result, existingEntries],
+  );
+
+  const reviewDecisions = useMemo(
+    () =>
+      duplicatePlan?.decisions.filter((d) => d.action === "review") ?? [],
+    [duplicatePlan],
+  );
+
+  const importableDrafts: ImportedEntryDraft[] = useMemo(() => {
+    if (!result || !duplicatePlan) return [];
+    if (mode === "skipDuplicates") return duplicatePlan.autoCreateDrafts;
+    return result.drafts;
+  }, [result, duplicatePlan, mode]);
 
   function handleClose() {
     reset();
@@ -57,13 +119,14 @@ export function CsvImportModal(props: CsvImportModalProps) {
 
   function handleCommit() {
     if (!result) return;
-    onCommit(result);
+    onCommit({ ...result, drafts: importableDrafts });
     reset();
     onClose();
   }
 
   const previewRows = result?.drafts.slice(0, 10) ?? [];
   const errorRows = result?.errors.slice(0, 20) ?? [];
+  const reviewPreviewRows = reviewDecisions.slice(0, 10);
 
   return (
     <Modal
@@ -123,6 +186,74 @@ export function CsvImportModal(props: CsvImportModalProps) {
               </Alert>
             )}
 
+            {reviewDecisions.length > 0 && (
+              <Alert
+                color="yellow"
+                title={t("registration.csvImport.duplicateAlertTitle", {
+                  n: reviewDecisions.length,
+                })}
+              >
+                <Stack gap="xs">
+                  <Text size="xs">
+                    {t("registration.csvImport.duplicateAlertBody")}
+                  </Text>
+                  <ScrollArea.Autosize mah={140}>
+                    <Stack gap={2}>
+                      {reviewPreviewRows.map((dec) => (
+                        <Group key={dec.draftIndex} gap="xs" wrap="nowrap">
+                          <Text size="xs" fw={500} style={{ minWidth: 30 }}>
+                            #{dec.draftIndex + 1}
+                          </Text>
+                          <Text size="xs">{dec.draft.name}</Text>
+                          {dec.matches.map((m, i) => (
+                            <Badge
+                              key={i}
+                              size="xs"
+                              variant="light"
+                              color={m.confidence === "high" ? "red" : "yellow"}
+                            >
+                              {reasonLabel(m.reason, t)}
+                            </Badge>
+                          ))}
+                        </Group>
+                      ))}
+                      {reviewDecisions.length > reviewPreviewRows.length && (
+                        <Text size="xs" c="dimmed">
+                          … +
+                          {reviewDecisions.length - reviewPreviewRows.length}
+                        </Text>
+                      )}
+                    </Stack>
+                  </ScrollArea.Autosize>
+                  <Group>
+                    <Text size="xs" fw={500}>
+                      {t("registration.csvImport.duplicateMode")}
+                    </Text>
+                    <SegmentedControl
+                      size="xs"
+                      value={mode}
+                      onChange={(value) => setMode(value as ImportMode)}
+                      data={[
+                        {
+                          value: "all",
+                          label: t("registration.csvImport.modeImportAll", {
+                            n: result.drafts.length,
+                          }),
+                        },
+                        {
+                          value: "skipDuplicates",
+                          label: t("registration.csvImport.modeSkipDuplicates", {
+                            n:
+                              duplicatePlan?.autoCreateDrafts.length ?? 0,
+                          }),
+                        },
+                      ]}
+                    />
+                  </Group>
+                </Stack>
+              </Alert>
+            )}
+
             <ScrollArea.Autosize mah={250}>
               <Table withColumnBorders striped highlightOnHover>
                 <Table.Thead>
@@ -162,11 +293,11 @@ export function CsvImportModal(props: CsvImportModalProps) {
             {t("registration.cancel")}
           </Button>
           <Button
-            disabled={!result || result.drafts.length === 0}
+            disabled={!result || importableDrafts.length === 0}
             onClick={handleCommit}
           >
             {t("registration.csvImport.doImport", {
-              n: result?.drafts.length ?? 0,
+              n: importableDrafts.length,
             })}
           </Button>
         </Group>
