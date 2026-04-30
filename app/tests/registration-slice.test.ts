@@ -184,6 +184,43 @@ describe("registration-slice CRUD", () => {
     expect(reg.lastLotNumber).toBe(3);
   });
 
+  it("buildEntry defaults missing day/platform/flight to 1/1/'A'", () => {
+    // Programmatic dispatch shape: omit placement fields entirely.
+    const draftWithoutPlacement: EntryDraft = {
+      name: "Charlie",
+      sex: "M",
+      birthDate: "1992-06-01",
+      ageOverride: null,
+      country: "RU",
+      division: "amateur",
+      disciplineCode: "classic_2lift",
+      guest: false,
+      bodyweightKg: 75,
+      reweighKg: null,
+    };
+    store.dispatch(addEntry(draftWithoutPlacement));
+    const e = store.getState().meet.current!.registration.entries[0]!;
+    expect(e.day).toBe(1);
+    expect(e.platform).toBe(1);
+    expect(e.flight).toBe("A");
+  });
+
+  it("buildEntry defaults empty/whitespace flight to 'A'", () => {
+    store.dispatch(addEntry({ ...draftA, flight: "   " }));
+    store.dispatch(addEntry({ ...draftA, name: "Empty", flight: "" }));
+    const entries = store.getState().meet.current!.registration.entries;
+    expect(entries[0]?.flight).toBe("A");
+    expect(entries[1]?.flight).toBe("A");
+  });
+
+  it("buildEntry preserves explicitly provided day/platform/flight", () => {
+    store.dispatch(addEntry({ ...draftA, day: 2, platform: 3, flight: "B" }));
+    const e = store.getState().meet.current!.registration.entries[0]!;
+    expect(e.day).toBe(2);
+    expect(e.platform).toBe(3);
+    expect(e.flight).toBe("B");
+  });
+
   it("applyLotAssignment re-orders by the supplied map", () => {
     store.dispatch(addEntry(draftA)); // Alice
     store.dispatch(addEntry(draftB)); // Bob

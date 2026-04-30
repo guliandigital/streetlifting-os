@@ -14,7 +14,15 @@ import type { Entry, Sex, Division, DisciplineCode } from "@domain/models";
 import type { RootState } from "./index";
 import { ISF_V51_DISCIPLINES } from "@domain/presets";
 
-/** Operator-supplied fields when adding/editing an entry. */
+/**
+ * Operator-supplied fields when adding/editing an entry.
+ *
+ * `day`, `platform`, and `flight` are optional because lightweight
+ * import paths (programmatic bulk dispatch, partial CSV columns) may
+ * not have them. `buildEntry` defaults missing values to day=1,
+ * platform=1, flight="A" so downstream code (Weigh-in order grouping,
+ * flight scheduling) always sees a valid placement triple.
+ */
 export type EntryDraft = {
   name: string;
   sex: Sex;
@@ -23,9 +31,9 @@ export type EntryDraft = {
   country: string | null;
   division: Division;
   disciplineCode: DisciplineCode;
-  day: number;
-  platform: number;
-  flight: string;
+  day?: number;
+  platform?: number;
+  flight?: string;
   team?: string;
   memberId?: string;
   guest: boolean;
@@ -66,9 +74,12 @@ function buildEntry(draft: EntryDraft): Entry {
     competitionFormat,
     disciplineCode: draft.disciplineCode,
     event,
-    day: draft.day,
-    platform: draft.platform,
-    flight: draft.flight,
+    day: draft.day ?? 1,
+    platform: draft.platform ?? 1,
+    flight:
+      typeof draft.flight === "string" && draft.flight.trim().length > 0
+        ? draft.flight
+        : "A",
     name: draft.name,
     sex: draft.sex,
     birthDate: draft.birthDate,
