@@ -127,3 +127,32 @@ export function placeAccent(place: 1 | 2 | 3): PlaceAccent {
   }
   return { background: "#8a4a25", text: "#fdf3e9", badge: "#f3d2b3" };
 }
+
+/**
+ * Compose the spoken announcement for an active award. Pure function so
+ * tests can assert exact wording per locale without invoking the Web
+ * Speech API.
+ *
+ * Russian and English templates use ordinal place names — "first",
+ * "second", "third" — instead of cardinals to match how an MC reads
+ * results aloud at a real podium.
+ */
+export type AnnouncerLocale = "ru-RU" | "en-US";
+
+const PLACE_ORDINAL: Record<AnnouncerLocale, Record<1 | 2 | 3, string>> = {
+  "ru-RU": { 1: "Первое место", 2: "Второе место", 3: "Третье место" },
+  "en-US": { 1: "First place", 2: "Second place", 3: "Third place" },
+};
+
+export function announceAward(
+  award: CeremonyAward,
+  locale: AnnouncerLocale,
+): string {
+  const place = PLACE_ORDINAL[locale][award.place];
+  const team = award.team
+    ? locale === "ru-RU"
+      ? `, команда ${award.team}`
+      : `, team ${award.team}`
+    : "";
+  return `${place}, ${award.athleteName}${team}, ${award.result}.`;
+}

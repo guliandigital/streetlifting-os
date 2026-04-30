@@ -596,6 +596,7 @@ export const enUS = {
     openProjector: "Open projector window",
     displayWaiting: "Waiting for the operator tab…",
     displayHint: "Open /awards in this same browser and start the ceremony",
+    voiceAnnouncer: "Voice announcer",
   },
   about: {
     title: "About",

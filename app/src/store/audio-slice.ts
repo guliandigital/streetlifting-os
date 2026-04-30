@@ -7,6 +7,7 @@ export type AudioSliceState = AudioSettings;
 
 const defaultAudioSettings: AudioSliceState = {
   enabled: true,
+  voiceEnabled: true,
   volume: 0.7,
 };
 
@@ -27,6 +28,10 @@ export function loadAudioSettings(): AudioSliceState {
         typeof parsed.enabled === "boolean"
           ? parsed.enabled
           : defaultAudioSettings.enabled,
+      voiceEnabled:
+        typeof parsed.voiceEnabled === "boolean"
+          ? parsed.voiceEnabled
+          : defaultAudioSettings.voiceEnabled,
       volume:
         typeof parsed.volume === "number"
           ? clampVolume(parsed.volume)
@@ -45,6 +50,7 @@ export function saveAudioSettings(settings: AudioSliceState): void {
       AUDIO_SETTINGS_STORAGE_KEY,
       JSON.stringify({
         enabled: settings.enabled,
+        voiceEnabled: settings.voiceEnabled,
         volume: clampVolume(settings.volume),
       }),
     );
@@ -60,6 +66,9 @@ const audioSlice = createSlice({
     setAudioEnabled(state, action: PayloadAction<boolean>) {
       state.enabled = action.payload;
     },
+    setVoiceEnabled(state, action: PayloadAction<boolean>) {
+      state.voiceEnabled = action.payload;
+    },
     setAudioVolume(state, action: PayloadAction<number>) {
       state.volume = clampVolume(action.payload);
     },
@@ -69,7 +78,11 @@ const audioSlice = createSlice({
   },
 });
 
-export const { setAudioEnabled, setAudioVolume, resetAudioSettings } =
-  audioSlice.actions;
+export const {
+  setAudioEnabled,
+  setVoiceEnabled,
+  setAudioVolume,
+  resetAudioSettings,
+} = audioSlice.actions;
 
 export default audioSlice.reducer;

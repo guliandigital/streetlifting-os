@@ -597,6 +597,7 @@ export const ruRU = {
     openProjector: "Окно проектора",
     displayWaiting: "Ожидание операторской вкладки…",
     displayHint: "Откройте /awards в этом же браузере и начните награждение",
+    voiceAnnouncer: "Голос ведущего",
   },
   about: {
     title: "О программе",

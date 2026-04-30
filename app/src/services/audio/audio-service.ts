@@ -5,8 +5,11 @@ export type AudioCue =
   | "attempt_failed";
 
 export type AudioSettings = {
+  /** Master toggle for beep cues (timer warnings, attempt-failed). */
   enabled: boolean;
-  /** 0..1 linear gain. */
+  /** Master toggle for voice announcements (awards announcer, future verdict voice). */
+  voiceEnabled: boolean;
+  /** 0..1 linear gain. Applies to both beeps and voice. */
   volume: number;
 };
 
@@ -79,11 +82,53 @@ class AudioService {
   }
 
   playVoicePhrase(
-    _phrase: VoicePhraseKey,
-    _locale: VoiceLocale,
-    _settings: AudioSettings,
+    phrase: VoicePhraseKey,
+    locale: VoiceLocale,
+    settings: AudioSettings,
   ): void {
-    // Stub contract for future recorded/TTS voice packs. Beeps remain the only runtime output for now.
+    const text = VOICE_PHRASES[locale][phrase];
+    this.speak(text, locale, settings);
+  }
+
+  /**
+   * Speak arbitrary text via the Web Speech API (browser TTS). Used by the
+   * awards-ceremony announcer to read podium results aloud. Runtime is
+   * best-effort: if `speechSynthesis` is unavailable (older WebKit, locked
+   * audio context, no installed voice for the requested locale), the call
+   * is silently a no-op so the rest of the ceremony continues.
+   *
+   * Each new speak() cancels any utterance currently in flight so rapid
+   * Next-award presses don't queue overlapping voice.
+   */
+  speak(text: string, locale: VoiceLocale, settings: AudioSettings): void {
+    if (!settings.voiceEnabled || settings.volume <= 0) return;
+    if (typeof window === "undefined") return;
+
+    try {
+      const synth = window.speechSynthesis;
+      if (!synth) return;
+
+      synth.cancel();
+
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = locale;
+      utter.volume = Math.min(Math.max(settings.volume, 0), 1);
+      utter.rate = 1.0;
+      utter.pitch = 1.0;
+      synth.speak(utter);
+    } catch {
+      // Voice is non-critical; never break the ceremony on TTS failure.
+    }
+  }
+
+  /** Stop any in-flight voice immediately. Used on unmount + on settings off. */
+  cancelVoice(): void {
+    if (typeof window === "undefined") return;
+    try {
+      window.speechSynthesis?.cancel();
+    } catch {
+      // ignored
+    }
   }
 
   private getContext(): AudioContext | null {

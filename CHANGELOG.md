@@ -11,6 +11,22 @@ release will be 1.0.0 once V1 reaches production-ready quality.
 ## [Unreleased]
 
 ### Added
+- **Awards ceremony voice announcer (Web Speech API).** When the
+  operator is in the fullscreen ceremony view, each new active award
+  is read aloud — "First place, Иванов Иван, team Alpha, 330 kg."
+  Templates exist for both RU and EN; the locale follows the current
+  i18n setting. Stub `playVoicePhrase` in the audio service is now a
+  real implementation built on `SpeechSynthesisUtterance`, with a
+  `speak(text, locale, settings)` entry point and a `cancelVoice()`
+  helper that interrupts the in-flight utterance on every advance and
+  on toggle-off (so rapid Next presses don't queue overlapping
+  voices). New `voiceEnabled` flag in `audio-slice` (persisted to
+  localStorage alongside the existing beep + volume settings) drives a
+  Switch on the Awards page header. Cross-browser fallback: if
+  `speechSynthesis` is unavailable, the call is a silent no-op so the
+  ceremony continues. 15 new vitest cases (announcer wording per
+  locale, audio-service speak/cancel/voice-disabled paths via
+  happy-dom mock).
 - **Duplicate detection in the CSV import modal.** The pure-logic
   `buildImportDuplicatePlan` (in place since the V2 foundation
   groundwork) is now wired into the operator-facing flow on the

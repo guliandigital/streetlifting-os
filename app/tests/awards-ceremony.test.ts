@@ -4,6 +4,7 @@
 
 import { describe, it, expect } from "vitest";
 import {
+  announceAward,
   buildAwardsList,
   placeAccent,
   sortAwards,
@@ -211,6 +212,57 @@ describe("sortAwards", () => {
       "thirdToFirst",
     );
     expect(sorted.map((a) => a.athleteName)).toEqual(["A", "B"]);
+  });
+});
+
+describe("announceAward", () => {
+  function award(overrides: Partial<CeremonyAward> = {}): CeremonyAward {
+    return {
+      id: "id-1",
+      format: "classic",
+      place: 1,
+      athleteName: "Иванов Иван",
+      team: "Alpha",
+      category: "M / open / M_82_5",
+      disciplineCode: "classic_2lift",
+      result: "330 kg",
+      ...overrides,
+    };
+  }
+
+  it("renders Russian ordinal place names", () => {
+    expect(announceAward(award({ place: 1 }), "ru-RU")).toContain("Первое место");
+    expect(announceAward(award({ place: 2 }), "ru-RU")).toContain("Второе место");
+    expect(announceAward(award({ place: 3 }), "ru-RU")).toContain("Третье место");
+  });
+
+  it("renders English ordinal place names", () => {
+    expect(announceAward(award({ place: 1 }), "en-US")).toContain("First place");
+    expect(announceAward(award({ place: 2 }), "en-US")).toContain("Second place");
+    expect(announceAward(award({ place: 3 }), "en-US")).toContain("Third place");
+  });
+
+  it("includes athlete name and result", () => {
+    const text = announceAward(award(), "en-US");
+    expect(text).toContain("Иванов Иван");
+    expect(text).toContain("330 kg");
+  });
+
+  it("includes team when present, omits team clause when null", () => {
+    const withTeam = announceAward(award({ team: "Alpha" }), "en-US");
+    const without = announceAward(award({ team: null }), "en-US");
+    expect(withTeam).toContain("team Alpha");
+    expect(without).not.toContain("team");
+  });
+
+  it("uses the localized team-prefix word for Russian", () => {
+    expect(announceAward(award({ team: "Альфа" }), "ru-RU")).toContain(
+      "команда Альфа",
+    );
+  });
+
+  it("ends with a period (sentence boundary for TTS pause)", () => {
+    expect(announceAward(award(), "en-US")).toMatch(/\.$/);
   });
 });
 

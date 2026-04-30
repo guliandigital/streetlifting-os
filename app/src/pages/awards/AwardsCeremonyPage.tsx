@@ -26,27 +26,34 @@ import {
   Group,
   SegmentedControl,
   Stack,
+  Switch,
   Text,
   Title,
 } from "@mantine/core";
-import { useAppSelector } from "@store/index";
+import { useAppSelector, useAppDispatch } from "@store/index";
 import { selectEntries } from "@store/registration-slice";
+import { setVoiceEnabled } from "@store/audio-slice";
 import { computeClassicResults } from "@logic/isf/classic-placing";
 import { computeMultirepResults } from "@logic/isf/multirep-placing";
 import {
+  announceAward,
   buildAwardsList,
+  type AnnouncerLocale,
   type AwardOrder,
 } from "@logic/reports/awards-ceremony";
 import { makeEnvelope } from "@logic/reports/awards-broadcast";
 import { openAwardsPublisher } from "@/services/awards-broadcast";
+import { audioService } from "@/services/audio/audio-service";
 import { AwardsFullscreenOverlay } from "./AwardsFullscreen";
 
 const AUTO_ADVANCE_MS = 6000;
 
 export function AwardsCeremonyPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const dispatch = useAppDispatch();
   const meet = useAppSelector((s) => s.meet.current);
   const entries = useAppSelector(selectEntries);
+  const audioSettings = useAppSelector((s) => s.audio);
   const [order, setOrder] = useState<AwardOrder>("thirdToFirst");
   const [activeIndex, setActiveIndex] = useState(0);
   const [fullscreen, setFullscreen] = useState(false);
@@ -54,6 +61,9 @@ export function AwardsCeremonyPage() {
 
   const meetDate = meet?.meet.date ?? new Date().toISOString().slice(0, 10);
   const meetName = meet?.meet.name ?? "Meet";
+
+  const announcerLocale: AnnouncerLocale =
+    i18n.language === "ru-RU" ? "ru-RU" : "en-US";
 
   const awards = useMemo(() => {
     if (!meet) return [];
@@ -117,6 +127,24 @@ export function AwardsCeremonyPage() {
     return () => window.clearInterval(id);
   }, [fullscreen, autoAdvance, awards.length]);
 
+  // Voice announcer — speaks the active award when the operator is in
+  // fullscreen mode. Speaking outside fullscreen would be surprising
+  // since the compact card is meant to be glanced at silently. Cancel
+  // any in-flight utterance on unmount + on toggle off.
+  useEffect(() => {
+    if (!fullscreen || !activeAward) return;
+    audioService.speak(
+      announceAward(activeAward, announcerLocale),
+      announcerLocale,
+      audioSettings,
+    );
+  }, [fullscreen, activeAward, announcerLocale, audioSettings]);
+  useEffect(() => {
+    return () => {
+      audioService.cancelVoice();
+    };
+  }, []);
+
   // BroadcastChannel publisher — drives any /display/awards tab open in
   // the same browser context. Operator tab is the source of truth.
   const publisherRef = useRef<ReturnType<typeof openAwardsPublisher> | null>(
@@ -174,6 +202,17 @@ export function AwardsCeremonyPage() {
             </Text>
           </Stack>
           <Group gap="md">
+            <Switch
+              size="sm"
+              label={t("awards.voiceAnnouncer")}
+              checked={audioSettings.voiceEnabled}
+              onChange={(event) => {
+                dispatch(setVoiceEnabled(event.currentTarget.checked));
+                if (!event.currentTarget.checked) {
+                  audioService.cancelVoice();
+                }
+              }}
+            />
             <SegmentedControl
               value={order}
               onChange={(value) => setOrder(value as AwardOrder)}
