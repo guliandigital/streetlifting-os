@@ -11,6 +11,18 @@ release will be 1.0.0 once V1 reaches production-ready quality.
 ## [Unreleased]
 
 ### Added
+- **Meet schedule page at `/schedule`.** Wall-clock projection of how
+  long the meet will run, computed by the existing pure
+  `buildSchedulePlan` service over current entries. Total estimate at
+  the top, then a day → platform → stream breakdown with per-group
+  rows (discipline, exercise, athlete count, duration). Editable
+  estimation config (classic attempts per exercise, classic /
+  multirep attempt buffer, group setup, stream break) recomputes the
+  plan live; values are local-only, persisting them as a MeetState
+  extension is V2 work. Pure-logic duration formatter
+  (`formatDurationCompact`) handles RU + EN unit suffixes and scales
+  from seconds through multi-day; 8 new vitest cases. Sidebar entry
+  `📅 Schedule` between `Flight Order` and `Readiness`.
 - **Awards ceremony voice announcer (Web Speech API).** When the
   operator is in the fullscreen ceremony view, each new active award
   is read aloud — "First place, Иванов Иван, team Alpha, 330 kg."

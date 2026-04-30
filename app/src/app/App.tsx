@@ -43,6 +43,7 @@ import { ScoreboardPage } from "@pages/scoreboard/ScoreboardPage";
 import { PrintPage } from "@pages/print/PrintPage";
 import { AwardsCeremonyPage } from "@pages/awards/AwardsCeremonyPage";
 import { ReadinessPage } from "@pages/readiness/ReadinessPage";
+import { SchedulePage } from "@pages/schedule/SchedulePage";
 import {
   DisplayBroadcastPage,
   DisplayOrderPage,
@@ -74,6 +75,7 @@ function SidebarNav({ onNavigate }: SidebarNavProps) {
     { to: "/registration", label: t("nav.registration"), emoji: "📋", needsMeet: true },
     { to: "/weigh-ins", label: t("nav.weighIns"), emoji: "⚖️", needsMeet: true },
     { to: "/flight-order", label: t("nav.flightOrder"), emoji: "📊", needsMeet: true },
+    { to: "/schedule", label: t("nav.schedule"), emoji: "📅", needsMeet: true },
     { to: "/readiness", label: t("nav.readiness"), emoji: "✅", needsMeet: true },
     { to: "/judging", label: t("nav.judging"), emoji: "🏋️", needsMeet: true },
     { to: "/results", label: t("nav.results"), emoji: "🏆", needsMeet: true },
@@ -254,6 +256,14 @@ function AppWithRouter() {
             element={
               <RequireMeet>
                 <FlightOrderPage />
+              </RequireMeet>
+            }
+          />
+          <Route
+            path="/schedule"
+            element={
+              <RequireMeet>
+                <SchedulePage />
               </RequireMeet>
             }
           />
