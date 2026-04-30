@@ -10,6 +10,26 @@ release will be 1.0.0 once V1 reaches production-ready quality.
 
 ## [Unreleased]
 
+### Added
+- **CSV export for team protocol and medal count.** Federations can now
+  download the team standings (one row per team plus one row per scoring
+  contributor) and medal-count summary (team and country buckets in one
+  file) as UTF-8-with-BOM CSV from the Reports tab on the Print page.
+  The print-only versions remain available for paper protocols.
+
+### Fixed
+- **`registration/bulkImport` defensive defaults.** Programmatic dispatch
+  paths that omitted `day` / `platform` / `flight` previously left those
+  fields `undefined` on the resulting Entry, which broke the weigh-in
+  order group label ("Day  · Platform  · Flight ") and any downstream
+  code that assumed a valid placement triple. `EntryDraft` now marks the
+  three fields optional and `buildEntry` defaults missing or
+  whitespace-only values to `day=1`, `platform=1`, `flight="A"`. CSV
+  import already had its own integer defaults; form-based add/edit paths
+  always supply values; this is purely a defensive default at the
+  programmatic boundary. 3 new unit tests for `buildEntry` defaults +
+  12 tests for the new CSV exporters; full suite **503 / 503**.
+
 ---
 
 ## [1.3.0] — 2026-04-30

@@ -490,9 +490,11 @@ export const ruRU = {
     multirepCsv: "CSV протокол Multirep",
     openPowerliftingExport: "OpenPowerlifting export",
     teamProtocol: "Командный протокол",
+    teamCsv: "CSV командный протокол",
     recordCertificates: "Сертификаты рекордов",
     weighInOrder: "Порядок взвешивания",
     medalCount: "Медальный зачёт",
+    medalCsv: "CSV медальный зачёт",
     scopeValue: {
       meet: "Соревнование",
       entries: "Заявки",

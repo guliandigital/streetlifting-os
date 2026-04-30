@@ -491,9 +491,11 @@ export const enUS = {
     multirepCsv: "Multirep CSV protocol",
     openPowerliftingExport: "OpenPowerlifting export",
     teamProtocol: "Team protocol",
+    teamCsv: "Team protocol CSV",
     recordCertificates: "Record certificates",
     weighInOrder: "Weigh-in order",
     medalCount: "Medal count",
+    medalCsv: "Medal count CSV",
     scopeValue: {
       meet: "Meet",
       entries: "Entries",

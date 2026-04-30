@@ -56,6 +56,8 @@ import {
   buildMedalCountReport,
   type MedalCountReport,
 } from "@logic/reports/medal-count";
+import { exportTeamProtocolCsv } from "@logic/reports/csv-export-team";
+import { exportMedalCountCsv } from "@logic/reports/csv-export-medal";
 import type { Entry } from "@domain/models";
 
 // ─── Print CSS ────────────────────────────────────────────────────────────────
@@ -71,14 +73,27 @@ const PRINT_STYLE = `
 
 // ─── Protocol tab ─────────────────────────────────────────────────────────────
 
+type DownloadHandlers = {
+  onDownloadOpenPowerlifting: () => void;
+  onDownloadTeamCsv: () => void;
+  onDownloadMedalCsv: () => void;
+};
+
 function ReportsRegistryContent({
   items,
-  onDownloadOpenPowerlifting,
+  handlers,
 }: {
   items: ReportRegistryItem[];
-  onDownloadOpenPowerlifting: () => void;
+  handlers: DownloadHandlers;
 }) {
   const { t } = useTranslation();
+
+  function handlerFor(itemId: string): (() => void) | null {
+    if (itemId === "openpowerlifting-export") return handlers.onDownloadOpenPowerlifting;
+    if (itemId === "team-csv") return handlers.onDownloadTeamCsv;
+    if (itemId === "medal-csv") return handlers.onDownloadMedalCsv;
+    return null;
+  }
 
   return (
     <Table withTableBorder withColumnBorders fz="sm">
@@ -93,42 +108,45 @@ function ReportsRegistryContent({
         </Table.Tr>
       </Table.Thead>
       <Table.Tbody>
-        {items.map((item) => (
-          <Table.Tr key={item.id}>
-            <Table.Td>
-              <Text size="sm" fw={500}>{t(item.labelKey)}</Text>
-            </Table.Td>
-            <Table.Td><Text size="sm">{t(`reports.scopeValue.${item.scope}`)}</Text></Table.Td>
-            <Table.Td><Text size="sm">{t(`reports.formatValue.${item.outputFormat}`)}</Text></Table.Td>
-            <Table.Td><Text size="sm">{item.itemCount}</Text></Table.Td>
-            <Table.Td>
-              <Badge
-                color={
-                  item.status === "ready"
-                    ? "green"
-                    : item.status === "planned"
-                      ? "yellow"
-                      : "gray"
-                }
-                variant="light"
-              >
-                {t(`reports.statusValue.${item.status}`)}
-              </Badge>
-            </Table.Td>
-            <Table.Td>
-              {item.id === "openpowerlifting-export" && (
-                <Button
-                  size="xs"
+        {items.map((item) => {
+          const handler = handlerFor(item.id);
+          return (
+            <Table.Tr key={item.id}>
+              <Table.Td>
+                <Text size="sm" fw={500}>{t(item.labelKey)}</Text>
+              </Table.Td>
+              <Table.Td><Text size="sm">{t(`reports.scopeValue.${item.scope}`)}</Text></Table.Td>
+              <Table.Td><Text size="sm">{t(`reports.formatValue.${item.outputFormat}`)}</Text></Table.Td>
+              <Table.Td><Text size="sm">{item.itemCount}</Text></Table.Td>
+              <Table.Td>
+                <Badge
+                  color={
+                    item.status === "ready"
+                      ? "green"
+                      : item.status === "planned"
+                        ? "yellow"
+                        : "gray"
+                  }
                   variant="light"
-                  disabled={item.status !== "ready"}
-                  onClick={onDownloadOpenPowerlifting}
                 >
-                  {t("reports.download")}
-                </Button>
-              )}
-            </Table.Td>
-          </Table.Tr>
-        ))}
+                  {t(`reports.statusValue.${item.status}`)}
+                </Badge>
+              </Table.Td>
+              <Table.Td>
+                {handler && (
+                  <Button
+                    size="xs"
+                    variant="light"
+                    disabled={item.status !== "ready"}
+                    onClick={handler}
+                  >
+                    {t("reports.download")}
+                  </Button>
+                )}
+              </Table.Td>
+            </Table.Tr>
+          );
+        })}
       </Table.Tbody>
     </Table>
   );
@@ -1036,6 +1054,12 @@ export function PrintPage() {
     [entries],
   );
 
+  function meetSlug(): string {
+    return (
+      meetName.replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-|-$/g, "") || "meet"
+    );
+  }
+
   function handleDownloadOpenPowerlifting() {
     if (!meet) return;
 
@@ -1049,10 +1073,19 @@ export function PrintPage() {
       sanctioned: "Yes",
     });
 
-    downloadCsv(
-      `${meetName.replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-|-$/g, "") || "meet"}-openpowerlifting.csv`,
-      csv,
-    );
+    downloadCsv(`${meetSlug()}-openpowerlifting.csv`, csv);
+  }
+
+  function handleDownloadTeamCsv() {
+    if (!meet || teamScores.length === 0) return;
+    const csv = exportTeamProtocolCsv(teamScores);
+    downloadCsv(`${meetSlug()}-team-protocol.csv`, csv);
+  }
+
+  function handleDownloadMedalCsv() {
+    if (!meet) return;
+    const csv = exportMedalCountCsv(medalCount);
+    downloadCsv(`${meetSlug()}-medal-count.csv`, csv);
   }
 
   return (
@@ -1094,7 +1127,11 @@ export function PrintPage() {
           <Tabs.Panel value="reports" className="print-section">
             <ReportsRegistryContent
               items={reportRegistry}
-              onDownloadOpenPowerlifting={handleDownloadOpenPowerlifting}
+              handlers={{
+                onDownloadOpenPowerlifting: handleDownloadOpenPowerlifting,
+                onDownloadTeamCsv: handleDownloadTeamCsv,
+                onDownloadMedalCsv: handleDownloadMedalCsv,
+              }}
             />
           </Tabs.Panel>
 

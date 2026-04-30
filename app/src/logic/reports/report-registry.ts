@@ -17,9 +17,11 @@ export type ReportDefinitionId =
   | "multirep-csv"
   | "openpowerlifting-export"
   | "team-protocol"
+  | "team-csv"
   | "record-certificates"
   | "weigh-in-order"
-  | "medal-count";
+  | "medal-count"
+  | "medal-csv";
 
 export type ReportDefinition = {
   id: ReportDefinitionId;
@@ -119,6 +121,15 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
     official: true,
   },
   {
+    id: "team-csv",
+    labelKey: "reports.teamCsv",
+    outputFormat: "csv",
+    scope: "results",
+    printOnly: false,
+    exportOnly: true,
+    official: true,
+  },
+  {
     id: "record-certificates",
     labelKey: "reports.recordCertificates",
     outputFormat: "print",
@@ -143,6 +154,15 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
     scope: "results",
     printOnly: true,
     exportOnly: false,
+    official: true,
+  },
+  {
+    id: "medal-csv",
+    labelKey: "reports.medalCsv",
+    outputFormat: "csv",
+    scope: "results",
+    printOnly: false,
+    exportOnly: true,
     official: true,
   },
 ];
@@ -212,13 +232,15 @@ export function buildReportRegistry({
                 : definition.id === "diplomas" ||
                     definition.id === "awards-ceremony"
                   ? awardCount
-                  : definition.id === "team-protocol"
+                  : definition.id === "team-protocol" ||
+                      definition.id === "team-csv"
                     ? teamScores.length
                     : definition.id === "record-certificates"
                       ? newRecordCount
                       : definition.id === "weigh-in-order"
                         ? entries.length
-                        : definition.id === "medal-count"
+                        : definition.id === "medal-count" ||
+                            definition.id === "medal-csv"
                           ? medalCountRowCount
                           : 0;
 
