@@ -11,6 +11,16 @@ release will be 1.0.0 once V1 reaches production-ready quality.
 ## [Unreleased]
 
 ### Added
+- **Awards ceremony fullscreen mode.** The `/awards` page now has an
+  in-page fullscreen overlay (toggled via the `Fullscreen` button or
+  the `F` key) for projector / hall-screen display during the
+  ceremony. Background gradient uses traditional medal accent colours
+  (gold #b8860b for place 1, silver #7d7d7d for place 2, bronze
+  #8a4a25 for place 3); fonts scale up to 200 px for the place number
+  and 96 px for the athlete name. Auto-advance switch (6 s interval)
+  for hands-free presentations. Keyboard: `←` / `→` / `Space` / `F` /
+  `Esc`. Awards-collection logic was extracted to a pure service
+  (`@logic/reports/awards-ceremony`) covered by 15 vitest cases.
 - **CSV export for team protocol and medal count.** Federations can now
   download the team standings (one row per team plus one row per scoring
   contributor) and medal-count summary (team and country buckets in one

@@ -579,6 +579,9 @@ export const ruRU = {
     place: "{{place}} место",
     previous: "Назад",
     next: "Дальше",
+    enterFullscreen: "Полноэкранный",
+    exitFullscreen: "Выйти",
+    autoAdvance: "Автопереход",
   },
   about: {
     title: "О программе",

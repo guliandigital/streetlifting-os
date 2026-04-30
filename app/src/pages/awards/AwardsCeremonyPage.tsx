@@ -1,3 +1,22 @@
+/**
+ * AwardsCeremonyPage — /awards
+ *
+ * Two display modes:
+ *   - "compact" (default): in-page card with order toggle, prev/next.
+ *   - "fullscreen": fixed-position overlay covering the viewport with
+ *     projector-scale fonts and place-accent colors (gold/silver/bronze).
+ *     Used when the operator's laptop drives a projector during the
+ *     awards ceremony — no separate display route needed yet (V3 broadcast
+ *     publisher will provide that).
+ *
+ * Keyboard:
+ *   - ←  previous award
+ *   - →  next award
+ *   - Space  next award
+ *   - F  toggle fullscreen
+ *   - Esc  exit fullscreen
+ */
+
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -7,75 +26,168 @@ import {
   Group,
   SegmentedControl,
   Stack,
+  Switch,
   Text,
   Title,
 } from "@mantine/core";
 import { useAppSelector } from "@store/index";
 import { selectEntries } from "@store/registration-slice";
 import { computeClassicResults } from "@logic/isf/classic-placing";
-import type { ClassicResultGroup } from "@logic/isf/classic-placing";
 import { computeMultirepResults } from "@logic/isf/multirep-placing";
-import type { MultirepResultGroup } from "@logic/isf/multirep-placing";
+import {
+  buildAwardsList,
+  placeAccent,
+  type AwardOrder,
+  type CeremonyAward,
+} from "@logic/reports/awards-ceremony";
 
-type AwardOrder = "firstToThird" | "thirdToFirst";
+const AUTO_ADVANCE_MS = 6000;
 
-type CeremonyAward = {
-  id: string;
-  format: "classic" | "multirep";
-  place: 1 | 2 | 3;
-  athleteName: string;
-  team: string | null;
-  category: string;
-  disciplineCode: string;
-  result: string;
-};
+function FullscreenOverlay({
+  award,
+  index,
+  total,
+  onPrev,
+  onNext,
+  onExit,
+  meetName,
+  meetDate,
+  autoAdvance,
+  onToggleAutoAdvance,
+}: {
+  award: CeremonyAward;
+  index: number;
+  total: number;
+  onPrev: () => void;
+  onNext: () => void;
+  onExit: () => void;
+  meetName: string;
+  meetDate: string;
+  autoAdvance: boolean;
+  onToggleAutoAdvance: () => void;
+}) {
+  const { t } = useTranslation();
+  const accent = placeAccent(award.place);
 
-function collectClassicAwards(groups: ClassicResultGroup[]): CeremonyAward[] {
-  return groups
-    .filter((group) => group.sex !== null || group.ageCategoryCode !== null)
-    .flatMap((group) =>
-      group.rows
-        .filter((row) => row.place === 1 || row.place === 2 || row.place === 3)
-        .map((row) => ({
-          id: `classic:${group.label}:${row.entry.id}`,
-          format: "classic" as const,
-          place: row.place as 1 | 2 | 3,
-          athleteName: row.entry.name,
-          team: row.entry.team ?? null,
-          category: group.label,
-          disciplineCode: row.entry.disciplineCode,
-          result: row.total > 0 ? `${row.total} kg` : "–",
-        })),
-    );
-}
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 1000,
+        background: `linear-gradient(135deg, ${accent.background}, #0a0a0a 80%)`,
+        color: accent.text,
+        display: "flex",
+        flexDirection: "column",
+        padding: "32px 48px",
+        fontFamily: "var(--mantine-font-family)",
+      }}
+    >
+      <Group justify="space-between" align="flex-start">
+        <Stack gap={2}>
+          <Text size="sm" style={{ opacity: 0.7 }}>
+            {meetName} · {meetDate}
+          </Text>
+          <Text size="xl" fw={700}>
+            {t("awards.title")}
+          </Text>
+        </Stack>
+        <Group gap="md">
+          <Switch
+            size="sm"
+            color="yellow"
+            label={t("awards.autoAdvance")}
+            checked={autoAdvance}
+            onChange={onToggleAutoAdvance}
+            styles={{ label: { color: accent.text } }}
+          />
+          <Button
+            size="sm"
+            color="dark"
+            variant="white"
+            onClick={onExit}
+          >
+            {t("awards.exitFullscreen")} (Esc)
+          </Button>
+        </Group>
+      </Group>
 
-function collectMultirepAwards(groups: MultirepResultGroup[]): CeremonyAward[] {
-  return groups.flatMap((group) =>
-    group.rows
-      .filter((row) => row.place === 1 || row.place === 2 || row.place === 3)
-      .map((row) => ({
-        id: `multirep:${group.label}:${row.entry.id}`,
-        format: "multirep" as const,
-        place: row.place as 1 | 2 | 3,
-        athleteName: row.entry.name,
-        team: row.entry.team ?? null,
-        category: group.label,
-        disciplineCode: row.entry.disciplineCode,
-        result: row.totalReps > 0 ? `${row.totalReps} reps` : "–",
-      })),
+      <Stack
+        gap="md"
+        align="center"
+        justify="center"
+        style={{ flex: 1, textAlign: "center" }}
+      >
+        <Badge
+          size="xl"
+          variant="white"
+          color="dark"
+          style={{ fontSize: 22, padding: "12px 22px", letterSpacing: 1 }}
+        >
+          {award.format === "classic" ? "Classic" : "Multirep"}
+        </Badge>
+        <Text style={{ fontSize: 36, opacity: 0.85 }}>{award.category}</Text>
+        <Text
+          style={{
+            fontSize: 200,
+            fontWeight: 900,
+            lineHeight: 1,
+            color: accent.badge,
+            textShadow: "0 4px 30px rgba(0,0,0,0.6)",
+          }}
+        >
+          {t("awards.place", { place: award.place })}
+        </Text>
+        <Text
+          style={{
+            fontSize: 96,
+            fontWeight: 900,
+            lineHeight: 1.1,
+            maxWidth: "80vw",
+            wordBreak: "break-word",
+          }}
+        >
+          {award.athleteName}
+        </Text>
+        {award.team && (
+          <Text style={{ fontSize: 36, opacity: 0.8 }}>{award.team}</Text>
+        )}
+        <Text
+          style={{
+            fontSize: 56,
+            fontWeight: 700,
+            color: accent.badge,
+          }}
+        >
+          {award.disciplineCode} · {award.result}
+        </Text>
+      </Stack>
+
+      <Group justify="space-between" align="flex-end">
+        <Button
+          size="lg"
+          variant="white"
+          color="dark"
+          onClick={onPrev}
+          disabled={index === 0}
+        >
+          ← {t("awards.previous")}
+        </Button>
+        <Text size="xl" fw={700} style={{ opacity: 0.85 }}>
+          {index + 1} / {total}
+        </Text>
+        <Button
+          size="lg"
+          variant="white"
+          color="dark"
+          onClick={onNext}
+          disabled={index >= total - 1}
+        >
+          {t("awards.next")} →
+        </Button>
+      </Group>
+    </div>
   );
-}
-
-function sortAwards(items: CeremonyAward[], order: AwardOrder): CeremonyAward[] {
-  const placeDirection = order === "firstToThird" ? 1 : -1;
-
-  return [...items].sort((a, b) => {
-    const categoryDiff = a.category.localeCompare(b.category);
-    if (categoryDiff !== 0) return categoryDiff;
-    const placeDiff = (a.place - b.place) * placeDirection;
-    if (placeDiff !== 0) return placeDiff;
-    return a.athleteName.localeCompare(b.athleteName);
-  });
 }
 
 export function AwardsCeremonyPage() {
@@ -84,18 +196,26 @@ export function AwardsCeremonyPage() {
   const entries = useAppSelector(selectEntries);
   const [order, setOrder] = useState<AwardOrder>("thirdToFirst");
   const [activeIndex, setActiveIndex] = useState(0);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [autoAdvance, setAutoAdvance] = useState(false);
 
   const meetDate = meet?.meet.date ?? new Date().toISOString().slice(0, 10);
+  const meetName = meet?.meet.name ?? "Meet";
 
   const awards = useMemo(() => {
     if (!meet) return [];
     const classicGroups = computeClassicResults(entries, meet.meet, meetDate);
     const multirepGroups = computeMultirepResults(entries, meet.meet, meetDate);
-    return sortAwards(
-      [...collectClassicAwards(classicGroups), ...collectMultirepAwards(multirepGroups)],
+    return buildAwardsList(
+      {
+        classicGroups,
+        multirepGroups,
+        kgUnitLabel: t("print.kg"),
+        repsUnitLabel: t("multirep.reps"),
+      },
       order,
     );
-  }, [entries, meet, meetDate, order]);
+  }, [entries, meet, meetDate, order, t]);
 
   const activeAward = awards[activeIndex] ?? null;
 
@@ -103,21 +223,67 @@ export function AwardsCeremonyPage() {
     setActiveIndex(0);
   }, [order, awards.length]);
 
+  // Keyboard navigation — works in both compact and fullscreen modes.
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === "ArrowRight" || event.key === " ") {
         event.preventDefault();
-        setActiveIndex((idx) => Math.min(idx + 1, Math.max(awards.length - 1, 0)));
+        setActiveIndex((idx) =>
+          Math.min(idx + 1, Math.max(awards.length - 1, 0)),
+        );
       }
       if (event.key === "ArrowLeft") {
         event.preventDefault();
         setActiveIndex((idx) => Math.max(idx - 1, 0));
       }
+      if (event.key === "f" || event.key === "F") {
+        event.preventDefault();
+        setFullscreen((on) => !on);
+      }
+      if (event.key === "Escape") {
+        if (fullscreen) {
+          event.preventDefault();
+          setFullscreen(false);
+        }
+      }
     }
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [awards.length]);
+  }, [awards.length, fullscreen]);
+
+  // Auto-advance ticker in fullscreen mode.
+  useEffect(() => {
+    if (!fullscreen || !autoAdvance || awards.length === 0) return;
+    const id = window.setInterval(() => {
+      setActiveIndex((idx) => {
+        if (idx >= awards.length - 1) return idx;
+        return idx + 1;
+      });
+    }, AUTO_ADVANCE_MS);
+    return () => window.clearInterval(id);
+  }, [fullscreen, autoAdvance, awards.length]);
+
+  if (fullscreen && activeAward) {
+    return (
+      <FullscreenOverlay
+        award={activeAward}
+        index={activeIndex}
+        total={awards.length}
+        onPrev={() => setActiveIndex((idx) => Math.max(idx - 1, 0))}
+        onNext={() =>
+          setActiveIndex((idx) =>
+            Math.min(idx + 1, Math.max(awards.length - 1, 0)),
+          )
+        }
+        onExit={() => setFullscreen(false)}
+        meetName={meetName}
+        meetDate={meetDate}
+        autoAdvance={autoAdvance}
+        onToggleAutoAdvance={() => setAutoAdvance((v) => !v)}
+      />
+    );
+  }
 
   return (
     <Container size="lg" py="md">
@@ -126,17 +292,27 @@ export function AwardsCeremonyPage() {
           <Stack gap={4}>
             <Title order={2}>{t("awards.title")}</Title>
             <Text size="sm" c="dimmed">
-              {meet?.meet.name ?? "Meet"} · {meetDate}
+              {meetName} · {meetDate}
             </Text>
           </Stack>
-          <SegmentedControl
-            value={order}
-            onChange={(value) => setOrder(value as AwardOrder)}
-            data={[
-              { value: "thirdToFirst", label: t("awards.thirdToFirst") },
-              { value: "firstToThird", label: t("awards.firstToThird") },
-            ]}
-          />
+          <Group gap="md">
+            <SegmentedControl
+              value={order}
+              onChange={(value) => setOrder(value as AwardOrder)}
+              data={[
+                { value: "thirdToFirst", label: t("awards.thirdToFirst") },
+                { value: "firstToThird", label: t("awards.firstToThird") },
+              ]}
+            />
+            <Button
+              variant="filled"
+              color="red"
+              onClick={() => setFullscreen(true)}
+              disabled={!activeAward}
+            >
+              {t("awards.enterFullscreen")} (F)
+            </Button>
+          </Group>
         </Group>
 
         {!activeAward ? (

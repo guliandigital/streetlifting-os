@@ -578,6 +578,9 @@ export const enUS = {
     place: "Place {{place}}",
     previous: "Previous",
     next: "Next",
+    enterFullscreen: "Fullscreen",
+    exitFullscreen: "Exit",
+    autoAdvance: "Auto-advance",
   },
   about: {
     title: "About",
