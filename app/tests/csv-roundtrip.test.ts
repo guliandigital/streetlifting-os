@@ -122,6 +122,17 @@ describe("CSV parse — error reporting", () => {
     expect(result.drafts[0]?.country).toBeNull();
   });
 
+  it("defaults missing/blank flight to 'A' (downstream grouping needs a key)", () => {
+    const csv =
+      "name,sex,division,disciplineCode,flight\n" +
+      "A,M,amateur,classic_2lift,\n" +     // empty
+      "B,M,amateur,classic_2lift,   \n" +  // whitespace only
+      "C,M,amateur,classic_2lift,B\n";     // explicit
+    const result = parseRegistrationCsv(csv, VALID);
+    expect(result.errors).toEqual([]);
+    expect(result.drafts.map((d) => d.flight)).toEqual(["A", "A", "B"]);
+  });
+
   it("treats common header aliases (case-insensitive, snake_case)", () => {
     const csv =
       "Name,SEX,Division,Discipline_Code,Bodyweight_Kg\nIvan,M,amateur,classic_2lift,75.5\n";

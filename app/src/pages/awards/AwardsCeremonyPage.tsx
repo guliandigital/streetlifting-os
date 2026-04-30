@@ -46,10 +46,16 @@ import { makeEnvelope } from "@logic/reports/awards-broadcast";
 import { openAwardsPublisher } from "@/services/awards-broadcast";
 import { audioService } from "@/services/audio/audio-service";
 import { AwardsFullscreenOverlay } from "./AwardsFullscreen";
+import { loadAwardsPrefs, saveAwardsPrefs } from "./awards-prefs";
 
 const DEFAULT_AUTO_ADVANCE_SEC = 6;
 const MIN_AUTO_ADVANCE_SEC = 2;
 const MAX_AUTO_ADVANCE_SEC = 60;
+
+function clampAutoAdvance(sec: number): number {
+  if (!Number.isFinite(sec)) return DEFAULT_AUTO_ADVANCE_SEC;
+  return Math.min(Math.max(sec, MIN_AUTO_ADVANCE_SEC), MAX_AUTO_ADVANCE_SEC);
+}
 
 export function AwardsCeremonyPage() {
   const { t, i18n } = useTranslation();
@@ -62,8 +68,17 @@ export function AwardsCeremonyPage() {
   const [fullscreen, setFullscreen] = useState(false);
   const [autoAdvance, setAutoAdvance] = useState(false);
   const [autoAdvanceSec, setAutoAdvanceSec] = useState<number>(
-    DEFAULT_AUTO_ADVANCE_SEC,
+    () =>
+      clampAutoAdvance(
+        loadAwardsPrefs({ autoAdvanceSec: DEFAULT_AUTO_ADVANCE_SEC })
+          .autoAdvanceSec,
+      ),
   );
+
+  // Persist auto-advance interval whenever it changes.
+  useEffect(() => {
+    saveAwardsPrefs({ autoAdvanceSec });
+  }, [autoAdvanceSec]);
 
   const meetDate = meet?.meet.date ?? new Date().toISOString().slice(0, 10);
   const meetName = meet?.meet.name ?? "Meet";
@@ -143,11 +158,7 @@ export function AwardsCeremonyPage() {
   // Auto-advance ticker in fullscreen mode.
   useEffect(() => {
     if (!fullscreen || !autoAdvance || awards.length === 0) return;
-    const intervalMs =
-      Math.min(
-        Math.max(autoAdvanceSec, MIN_AUTO_ADVANCE_SEC),
-        MAX_AUTO_ADVANCE_SEC,
-      ) * 1000;
+    const intervalMs = clampAutoAdvance(autoAdvanceSec) * 1000;
     const id = window.setInterval(() => {
       setActiveIndex((idx) => {
         if (idx >= awards.length - 1) return idx;

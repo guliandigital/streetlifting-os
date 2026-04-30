@@ -11,6 +11,11 @@ release will be 1.0.0 once V1 reaches production-ready quality.
 ## [Unreleased]
 
 ### Added
+- **Awards auto-advance interval persists across sessions.** The
+  operator-set value (NumberInput on the Awards page header) now
+  survives a browser reload via `localStorage`
+  (`streetlifting-os.awards-prefs.v1`). Out of redux on purpose —
+  single primitive, single consumer, no need for a slice.
 - **Schedule export — print + CSV download.** New buttons on the
   `/schedule` page give federations both paper run-of-show (the
   estimation-config card is hidden in print, day-platform-stream cards
@@ -35,6 +40,15 @@ release will be 1.0.0 once V1 reaches production-ready quality.
   badge added.
 
 ### Fixed
+- **CSV import: default missing/blank `flight` to `"A"`.** Previously
+  `(row.flight ?? "").trim()` left the value as an empty string,
+  which propagated through into Entry.flight and broke downstream
+  grouping (weigh-in order showed `"Day 1 · Platform 1 · Flight "`
+  with a trailing space; schedule planner used the empty key as a
+  separate stream). Single-flight federations — the common case —
+  could leave the column out entirely or blank without realising.
+  Now defaults to `"A"`, consistent with `buildEntry` runtime
+  default for programmatic dispatch (shipped in v1.4.0).
 - **Single source of truth for `APP_RELEASE_VERSION`.** Three
   files held independently-drifting copies of the version constant
   (`AboutPage.tsx="0.5.0"`, `Home.tsx="0.5.0"`, `App.tsx="1.4.0"`,

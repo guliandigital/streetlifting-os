@@ -249,7 +249,12 @@ export function parseRegistrationCsv(
     const country = (row.country ?? "").trim();
     const team = (row.team ?? "").trim();
     const memberId = (row.memberId ?? "").trim();
-    const flight = (row.flight ?? "").trim();
+    // Default missing/blank flight to "A" so downstream grouping
+    // (weigh-in order, schedule plan) always has a non-empty key.
+    // The flight field carries no semantic when empty — most federations
+    // run a single flight, so "A" is the sensible default.
+    const flightRaw = (row.flight ?? "").trim();
+    const flight = flightRaw.length > 0 ? flightRaw : "A";
     const instagram = (row.instagram ?? "").trim();
     const notes = (row.notes ?? "").trim();
     const guest = parseBool(row.guest ?? "");
