@@ -54,8 +54,9 @@ import { DisplayAwardsPage } from "@pages/display/DisplayAwardsPage";
 import { BrandLogo } from "@components/BrandLogo";
 import { RequireMeet } from "@components/RequireMeet";
 import { useAppSelector } from "@store/index";
+import { APP_RELEASE_VERSION } from "@/persistence";
 
-const APP_VERSION = "1.4.0";
+const APP_VERSION = APP_RELEASE_VERSION;
 
 // ─── Sidebar navigation ───────────────────────────────────────────────────────
 

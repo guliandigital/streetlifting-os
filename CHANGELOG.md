@@ -10,6 +10,19 @@ release will be 1.0.0 once V1 reaches production-ready quality.
 
 ## [Unreleased]
 
+---
+
+## [1.4.1] — 2026-05-01
+
+Patch release. Operator-day quality polish on top of v1.4.0 + two
+silent bugs that were creating the wrong defaults under the surface.
+No breaking changes; save-file `stateVersion` unchanged at `4`.
+
+The `[Unreleased]` items below were authored over four commits on
+`main`; semver-wise this is a single patch release.
+
+Final test suite: **571 / 571** across 41 files; typecheck + lint clean.
+
 ### Added
 - **Awards auto-advance interval persists across sessions.** The
   operator-set value (NumberInput on the Awards page header) now
