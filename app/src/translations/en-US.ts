@@ -581,6 +581,9 @@ export const enUS = {
     enterFullscreen: "Fullscreen",
     exitFullscreen: "Exit",
     autoAdvance: "Auto-advance",
+    openProjector: "Open projector window",
+    displayWaiting: "Waiting for the operator tab…",
+    displayHint: "Open /awards in this same browser and start the ceremony",
   },
   about: {
     title: "About",

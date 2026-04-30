@@ -11,6 +11,18 @@ release will be 1.0.0 once V1 reaches production-ready quality.
 ## [Unreleased]
 
 ### Added
+- **Awards ceremony cross-tab sync via BroadcastChannel.** Operator
+  drives the ceremony from `/awards`; a second tab opened to
+  `/display/awards` (new route, mounted outside AppShell so it
+  occupies the full viewport) follows in lockstep through the
+  `streetlifting-os:awards` BroadcastChannel. Works inside one
+  browser context (PWA, two monitors of the same laptop). Tauri
+  cross-window sync and remote-judge-style cross-device broadcast
+  remain V3 Local Broadcast Publisher work per `architecture-v1.md`
+  §4.6. The `/awards` page gains an `Open projector window` button
+  next to `Fullscreen` — opens the display route in a new tab. The
+  display route shows a `Waiting for the operator tab…` placeholder
+  until the first envelope arrives.
 - **Awards ceremony fullscreen mode.** The `/awards` page now has an
   in-page fullscreen overlay (toggled via the `Fullscreen` button or
   the `F` key) for projector / hall-screen display during the

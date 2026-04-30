@@ -49,6 +49,7 @@ import {
   DisplayPlatesPage,
   DisplayTimerPage,
 } from "@pages/display/DisplayPages";
+import { DisplayAwardsPage } from "@pages/display/DisplayAwardsPage";
 import { BrandLogo } from "@components/BrandLogo";
 import { RequireMeet } from "@components/RequireMeet";
 import { useAppSelector } from "@store/index";
@@ -143,6 +144,7 @@ function AppWithRouter() {
         <Route path="/display/timer" element={<DisplayTimerPage />} />
         <Route path="/display/plates" element={<DisplayPlatesPage />} />
         <Route path="/display/broadcast" element={<DisplayBroadcastPage />} />
+        <Route path="/display/awards" element={<DisplayAwardsPage />} />
       </Routes>
     );
   }

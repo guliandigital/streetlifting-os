@@ -582,6 +582,9 @@ export const ruRU = {
     enterFullscreen: "Полноэкранный",
     exitFullscreen: "Выйти",
     autoAdvance: "Автопереход",
+    openProjector: "Окно проектора",
+    displayWaiting: "Ожидание операторской вкладки…",
+    displayHint: "Откройте /awards в этом же браузере и начните награждение",
   },
   about: {
     title: "О программе",

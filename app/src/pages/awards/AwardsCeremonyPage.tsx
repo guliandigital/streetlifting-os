@@ -17,7 +17,7 @@
  *   - Esc  exit fullscreen
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Badge,
@@ -26,7 +26,6 @@ import {
   Group,
   SegmentedControl,
   Stack,
-  Switch,
   Text,
   Title,
 } from "@mantine/core";
@@ -36,159 +35,13 @@ import { computeClassicResults } from "@logic/isf/classic-placing";
 import { computeMultirepResults } from "@logic/isf/multirep-placing";
 import {
   buildAwardsList,
-  placeAccent,
   type AwardOrder,
-  type CeremonyAward,
 } from "@logic/reports/awards-ceremony";
+import { makeEnvelope } from "@logic/reports/awards-broadcast";
+import { openAwardsPublisher } from "@/services/awards-broadcast";
+import { AwardsFullscreenOverlay } from "./AwardsFullscreen";
 
 const AUTO_ADVANCE_MS = 6000;
-
-function FullscreenOverlay({
-  award,
-  index,
-  total,
-  onPrev,
-  onNext,
-  onExit,
-  meetName,
-  meetDate,
-  autoAdvance,
-  onToggleAutoAdvance,
-}: {
-  award: CeremonyAward;
-  index: number;
-  total: number;
-  onPrev: () => void;
-  onNext: () => void;
-  onExit: () => void;
-  meetName: string;
-  meetDate: string;
-  autoAdvance: boolean;
-  onToggleAutoAdvance: () => void;
-}) {
-  const { t } = useTranslation();
-  const accent = placeAccent(award.place);
-
-  return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 1000,
-        background: `linear-gradient(135deg, ${accent.background}, #0a0a0a 80%)`,
-        color: accent.text,
-        display: "flex",
-        flexDirection: "column",
-        padding: "32px 48px",
-        fontFamily: "var(--mantine-font-family)",
-      }}
-    >
-      <Group justify="space-between" align="flex-start">
-        <Stack gap={2}>
-          <Text size="sm" style={{ opacity: 0.7 }}>
-            {meetName} · {meetDate}
-          </Text>
-          <Text size="xl" fw={700}>
-            {t("awards.title")}
-          </Text>
-        </Stack>
-        <Group gap="md">
-          <Switch
-            size="sm"
-            color="yellow"
-            label={t("awards.autoAdvance")}
-            checked={autoAdvance}
-            onChange={onToggleAutoAdvance}
-            styles={{ label: { color: accent.text } }}
-          />
-          <Button
-            size="sm"
-            color="dark"
-            variant="white"
-            onClick={onExit}
-          >
-            {t("awards.exitFullscreen")} (Esc)
-          </Button>
-        </Group>
-      </Group>
-
-      <Stack
-        gap="md"
-        align="center"
-        justify="center"
-        style={{ flex: 1, textAlign: "center" }}
-      >
-        <Badge
-          size="xl"
-          variant="white"
-          color="dark"
-          style={{ fontSize: 22, padding: "12px 22px", letterSpacing: 1 }}
-        >
-          {award.format === "classic" ? "Classic" : "Multirep"}
-        </Badge>
-        <Text style={{ fontSize: 36, opacity: 0.85 }}>{award.category}</Text>
-        <Text
-          style={{
-            fontSize: 200,
-            fontWeight: 900,
-            lineHeight: 1,
-            color: accent.badge,
-            textShadow: "0 4px 30px rgba(0,0,0,0.6)",
-          }}
-        >
-          {t("awards.place", { place: award.place })}
-        </Text>
-        <Text
-          style={{
-            fontSize: 96,
-            fontWeight: 900,
-            lineHeight: 1.1,
-            maxWidth: "80vw",
-            wordBreak: "break-word",
-          }}
-        >
-          {award.athleteName}
-        </Text>
-        {award.team && (
-          <Text style={{ fontSize: 36, opacity: 0.8 }}>{award.team}</Text>
-        )}
-        <Text
-          style={{
-            fontSize: 56,
-            fontWeight: 700,
-            color: accent.badge,
-          }}
-        >
-          {award.disciplineCode} · {award.result}
-        </Text>
-      </Stack>
-
-      <Group justify="space-between" align="flex-end">
-        <Button
-          size="lg"
-          variant="white"
-          color="dark"
-          onClick={onPrev}
-          disabled={index === 0}
-        >
-          ← {t("awards.previous")}
-        </Button>
-        <Text size="xl" fw={700} style={{ opacity: 0.85 }}>
-          {index + 1} / {total}
-        </Text>
-        <Button
-          size="lg"
-          variant="white"
-          color="dark"
-          onClick={onNext}
-          disabled={index >= total - 1}
-        >
-          {t("awards.next")} →
-        </Button>
-      </Group>
-    </div>
-  );
-}
 
 export function AwardsCeremonyPage() {
   const { t } = useTranslation();
@@ -264,23 +117,48 @@ export function AwardsCeremonyPage() {
     return () => window.clearInterval(id);
   }, [fullscreen, autoAdvance, awards.length]);
 
+  // BroadcastChannel publisher — drives any /display/awards tab open in
+  // the same browser context. Operator tab is the source of truth.
+  const publisherRef = useRef<ReturnType<typeof openAwardsPublisher> | null>(
+    null,
+  );
+  useEffect(() => {
+    publisherRef.current = openAwardsPublisher();
+    return () => {
+      publisherRef.current?.close();
+      publisherRef.current = null;
+    };
+  }, []);
+  useEffect(() => {
+    publisherRef.current?.send(
+      makeEnvelope({
+        meetName,
+        meetDate,
+        totalAwards: awards.length,
+        currentIndex: activeIndex,
+        award: activeAward,
+      }),
+    );
+  }, [activeAward, activeIndex, awards.length, meetName, meetDate]);
+
   if (fullscreen && activeAward) {
     return (
-      <FullscreenOverlay
+      <AwardsFullscreenOverlay
         award={activeAward}
         index={activeIndex}
         total={awards.length}
-        onPrev={() => setActiveIndex((idx) => Math.max(idx - 1, 0))}
-        onNext={() =>
-          setActiveIndex((idx) =>
-            Math.min(idx + 1, Math.max(awards.length - 1, 0)),
-          )
-        }
-        onExit={() => setFullscreen(false)}
         meetName={meetName}
         meetDate={meetDate}
-        autoAdvance={autoAdvance}
-        onToggleAutoAdvance={() => setAutoAdvance((v) => !v)}
+        controls={{
+          onPrev: () => setActiveIndex((idx) => Math.max(idx - 1, 0)),
+          onNext: () =>
+            setActiveIndex((idx) =>
+              Math.min(idx + 1, Math.max(awards.length - 1, 0)),
+            ),
+          onExit: () => setFullscreen(false),
+          autoAdvance,
+          onToggleAutoAdvance: () => setAutoAdvance((v) => !v),
+        }}
       />
     );
   }
@@ -304,6 +182,15 @@ export function AwardsCeremonyPage() {
                 { value: "firstToThird", label: t("awards.firstToThird") },
               ]}
             />
+            <Button
+              variant="default"
+              onClick={() =>
+                window.open("/display/awards", "streetlifting-os-awards-display")
+              }
+              disabled={!activeAward}
+            >
+              {t("awards.openProjector")}
+            </Button>
             <Button
               variant="filled"
               color="red"
