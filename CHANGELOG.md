@@ -10,6 +10,23 @@ release will be 1.0.0 once V1 reaches production-ready quality.
 
 ## [Unreleased]
 
+---
+
+## [1.4.0] — 2026-04-30
+
+V1.x → V2 bridge release. Two themes: the awards ceremony reaches
+PowerTable parity (fullscreen projector mode, medal-accent colours,
+cross-tab sync, voice announcer), and operator UX surfaces the
+V2-foundation pure-logic services that were already in place but
+previously hidden (duplicate detection during CSV import, the
+schedule planner). Total: 6 user-visible features + 1 defensive fix.
+
+The `[Unreleased]` items below were authored over multiple commits
+on `main`; semver-wise this is a single minor release (no breaking
+changes; save-file `stateVersion` unchanged at `4`).
+
+Final test suite: **558 / 558** across 39 files; typecheck + lint clean.
+
 ### Added
 - **Meet schedule page at `/schedule`.** Wall-clock projection of how
   long the meet will run, computed by the existing pure

@@ -55,7 +55,7 @@ import { BrandLogo } from "@components/BrandLogo";
 import { RequireMeet } from "@components/RequireMeet";
 import { useAppSelector } from "@store/index";
 
-const APP_VERSION = "1.3.0";
+const APP_VERSION = "1.4.0";
 
 // ─── Sidebar navigation ───────────────────────────────────────────────────────
 
