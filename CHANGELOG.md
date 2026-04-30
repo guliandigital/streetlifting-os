@@ -59,6 +59,20 @@ backend phase begins.
   (`readiness-checklist`, `medal-count`, `weigh-in-order`,
   `record-certificates`). Full suite: 488 passing across 33 files.
 
+### Security
+- **Auto-updater signing keypair rotated.** The previous keypair generated
+  2026-04-28 (pubkey ID `3EB66068DA9A6A3B`, baked into v1.1.1+ desktop bundle
+  configurations) was orphaned during release-CI debugging — its private half
+  could no longer be recovered in usable form. A fresh keypair was generated
+  2026-04-30 (pubkey ID `AE2CE39D47158968`) and replaces the previous pubkey
+  in `app/src-tauri/tauri.conf.json`. Note: v1.1.1 never produced public
+  desktop installers (release CI failed on every attempt for that version),
+  and v1.1.0 shipped with the placeholder pubkey `dW5zZXQ=`. Therefore no
+  installed v1.x desktop user has a working auto-update path — all existing
+  desktop users must download v1.3.0 manually. PWA users at
+  `https://streetlifting.app/` are unaffected; PWA updates do not depend on
+  the desktop signing keypair.
+
 ---
 
 ## [1.2.0] — 2026-04-30

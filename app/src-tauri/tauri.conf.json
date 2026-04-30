@@ -75,8 +75,8 @@
     },
     "dialog": {},
     "updater": {
-      "_comment_pubkey": "Public half of the Ed25519/minisign keypair generated 2026-04-28. Private half lives at ~/.tauri/streetlifting-os.key on the maintainer's host (NEVER commit) and is mirrored to the TAURI_SIGNING_PRIVATE_KEY GitHub Actions secret. To rotate: re-run `npx @tauri-apps/cli signer generate -w ~/.tauri/streetlifting-os.key` (CI=true env), replace pubkey here, replace the GitHub secret. Be aware: rotating breaks auto-update for users who installed older versions — they must reinstall manually.",
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDNFQjY2MDY4REE5QTZBM0IKUldRN2FwcmFhR0MyUHFNN2w1ai9wcjdLVFZBZ2RTbytQRTRpR2tYeG5xazc1OEVuT2dCZG12Y2wK",
+      "_comment_pubkey": "Public half of the Ed25519/minisign keypair regenerated 2026-04-30 (key ID AE2CE39D47158968) after the original 2026-04-28 keypair was lost during release-CI debugging. The previous v1.1.1+ baked-in pubkey (3EB66068DA9A6A3B) was orphaned — its private half cannot be recovered. Private half of the current keypair lives at ~/.tauri/streetlifting-os.key on the maintainer's host (NEVER commit) and is mirrored verbatim into the TAURI_SIGNING_PRIVATE_KEY GitHub Actions secret (just paste the raw .key file content — it is already base64-encoded by Tauri CLI; do NOT wrap with [Convert]::ToBase64String). Key has no password, so TAURI_SIGNING_PRIVATE_KEY_PASSWORD must be unset/empty. To rotate: re-run `npx @tauri-apps/cli signer generate -w ~/.tauri/streetlifting-os.key`, replace pubkey here, replace the GitHub secret. Be aware: rotating breaks auto-update for users who installed older versions — they must reinstall manually.",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEFFMkNFMzlENDcxNTg5NjgKUldSb2lSVkhuZU1zcnFxVVBEbGh2Mk5hU0t4TTFIa05uWHd4VmVINTRMTGdyVHJidldPZGNhWGEK",
       "endpoints": [
         "https://github.com/GulianDigital/streetlifting-os/releases/latest/download/latest.json"
       ]
