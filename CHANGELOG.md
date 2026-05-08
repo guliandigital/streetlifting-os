@@ -12,6 +12,20 @@ release will be 1.0.0 once V1 reaches production-ready quality.
 
 ---
 
+## [1.4.2] — 2026-05-09
+
+Patch release. Fixes a desktop startup panic in the published v1.4.1
+installers. The Tauri FS plugin no longer accepts `plugins.fs.scope` in
+`tauri.conf.json`; file-system scope is already declared in
+`src-tauri/capabilities/default.json`, so the duplicate legacy config has
+been removed. No save-file schema changes; `stateVersion` remains `4`.
+
+### Fixed
+- Desktop app startup on Windows/macOS/Linux no longer aborts during
+  `tauri_plugin_fs` initialization with `unknown field scope`.
+
+---
+
 ## [1.4.1] — 2026-05-01
 
 Patch release. Operator-day quality polish on top of v1.4.0 + two

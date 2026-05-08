@@ -1,6 +1,6 @@
 [package]
 name = "streetlifting-os"
-version = "1.4.1"
+version = "1.4.2"
 description = "Streetlifting OS — offline-first ISF Streetlifting & Calisthenics meet client"
 authors = ["Streetlifting OS Team"]
 edition = "2021"
