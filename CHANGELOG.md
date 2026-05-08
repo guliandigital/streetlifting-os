@@ -12,6 +12,18 @@ release will be 1.0.0 once V1 reaches production-ready quality.
 
 ---
 
+## [1.4.3] — 2026-05-09
+
+Patch release. Completes the desktop startup fix by removing the remaining
+empty legacy Tauri plugin config entry for `dialog`. No save-file schema
+changes; `stateVersion` remains `4`.
+
+### Fixed
+- Desktop app startup no longer aborts during `tauri_plugin_dialog`
+  initialization with `invalid type: map, expected unit`.
+
+---
+
 ## [1.4.2] — 2026-05-09
 
 Patch release. Fixes a desktop startup panic in the published v1.4.1
