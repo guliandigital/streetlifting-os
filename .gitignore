@@ -111,6 +111,10 @@ sandbox/
 # Maintainer research scripts at repo root (NOT app/scripts/)
 /scripts/
 
+# Local migration payloads can contain PII from legacy systems.
+migration-input/
+migration-output/
+
 # ISF copyrighted rules text — kept local
 ISF_Rules_ver.*.docx
 
@@ -121,4 +125,3 @@ ISF_Rules_ver.*.docx
 # Local install artefacts (npm output captures, etc.)
 app/install.err
 app/install.out
-

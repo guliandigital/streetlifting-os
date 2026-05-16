@@ -16,6 +16,8 @@
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.node.json",
     "lint": "eslint . --ext ts,tsx",
     "icons:generate": "tsx scripts/generate-icons.ts",
+    "powergage:migrate": "node scripts/powergage-migrate.mjs",
+    "powertable:migrate": "node scripts/powertable-migrate.mjs",
     "release:validate-updater": "tsx scripts/validate-updater-config.ts",
     "pwa:validate": "tsx scripts/validate-pwa-build.ts"
   },
