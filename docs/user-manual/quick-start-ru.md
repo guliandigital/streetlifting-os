@@ -9,7 +9,7 @@
 - **Windows**: скачайте `StreetliftingOS_*_x64-setup.exe` с [страницы релизов](https://github.com/GulianDigital/streetlifting-os/releases/latest) → запустите → если появится предупреждение SmartScreen, нажмите «Подробнее → Выполнить в любом случае»
 - **macOS**: скачайте `.dmg` → перетащите в «Программы» → правый клик → «Открыть»
 - **Linux**: скачайте `.AppImage` → `chmod +x` → двойной клик
-- **Без установки**: откройте <https://guliandigital.github.io/streetlifting-os/> в Edge / Chrome / Firefox (Яндекс.Браузер не подойдёт). Программа работает оффлайн после первого открытия.
+- **Без установки**: откройте <https://guliandigital.github.io/streetlifting-os-legacy/> в Edge / Chrome / Firefox (Яндекс.Браузер не подойдёт). Программа работает оффлайн после первого открытия.
 
 Лицензионная программа пока не подписана — предупреждения SmartScreen / Gatekeeper при первом запуске нормальны. Подробности по обходу — в [`installation-v1.md`](../installation-v1.md).
 

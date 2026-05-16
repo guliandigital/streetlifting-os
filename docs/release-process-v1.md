@@ -60,8 +60,8 @@ Before tagging, all of the following must be true:
 - [ ] **PWA build still works**:
       ```sh
       cd app
-      VITE_PUBLIC_BASE=/streetlifting-os/ npm run build
-      VITE_PUBLIC_BASE=/streetlifting-os/ npm run pwa:validate
+      VITE_PUBLIC_BASE=/streetlifting-os-legacy/ npm run build
+      VITE_PUBLIC_BASE=/streetlifting-os-legacy/ npm run pwa:validate
       npx serve dist  # spot-check the offline manifest
       ```
 - [ ] **No unrelated uncommitted changes** in `git status`.
@@ -271,7 +271,7 @@ GitHub Pages is also active for the now-public repository and remains the
 public fallback URL:
 
 ```text
-https://guliandigital.github.io/streetlifting-os/
+https://guliandigital.github.io/streetlifting-os-legacy/
 ```
 
 `.github/workflows/pages.yml` deploys the fallback automatically on every push
@@ -287,7 +287,7 @@ Important constraints:
 - If the repository is made private again on a Free plan, Pages will stop
   working. Keep `https://streetlifting.app/` as the production PWA channel or
   upgrade the GitHub account.
-- The GitHub Pages build must keep `VITE_PUBLIC_BASE=/streetlifting-os/`
+- The GitHub Pages build must keep `VITE_PUBLIC_BASE=/streetlifting-os-legacy/`
   because the project site is served under the repository path.
 
 ### 7.1 GitHub Pages provisioning / recovery
@@ -296,7 +296,7 @@ If the Pages site is ever deleted, recreate it once while the repository is
 public or on a paid plan:
 
 ```sh
-gh api -X POST repos/GulianDigital/streetlifting-os/pages -f build_type=workflow
+gh api -X POST repos/GulianDigital/streetlifting-os-legacy/pages -f build_type=workflow
 ```
 
 Then run:
@@ -308,15 +308,15 @@ gh workflow run pages.yml --ref main
 Verify:
 
 1. The `Deploy PWA to GitHub Pages` workflow finishes successfully.
-2. `https://guliandigital.github.io/streetlifting-os/` returns HTTP 200.
+2. `https://guliandigital.github.io/streetlifting-os-legacy/` returns HTTP 200.
 3. The app loads nested routes and the PWA manifest/service worker is fetched
-   from `/streetlifting-os/`.
+   from `/streetlifting-os-legacy/`.
 
 The workflow runs `npm run pwa:validate` after build. This gate fails the
 deployment before upload if `index.html`, `manifest.webmanifest`, generated
 service worker files, app assets, or manifest icons are missing or if the
 artifact uses root-relative `/assets/` paths while deploying under
-`/streetlifting-os/`.
+`/streetlifting-os-legacy/`.
 
 ### 7.2 streetlifting.app nginx publish
 

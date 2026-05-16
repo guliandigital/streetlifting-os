@@ -71,7 +71,7 @@ Each release builds installers for all three platforms — see the [latest relea
 
 Browser PWA production is available at <https://streetlifting.app/>. GitHub
 Pages remains available as a public fallback at
-<https://guliandigital.github.io/streetlifting-os/>. The PWA is a browser
+<https://guliandigital.github.io/streetlifting-os-legacy/>. The PWA is a browser
 fallback for operators who cannot install the desktop bundle; once opened, it
 can work offline from the service-worker cache.
 

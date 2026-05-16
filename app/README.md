@@ -12,7 +12,7 @@ Pre-built installers for Windows / macOS / Linux are attached to each GitHub Rel
 
 Step-by-step instructions for every OS (including the SmartScreen / Gatekeeper bypass for unsigned binaries) live in [`../docs/installation-v1.md`](../docs/installation-v1.md).
 
-If you can't install software, run the PWA in your browser instead: <https://guliandigital.github.io/streetlifting-os/>. It still works fully offline once loaded.
+If you can't install software, run the PWA in your browser instead: <https://guliandigital.github.io/streetlifting-os-legacy/>. It still works fully offline once loaded.
 
 ## What's in this directory
 

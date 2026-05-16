@@ -51,7 +51,7 @@
 - Зависимости: `libwebkit2gtk-4.1-0`, `libgtk-3-0`, `libayatana-appindicator3-1`
 
 ### Браузерная версия (PWA)
-Если установить нельзя (запрет в корпоративных политиках, рабочий ноутбук) — откройте <https://guliandigital.github.io/streetlifting-os/> в Edge / Chrome / Firefox. Сохраняйте на флэшку или в облако вручную через кнопку «Сохранить».
+Если установить нельзя (запрет в корпоративных политиках, рабочий ноутбук) — откройте <https://guliandigital.github.io/streetlifting-os-legacy/> в Edge / Chrome / Firefox. Сохраняйте на флэшку или в облако вручную через кнопку «Сохранить».
 
 Подробности по установке для каждой ОС — в [`../installation-v1.md`](../installation-v1.md).
 
