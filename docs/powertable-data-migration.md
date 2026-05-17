@@ -17,10 +17,13 @@ Default behavior:
 
 - fetch public directories: federations, clubs, cities, change history;
 - fetch ISF event list via `all_sorev?fed=0010`;
-- fetch public meet pages and working protocols for the first 25 discovered
-  events;
+- fetch public meet pages and all discovered public `wt?nom=...&dsp=...`
+  working-protocol discipline tabs for the first 25 discovered events;
+- fetch public XHR reference endpoints behind the PowerTable pages:
+  `norm_in`, `rec_in`, `rating_in`, `rating_coach_in`;
 - write raw HTML plus parsed table JSON/CSV;
-- write `powertable-public-athlete-mentions.csv` from public working protocols.
+- write parsed competitions, result rows, attempts, athlete mentions, norms,
+  records, athlete ratings, and coach ratings.
 
 To collect a specific federation:
 
@@ -33,6 +36,22 @@ To collect all discovered meet details:
 ```powershell
 npm run powertable:migrate -- --fed 0010 --all-meets
 ```
+
+If disk space is tight, keep only structured outputs and skip raw HTML copies:
+
+```powershell
+npm run powertable:migrate -- --fed 0010 --all-meets --no-raw
+```
+
+To include every public regional record endpoint as well:
+
+```powershell
+npm run powertable:migrate -- --fed 0010 --all-meets --include-regional-records
+```
+
+To include per-year/per-regional-federation rating breakdowns, add
+`--rating-breakdowns`. The default only collects all-time/all-federations
+ratings to keep the public run bounded.
 
 ## Authenticated Collection
 
@@ -68,7 +87,21 @@ Important files:
 - `public-clubs.csv` - parsed public club directory.
 - `public-cities.csv` - parsed public city directory.
 - `fed-<code>-all_sorev.csv` - parsed public event list for a federation.
+- `fed-<code>-public-api-catalog.json` - discovered public PowerTable pages,
+  select filters, XHR endpoint URLs, and row counts.
+- `fed-<code>-public-references.json` - parsed public norms, records, athlete
+  ratings, and coach ratings.
+- `powertable-public-competitions.csv/json` - competition metadata parsed from
+  public `sorev?nom=...` pages.
+- `powertable-public-results.csv/json` - parsed result rows from all fetched
+  public `wt?nom=...&dsp=...` discipline tabs.
+- `powertable-public-attempts.csv/json` - parsed attempt rows derived from
+  public working protocols.
 - `meets/<id>/wt-tables.csv` - parsed public working protocol tables.
+- `meets/<id>/discipline-links.json` - public discipline tabs discovered on
+  the working protocol page.
+- `meets/<id>/discipline-results.csv/json` - parsed per-meet result rows.
+- `meets/<id>/attempts.csv/json` - parsed per-meet attempts.
 - `powertable-public-athlete-mentions.csv` - best-effort athlete rows recovered
   from public protocols.
 - `raw/` and `meets/<id>/raw/` - original HTML.
@@ -88,8 +121,12 @@ Observed output on 2026-05-17:
 - `public-clubs.csv`: 14 rows.
 - `public-cities.csv`: 100 rows.
 - `fed-0010-all_sorev.csv`: 100 ISF competitions.
-- `powertable-public-athlete-mentions.csv`: 750 public athlete rows from
-  working protocols.
+- `powertable-public-results.csv`: all public discipline-tab result rows from
+  fetched working protocols.
+- `powertable-public-attempts.csv`: parsed attempt rows from the public
+  protocol markup.
+- `fed-0010-public-references.json`: public norms, global/country records,
+  all-time athlete ratings, and all-time coach ratings.
 
 ## Limits
 
@@ -97,6 +134,9 @@ Observed output on 2026-05-17:
   private federation fields.
 - Judge catalog extraction requires authenticated data or a PowerTable export
   generated inside the client.
+- Per-attempt judge votes are visible only on individual public `noms?nom=...`
+  pages; the default collector does not fetch thousands of participant detail
+  pages to avoid excessive load.
 - The public working protocol is an HTML view, so athlete row mapping is
   best-effort. For production migration, prefer authenticated
   `nomination?...&json=true`/CSV exports.

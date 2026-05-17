@@ -19,6 +19,36 @@ const PUBLIC_ENDPOINTS = [
   { key: "history", url: `${BASE_URL}/history` },
 ];
 
+const DISCIPLINE_META_BY_DSP = {
+  "0101": { code: "classic_pu", component: "pu", label: "Weighted Pull-up", type: "classic-single" },
+  "0102": { code: "classic_di", component: "di", label: "Weighted Dip", type: "classic-single" },
+  "0103": { code: "classic_total", label: "Total Classic", type: "classic-total" },
+  "0104": { code: "multirep_pu_8", component: "pu", weightKg: 8, label: "Pull-ups with 8 kg", type: "multirep-single" },
+  "0105": { code: "multirep_pu_16", component: "pu", weightKg: 16, label: "Pull-ups with 16 kg", type: "multirep-single" },
+  "0106": { code: "multirep_pu_24", component: "pu", weightKg: 24, label: "Pull-ups with 24 kg", type: "multirep-single" },
+  "0107": { code: "multirep_pu_32", component: "pu", weightKg: 32, label: "Pull-ups with 32 kg", type: "multirep-single" },
+  "0108": { code: "multirep_di_16", component: "di", weightKg: 16, label: "Dips with 16 kg", type: "multirep-single" },
+  "0109": { code: "multirep_di_24", component: "di", weightKg: 24, label: "Dips with 24 kg", type: "multirep-single" },
+  "0110": { code: "multirep_di_32", component: "di", weightKg: 32, label: "Dips with 32 kg", type: "multirep-single" },
+  "0111": { code: "multirep_di_48", component: "di", weightKg: 48, label: "Dips with 48 kg", type: "multirep-single" },
+  "0112": { code: "multirep_total_8_16", pullUpWeightKg: 8, dipWeightKg: 16, label: "Multirep 8/16 (total)", type: "multirep-total" },
+  "0113": { code: "multirep_total_16_24", pullUpWeightKg: 16, dipWeightKg: 24, label: "Multirep 16/24 (total)", type: "multirep-total" },
+  "0114": { code: "multirep_total_24_32", pullUpWeightKg: 24, dipWeightKg: 32, label: "Multirep 24/32 (total)", type: "multirep-total" },
+  "0115": { code: "multirep_total_32_48", pullUpWeightKg: 32, dipWeightKg: 48, label: "Multirep 32/48 (total)", type: "multirep-total" },
+  "0116": { code: "multirep_pu_12", component: "pu", weightKg: 12, label: "Pull-ups with 12 kg", type: "multirep-single" },
+  "0118": { code: "multirep_di_12", component: "di", weightKg: 12, label: "Dips with 12 kg", type: "multirep-single" },
+  "0119": { code: "multirep_total_8_12", pullUpWeightKg: 8, dipWeightKg: 12, label: "Multirep 8/12 (total)", type: "multirep-total" },
+  "0120": { code: "multirep_total_12_16", pullUpWeightKg: 12, dipWeightKg: 16, label: "Multirep 12/16 (total)", type: "multirep-total" },
+  "1298": { code: "wc_mu_bar", component: "mu", label: "Classic muscle-up", type: "multirep-single" },
+  "1299": { code: "classic_squat", component: "sq", label: "Classic barbell squat", type: "classic-single" },
+  "4525": { code: "calisthenics_total", label: "Power calisthenics total", type: "generic" },
+};
+
+const RECORD_LEVEL_GLOBAL_CODES = new Set(["000000008", "000000004", "000000003"]);
+const RECORD_LEVEL_COUNTRY_CODE = "000000002";
+const RECORD_LEVEL_REGION_CODE = "000000001";
+let saveRawPayloads = true;
+
 function printHelp() {
   console.log(`PowerTable migration collector
 
@@ -40,6 +70,13 @@ Options:
   --limit-meets <n>    Limit meet detail downloads per federation. Default: 25.
   --all-meets          Download details for all discovered meets.
   --skip-meet-details  Only collect directories and event lists.
+  --single-wt-page     Fetch only the default working protocol page per meet.
+  --skip-public-references
+                       Skip norm/record/rating public AJAX endpoints.
+  --include-regional-records
+                       Also fetch record endpoints for every public region option.
+  --rating-breakdowns  Also fetch rating endpoints per public year/federation filter.
+  --no-raw            Do not save raw HTML/JSON payloads, only structured outputs.
   --sk <token>         PowerTable security key. Prefer env POWERTABLE_SK.
   --user <id>          PowerTable user id for live endpoints. Prefer env POWERTABLE_USER.
   --sportsmen          With --sk: fetch all federation athletes.
@@ -58,6 +95,11 @@ function parseArgs(argv) {
     limitMeets: 25,
     allMeets: false,
     skipMeetDetails: false,
+    singleWtPage: false,
+    skipPublicReferences: false,
+    includeRegionalRecords: false,
+    ratingBreakdowns: false,
+    noRaw: false,
     sk: process.env.POWERTABLE_SK ?? "",
     user: process.env.POWERTABLE_USER ?? "",
     sportsmen: false,
@@ -93,6 +135,21 @@ function parseArgs(argv) {
         break;
       case "--skip-meet-details":
         args.skipMeetDetails = true;
+        break;
+      case "--single-wt-page":
+        args.singleWtPage = true;
+        break;
+      case "--skip-public-references":
+        args.skipPublicReferences = true;
+        break;
+      case "--include-regional-records":
+        args.includeRegionalRecords = true;
+        break;
+      case "--rating-breakdowns":
+        args.ratingBreakdowns = true;
+        break;
+      case "--no-raw":
+        args.noRaw = true;
         break;
       case "--sk":
         args.sk = requireValue(arg, next);
@@ -133,20 +190,38 @@ function normalizeFsPath(input) {
 }
 
 async function fetchBuffer(url) {
-  const response = await fetch(url, {
-    headers: {
-      "User-Agent": "StreetliftingOS-Migration/1.0 read-only",
-      Accept: "*/*",
-    },
-  });
-  const buffer = Buffer.from(await response.arrayBuffer());
-  return {
-    url,
-    status: response.status,
-    ok: response.ok,
-    contentType: response.headers.get("content-type") ?? "",
-    buffer,
-  };
+  const maxAttempts = 3;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 45_000);
+    try {
+      const response = await fetch(url, {
+        signal: controller.signal,
+        headers: {
+          "User-Agent": "StreetliftingOS-Migration/1.0 read-only",
+          Accept: "*/*",
+        },
+      });
+      const buffer = Buffer.from(await response.arrayBuffer());
+      if ((response.status === 429 || response.status >= 500) && attempt < maxAttempts) {
+        await delay(REQUEST_DELAY_MS * attempt * 3);
+        continue;
+      }
+      return {
+        url,
+        status: response.status,
+        ok: response.ok,
+        contentType: response.headers.get("content-type") ?? "",
+        buffer,
+      };
+    } catch (error) {
+      if (attempt >= maxAttempts) throw error;
+      await delay(REQUEST_DELAY_MS * attempt * 3);
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+  throw new Error(`Failed to fetch ${url}`);
 }
 
 async function fetchText(url) {
@@ -177,6 +252,11 @@ async function saveText(outDir, key, text, extension = "html") {
   return filePath;
 }
 
+async function saveRawText(outDir, key, text, extension = "html") {
+  if (!saveRawPayloads) return "";
+  return saveText(outDir, key, text, extension);
+}
+
 async function saveBuffer(outDir, key, buffer, extension) {
   await mkdir(outDir, { recursive: true });
   const filePath = path.join(outDir, endpointFileName(key, extension));
@@ -199,7 +279,9 @@ async function writeCsv(filePath, rows, headers) {
 }
 
 function csvCell(value) {
-  const text = String(value ?? "");
+  const text = value && typeof value === "object"
+    ? JSON.stringify(value)
+    : String(value ?? "");
   if (/[",\r\n]/.test(text)) return `"${text.replace(/"/g, '""')}"`;
   return text;
 }
@@ -298,6 +380,13 @@ function extractLinks(html) {
     });
   }
   return links;
+}
+
+function publicUrl(href) {
+  const decoded = decodeHtml(String(href ?? ""));
+  if (/^https?:\/\//i.test(decoded)) return decoded;
+  if (decoded.startsWith("/")) return `https://powertable.ru${decoded}`;
+  return `${BASE_URL}/${decoded.replace(/^\/+/, "")}`;
 }
 
 function extractFederationLikeDirectoryRows(html, source) {
@@ -534,6 +623,250 @@ function extractAthleteMentionsFromWtHtml(meetId, html) {
   return rows;
 }
 
+function extractWtDisciplineLinks(html, meetId) {
+  const links = [];
+  const seen = new Set();
+  for (const link of extractLinks(html)) {
+    if (!/^wt\?/i.test(link.href) && !/\/api\/hs\/p\/wt\?/i.test(link.href)) continue;
+    const url = new URL(publicUrl(link.href));
+    const nom = url.searchParams.get("nom");
+    const dsp = url.searchParams.get("dsp") ?? "";
+    if (nom !== String(meetId) || !dsp) continue;
+    const key = `${nom}:${dsp}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const badgeMatch = link.text.match(/^(.*?)(\d+)\s*$/);
+    const label = (badgeMatch ? badgeMatch[1] : link.text).trim();
+    links.push({
+      meetId: String(meetId),
+      dsp,
+      url: `${BASE_URL}/wt?nom=${encodeURIComponent(meetId)}&dsp=${encodeURIComponent(dsp)}&lg=en`,
+      label: label || disciplineMeta(dsp).label,
+      advertisedRowCount: badgeMatch ? Number.parseInt(badgeMatch[2], 10) : null,
+    });
+  }
+  return links;
+}
+
+function extractCompetitionMetaFromSorev(meetId, html) {
+  const title = extractTitle(html).replace(/^PowerTable\s*\/\s*/i, "").trim();
+  const links = extractLinks(html);
+  const federationLink = links.find((link) => /(?:^|\/)fed\?fed=/i.test(link.href));
+  return {
+    meetId: String(meetId),
+    title,
+    federationName: federationLink?.text ?? "",
+    federationHref: federationLink?.href ?? "",
+  };
+}
+
+function extractPublicResultsFromWtHtml(meetId, disciplineLink, html) {
+  const meta = disciplineMeta(disciplineLink.dsp, disciplineLink.label);
+  const rows = [];
+  const attempts = [];
+  let division = "";
+  let gender = "";
+  let category = "";
+  let tableIndex = 0;
+
+  for (const rowMatch of html.matchAll(/<tr\b[\s\S]*?<\/tr>/gi)) {
+    const rowHtml = rowMatch[0];
+    const rowText = stripTags(rowHtml);
+
+    if (/<tr\b[^>]*class=["'][^"']*\bcomp\b/i.test(rowHtml)) {
+      tableIndex += 1;
+      continue;
+    }
+    if (/class=["'][^"']*\bdivision\b/i.test(rowHtml)) {
+      division = rowText;
+      gender = "";
+      category = "";
+      continue;
+    }
+
+    const colspanMatch = rowHtml.match(/<td\b[^>]*colspan=["']?50["']?[^>]*>([\s\S]*?)<\/td>/i);
+    if (colspanMatch) {
+      const contextText = stripTags(colspanMatch[1]).replace(/^-$/, "").trim();
+      if (/^(man|woman|муж|жен)/i.test(contextText)) {
+        gender = contextText;
+      } else if (contextText) {
+        category = contextText;
+      }
+    }
+
+    const athleteLink = rowHtml.match(
+      /<a\b[^>]*href=["']([^"']*noms\?[^"']*\bsp=(\d+)[^"']*)["'][^>]*>([\s\S]*?)<\/a>/i,
+    );
+    if (!athleteLink) continue;
+
+    const cells = extractHtmlCells(rowHtml);
+    const nameParts = splitNameAndBirth(stripTags(athleteLink[3]));
+    const resultRow = {
+      meetId: String(meetId),
+      tableIndex: Math.max(tableIndex - 1, 0),
+      dsp: disciplineLink.dsp,
+      disciplineCode: meta.code,
+      disciplineLabel: disciplineLink.label || meta.label,
+      sportsmanId: athleteLink[2],
+      name: nameParts.name,
+      birthYear: nameParts.birthYear,
+      team: cells[1]?.text ?? "",
+      className: cells[2]?.text ?? "",
+      division,
+      gender,
+      category,
+      href: decodeHtml(athleteLink[1]),
+      bodyWeightKg: numberOrNull(cells[3]?.text),
+      raw: cells.map((cell) => cell.text).join(" | "),
+    };
+
+    applyDisciplineCells(resultRow, attempts, cells, meta);
+    rows.push(resultRow);
+  }
+
+  return { rows, attempts };
+}
+
+function extractHtmlCells(rowHtml) {
+  const cells = [];
+  for (const cellMatch of rowHtml.matchAll(/<(td|th)\b([^>]*)>([\s\S]*?)<\/\1>/gi)) {
+    const attrs = cellMatch[2] ?? "";
+    cells.push({
+      text: stripTags(cellMatch[3]),
+      attrs,
+      noLift: /background-color:\s*#?ffb3ba/i.test(attrs),
+      skipped: /background-color:\s*#?9d9d9d/i.test(attrs),
+    });
+  }
+  return cells;
+}
+
+function disciplineMeta(dsp, label = "") {
+  const known = DISCIPLINE_META_BY_DSP[dsp];
+  if (known) return known;
+  return {
+    code: `powertable_${dsp || "unknown"}`,
+    label: label || `PowerTable ${dsp || "unknown"}`,
+    type: "generic",
+  };
+}
+
+function applyDisciplineCells(row, attempts, cells, meta) {
+  row.resultValue = null;
+  row.coefficient = null;
+  row.placeInClass = null;
+  row.placeOverall = null;
+
+  if (meta.type === "classic-total") {
+    row.bestPullUpKg = numberOrNull(cells[8]?.text);
+    row.bestDipKg = numberOrNull(cells[13]?.text);
+    row.resultValue = numberOrNull(cells[14]?.text);
+    row.placeInClass = numberOrNull(cells[15]?.text);
+    row.coefficient = numberOrNull(cells[16]?.text);
+    row.placeOverall = numberOrNull(cells[17]?.text);
+    addClassicAttempts(row, attempts, cells, "pu", [4, 5, 6]);
+    addClassicAttempts(row, attempts, cells, "di", [9, 10, 11]);
+    return;
+  }
+
+  if (meta.type === "classic-single") {
+    const bestKey = meta.component === "di" ? "bestDipKg" : meta.component === "pu" ? "bestPullUpKg" : "bestLiftKg";
+    row[bestKey] = numberOrNull(cells[8]?.text);
+    row.resultValue = numberOrNull(cells[9]?.text);
+    row.placeInClass = numberOrNull(cells[10]?.text);
+    row.coefficient = numberOrNull(cells[11]?.text);
+    row.placeOverall = numberOrNull(cells[12]?.text);
+    addClassicAttempts(row, attempts, cells, meta.component, [4, 5, 6]);
+    return;
+  }
+
+  if (meta.type === "multirep-total") {
+    row.pullUpReps = numberOrNull(cells[5]?.text);
+    row.dipReps = numberOrNull(cells[7]?.text);
+    row.resultValue = numberOrNull(cells[9]?.text);
+    row.placeInClass = numberOrNull(cells[10]?.text);
+    row.coefficient = numberOrNull(cells[11]?.text);
+    row.placeOverall = numberOrNull(cells[12]?.text);
+    addMultirepAttempt(row, attempts, cells[5], "pu", meta.pullUpWeightKg);
+    addMultirepAttempt(row, attempts, cells[7], "di", meta.dipWeightKg);
+    return;
+  }
+
+  if (meta.type === "multirep-single") {
+    row.reps = numberOrNull(cells[4]?.text);
+    row.resultValue = numberOrNull(cells[6]?.text);
+    row.placeInClass = numberOrNull(cells[7]?.text);
+    row.coefficient = numberOrNull(cells[8]?.text);
+    row.placeOverall = numberOrNull(cells[9]?.text);
+    addMultirepAttempt(row, attempts, cells[4], meta.component, meta.weightKg);
+    return;
+  }
+
+  row.resultValue = firstNumberAfter(cells, 4);
+}
+
+function addClassicAttempts(row, attempts, cells, componentCode, indexes) {
+  indexes.forEach((cellIndex, index) => {
+    const cell = cells[cellIndex];
+    const weightKg = numberOrNull(cell?.text);
+    if (weightKg === null) return;
+    const attempt = {
+      meetId: row.meetId,
+      sportsmanId: row.sportsmanId,
+      dsp: row.dsp,
+      disciplineCode: row.disciplineCode,
+      componentCode,
+      attemptNumber: index + 1,
+      weightKg,
+      result: cell?.noLift ? "no_lift" : "good_lift",
+    };
+    attempts.push(attempt);
+    row.attempts = [...(row.attempts ?? []), omitMeetAttemptKeys(attempt)];
+  });
+}
+
+function addMultirepAttempt(row, attempts, cell, componentCode, weightKg) {
+  const repsCount = numberOrNull(cell?.text);
+  if (repsCount === null) return;
+  const attempt = {
+    meetId: row.meetId,
+    sportsmanId: row.sportsmanId,
+    dsp: row.dsp,
+    disciplineCode: row.disciplineCode,
+    componentCode,
+    attemptNumber: 1,
+    weightKg: weightKg ?? null,
+    repsCount,
+    result: cell?.noLift ? "no_lift" : "good_lift",
+  };
+  attempts.push(attempt);
+  row.attempts = [...(row.attempts ?? []), omitMeetAttemptKeys(attempt)];
+}
+
+function omitMeetAttemptKeys(attempt) {
+  const { meetId: _meetId, sportsmanId: _sportsmanId, dsp: _dsp, disciplineCode: _disciplineCode, ...rest } = attempt;
+  return rest;
+}
+
+function numberOrNull(value) {
+  const normalized = normalizeNumber(value);
+  return normalized === "" ? null : Number(normalized);
+}
+
+function firstNumberAfter(cells, startIndex) {
+  for (const cell of cells.slice(startIndex)) {
+    const value = numberOrNull(cell.text);
+    if (value !== null) return value;
+  }
+  return null;
+}
+
+function hasMeaningfulResult(row) {
+  return row.resultValue !== null
+    || row.coefficient !== null
+    || (row.attempts?.length ?? 0) > 0;
+}
+
 function extractRowCells(rowHtml) {
   const cells = [];
   for (const cellMatch of rowHtml.matchAll(/<(td|th)\b[^>]*>([\s\S]*?)<\/\1>/gi)) {
@@ -596,7 +929,7 @@ function decodeQueryValue(value) {
 async function collectPublicEndpoint(outDir, endpoint) {
   const response = await fetchText(endpoint.url);
   const key = `public-${endpoint.key}`;
-  const rawPath = await saveText(path.join(outDir, "raw"), key, response.text);
+  const rawPath = await saveRawText(path.join(outDir, "raw"), key, response.text);
   const tables = extractTables(response.text);
   const directoryRows = extractDirectoryRows(endpoint.key, response.text);
   const rows = directoryRows.length > 0
@@ -622,6 +955,244 @@ async function collectPublicEndpoint(outDir, endpoint) {
   };
 }
 
+async function collectPublicReferences(outDir, fed, args) {
+  const pageSpecs = [
+    { key: "norm", url: `${BASE_URL}/norm?fed=${encodeURIComponent(fed)}` },
+    { key: "rec", url: `${BASE_URL}/rec?fed=${encodeURIComponent(fed)}` },
+    { key: "rating", url: `${BASE_URL}/rating?fed=${encodeURIComponent(fed)}` },
+    { key: "rating_coach", url: `${BASE_URL}/rating_coach?fed=${encodeURIComponent(fed)}` },
+  ];
+  const result = {
+    generatedAt: new Date().toISOString(),
+    federationCode: fed,
+    pages: [],
+    endpoints: [],
+    options: {},
+    normRows: [],
+    recordRows: [],
+    athleteRatingRows: [],
+    coachRatingRows: [],
+  };
+
+  const pages = {};
+  for (const pageSpec of pageSpecs) {
+    const response = await fetchText(pageSpec.url);
+    pages[pageSpec.key] = response.text;
+    await saveRawText(path.join(outDir, "raw"), `reference-${pageSpec.key}`, response.text);
+    result.pages.push({
+      key: pageSpec.key,
+      url: pageSpec.url,
+      status: response.status,
+      contentType: response.contentType,
+      title: extractTitle(response.text),
+    });
+    await delay(REQUEST_DELAY_MS);
+  }
+
+  const normDisciplines = extractSelectOptions(pages.norm, "mydisc");
+  const recordDisciplines = extractSelectOptions(pages.rec, "mydisc");
+  const ratingDisciplines = extractSelectOptions(pages.rating, "mydisc");
+  const recordLevels = extractSelectOptions(pages.rec, "mytyperec");
+  const countries = extractSelectOptions(pages.rec, "mycountry").filter((option) => option.value);
+  const regions = extractSelectOptions(pages.rec, "myregion").filter((option) => option.value);
+  const ratingYears = extractSelectOptions(pages.rating, "myyear");
+  const ratingFeds = extractSelectOptions(pages.rating, "myfed");
+  const coachYears = extractSelectOptions(pages.rating_coach, "myyear");
+  const coachFeds = extractSelectOptions(pages.rating_coach, "myfed");
+  result.options = {
+    normDisciplines,
+    recordDisciplines,
+    ratingDisciplines,
+    recordLevels,
+    countries,
+    regions,
+    ratingYears,
+    ratingFeds,
+    coachYears,
+    coachFeds,
+  };
+
+  for (const discipline of normDisciplines) {
+    const url = `${BASE_URL}/norm_in?fed=${encodeURIComponent(fed)}&md=${encodeURIComponent(discipline.value)}`;
+    const response = await fetchText(url);
+    const rows = referenceRowsFromHtml(response.text, {
+      dsp: discipline.value,
+      disciplineCode: disciplineMeta(discipline.value, discipline.label).code,
+      disciplineLabel: discipline.label,
+    });
+    result.normRows.push(...rows);
+    result.endpoints.push(referenceEndpointSummary(`norm_in:${discipline.value}`, url, response, rows));
+    await delay(REQUEST_DELAY_MS);
+  }
+
+  for (const discipline of recordDisciplines) {
+    const meta = disciplineMeta(discipline.value, discipline.label);
+    for (const level of recordLevels) {
+      const targets = recordTargetsForLevel(level, countries, regions, args.includeRegionalRecords);
+      for (const target of targets) {
+        const url = `${BASE_URL}/rec_in?fed=${encodeURIComponent(fed)}&mtr=${encodeURIComponent(level.value)}&mct=&mc=${encodeURIComponent(target.countryCode)}&mr=${encodeURIComponent(target.regionCode)}&md=${encodeURIComponent(discipline.value)}&lg=`;
+        const response = await fetchText(url);
+        const rows = referenceRowsFromHtml(response.text, {
+          dsp: discipline.value,
+          disciplineCode: meta.code,
+          disciplineLabel: discipline.label,
+          levelCode: level.value,
+          levelLabel: level.label,
+          countryCode: target.countryCode,
+          countryLabel: target.countryLabel,
+          regionCode: target.regionCode,
+          regionLabel: target.regionLabel,
+        });
+        result.recordRows.push(...rows);
+        result.endpoints.push(referenceEndpointSummary(`rec_in:${discipline.value}:${level.value}:${target.key}`, url, response, rows));
+        await delay(REQUEST_DELAY_MS);
+      }
+    }
+  }
+
+  const ratingYearTargets = args.ratingBreakdowns ? ratingYears : ratingYears.filter((option) => option.value === "all");
+  const ratingFedTargets = args.ratingBreakdowns ? ratingFeds : ratingFeds.filter((option) => option.value === "all");
+  for (const discipline of ratingDisciplines) {
+    const meta = disciplineMeta(discipline.value, discipline.label);
+    for (const year of ratingYearTargets) {
+      for (const fedFilter of ratingFedTargets) {
+        const url = `${BASE_URL}/rating_in?fed=${encodeURIComponent(fed)}&md=${encodeURIComponent(discipline.value)}&y=${encodeURIComponent(year.value)}&fd=${encodeURIComponent(fedFilter.value)}`;
+        const response = await fetchText(url);
+        const rows = referenceRowsFromHtml(response.text, {
+          dsp: discipline.value,
+          disciplineCode: meta.code,
+          disciplineLabel: discipline.label,
+          year: year.value,
+          federationFilter: fedFilter.value,
+          federationFilterLabel: fedFilter.label,
+        });
+        result.athleteRatingRows.push(...rows);
+        result.endpoints.push(referenceEndpointSummary(`rating_in:${discipline.value}:${year.value}:${fedFilter.value}`, url, response, rows));
+        await delay(REQUEST_DELAY_MS);
+      }
+    }
+  }
+
+  const coachYearTargets = args.ratingBreakdowns ? coachYears : coachYears.filter((option) => option.value === "all");
+  const coachFedTargets = args.ratingBreakdowns ? coachFeds : coachFeds.filter((option) => option.value === "all");
+  for (const year of coachYearTargets) {
+    for (const fedFilter of coachFedTargets) {
+      const url = `${BASE_URL}/rating_coach_in?fed=${encodeURIComponent(fed)}&y=${encodeURIComponent(year.value)}&fd=${encodeURIComponent(fedFilter.value)}`;
+      const response = await fetchText(url);
+      const rows = referenceRowsFromHtml(response.text, {
+        year: year.value,
+        federationFilter: fedFilter.value,
+        federationFilterLabel: fedFilter.label,
+      });
+      result.coachRatingRows.push(...rows);
+      result.endpoints.push(referenceEndpointSummary(`rating_coach_in:${year.value}:${fedFilter.value}`, url, response, rows));
+      await delay(REQUEST_DELAY_MS);
+    }
+  }
+
+  await writeJson(path.join(outDir, `fed-${fed}-public-references.json`), result);
+  await writeJson(path.join(outDir, `fed-${fed}-public-api-catalog.json`), {
+    generatedAt: result.generatedAt,
+    federationCode: fed,
+    baseUrl: BASE_URL,
+    pages: result.pages,
+    options: result.options,
+    endpoints: result.endpoints,
+    notes: [
+      "PowerTable public pages are HTML; norm/record/rating bodies are loaded by XHR *_in endpoints.",
+      "ratingBreakdowns=false collects all-time/all-federations ratings only to keep the default run bounded.",
+      "includeRegionalRecords=false skips region-level record endpoints by default because the public page exposes many region filters.",
+    ],
+  });
+
+  return result;
+}
+
+function extractSelectOptions(html, selectId) {
+  const selectPattern = new RegExp(`<select\\b[^>]*id=["']${escapeRegExp(selectId)}["'][^>]*>([\\s\\S]*?)<\\/select>`, "i");
+  const selectMatch = html.match(selectPattern);
+  if (!selectMatch) return [];
+  const options = [];
+  for (const optionMatch of selectMatch[1].matchAll(/<option\b([^>]*)>([\s\S]*?)<\/option>/gi)) {
+    const attrs = optionMatch[1] ?? "";
+    const valueMatch = attrs.match(/\bvalue=["']([^"']*)["']/i);
+    const value = valueMatch ? decodeHtml(valueMatch[1]) : stripTags(optionMatch[2]);
+    const label = stripTags(optionMatch[2]);
+    options.push({
+      value,
+      label,
+      selected: /\bselected\b/i.test(attrs),
+    });
+  }
+  return options;
+}
+
+function recordTargetsForLevel(level, countries, regions, includeRegionalRecords) {
+  if (RECORD_LEVEL_GLOBAL_CODES.has(level.value)) {
+    return [{ key: "global", countryCode: "", countryLabel: "", regionCode: "", regionLabel: "" }];
+  }
+  if (level.value === RECORD_LEVEL_COUNTRY_CODE) {
+    return countries.map((country) => ({
+      key: `country-${country.value}`,
+      countryCode: country.value,
+      countryLabel: country.label,
+      regionCode: "",
+      regionLabel: "",
+    }));
+  }
+  if (level.value === RECORD_LEVEL_REGION_CODE && includeRegionalRecords) {
+    return regions.map((region) => ({
+      key: `region-${region.value}`,
+      countryCode: "",
+      countryLabel: "",
+      regionCode: region.value,
+      regionLabel: region.label,
+    }));
+  }
+  return [];
+}
+
+function referenceRowsFromHtml(html, metadata) {
+  const dataDate = extractDataDate(html);
+  const rows = [];
+  extractTables(html).forEach((table, tableIndex) => {
+    table.rows.forEach((cells, rowIndex) => {
+      const cleanedCells = cells.map((cell) => cell.trim()).filter((cell) => cell.length > 0);
+      if (cleanedCells.length === 0) return;
+      if (cleanedCells.length === 1 && /данные по состоянию|data on date/i.test(cleanedCells[0])) return;
+      rows.push({
+        ...metadata,
+        dataDate,
+        tableIndex,
+        rowIndex,
+        cells: cleanedCells,
+      });
+    });
+  });
+  return rows;
+}
+
+function extractDataDate(html) {
+  const text = stripTags(html);
+  const match = text.match(/(?:Данные по состоянию на|Data on date)\s*\/?\s*(?:Data on date)?\s*([0-9]{1,2}\.[0-9]{1,2}\.[0-9]{4}\s+[0-9:]+(?:\s*\(UTC[+-]\d+\))?)/i);
+  return match ? match[1].trim() : "";
+}
+
+function referenceEndpointSummary(key, url, response, rows) {
+  return {
+    key,
+    url,
+    status: response.status,
+    contentType: response.contentType,
+    bytes: response.buffer.length,
+    rowCount: rows.length,
+  };
+}
+
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function unionHeaders(rows) {
   const headers = [];
   for (const row of rows) {
@@ -636,7 +1207,7 @@ async function collectFederationMeetList(outDir, fed) {
   const url = `${BASE_URL}/all_sorev?fed=${encodeURIComponent(fed)}`;
   const response = await fetchText(url);
   const key = `fed-${fed}-all_sorev`;
-  await saveText(path.join(outDir, "raw"), key, response.text);
+  await saveRawText(path.join(outDir, "raw"), key, response.text);
   const tables = extractTables(response.text);
   const rows = extractFederationMeetRows(response.text, fed);
   const links = extractLinks(response.text);
@@ -655,15 +1226,24 @@ async function collectFederationMeetList(outDir, fed) {
   };
 }
 
-async function collectMeetPublic(outDir, meetId) {
+async function collectMeetPublic(outDir, meetId, args) {
   const meetDir = path.join(outDir, "meets", String(meetId));
-  const result = { meetId, endpoints: [], athleteMentions: [] };
+  const result = {
+    meetId,
+    endpoints: [],
+    competition: null,
+    athleteMentions: [],
+    resultRows: [],
+    attemptRows: [],
+    disciplineLinks: [],
+  };
 
   const sorevUrl = `${BASE_URL}/sorev?nom=${encodeURIComponent(meetId)}`;
   const sorev = await fetchText(sorevUrl);
-  await saveText(path.join(meetDir, "raw"), "sorev", sorev.text);
+  await saveRawText(path.join(meetDir, "raw"), "sorev", sorev.text);
   const sorevTables = extractTables(sorev.text);
   await writeJson(path.join(meetDir, "sorev-tables.json"), sorevTables);
+  result.competition = extractCompetitionMetaFromSorev(meetId, sorev.text);
   result.title = extractTitle(sorev.text);
   result.endpoints.push({
     key: "sorev",
@@ -676,27 +1256,67 @@ async function collectMeetPublic(outDir, meetId) {
 
   const wtUrl = `${BASE_URL}/wt?nom=${encodeURIComponent(meetId)}&lg=en`;
   const wt = await fetchText(wtUrl);
-  await saveText(path.join(meetDir, "raw"), "wt-en", wt.text);
+  await saveRawText(path.join(meetDir, "raw"), "wt-en", wt.text);
   const wtTables = extractTables(wt.text);
   const wtRows = maybeRowsFromTables(wtTables, `meet-${meetId}-wt`);
-  result.athleteMentions = extractAthleteMentionsFromWtHtml(meetId, wt.text);
-  if (result.athleteMentions.length === 0) {
-    result.athleteMentions = extractAthleteMentionsFromWt(meetId, wtTables);
-  }
+  result.disciplineLinks = extractWtDisciplineLinks(wt.text, meetId);
   await writeJson(path.join(meetDir, "wt-tables.json"), wtTables);
   await writeCsv(path.join(meetDir, "wt-tables.csv"), wtRows, unionHeaders(wtRows));
-  await writeCsv(
-    path.join(meetDir, "athlete-mentions.csv"),
-    result.athleteMentions,
-    unionHeaders(result.athleteMentions),
-  );
   result.endpoints.push({
     key: "wt-en",
     url: wtUrl,
     status: wt.status,
     tableCount: wtTables.length,
-    athleteMentions: result.athleteMentions.length,
+    disciplineLinks: result.disciplineLinks.length,
   });
+
+  const pagesToParse = args.singleWtPage || result.disciplineLinks.length === 0
+    ? [{ dsp: "", url: wtUrl, label: "default", advertisedRowCount: null, html: wt.text, status: wt.status }]
+    : result.disciplineLinks;
+
+  for (const disciplineLink of pagesToParse) {
+    let html = disciplineLink.html;
+    let status = disciplineLink.status;
+    let tableCount = wtTables.length;
+    if (!html) {
+      const page = await fetchText(disciplineLink.url);
+      html = page.text;
+      status = page.status;
+      tableCount = extractTables(page.text).length;
+      await saveRawText(
+        path.join(meetDir, "raw"),
+        `wt-${disciplineLink.dsp || "default"}-en`,
+        page.text,
+      );
+      await delay(REQUEST_DELAY_MS);
+    }
+
+    const parsed = extractPublicResultsFromWtHtml(meetId, disciplineLink, html);
+    result.resultRows.push(...parsed.rows);
+    result.attemptRows.push(...parsed.attempts);
+    result.endpoints.push({
+      key: `wt-${disciplineLink.dsp || "default"}-en`,
+      url: disciplineLink.url,
+      status,
+      tableCount,
+      resultRows: parsed.rows.length,
+      attemptRows: parsed.attempts.length,
+    });
+  }
+
+  result.athleteMentions = result.resultRows.length > 0
+    ? result.resultRows
+    : extractAthleteMentionsFromWtHtml(meetId, wt.text);
+  if (result.athleteMentions.length === 0) {
+    result.athleteMentions = extractAthleteMentionsFromWt(meetId, wtTables);
+  }
+
+  await writeJson(path.join(meetDir, "discipline-links.json"), result.disciplineLinks);
+  await writeJson(path.join(meetDir, "discipline-results.json"), result.resultRows);
+  await writeJson(path.join(meetDir, "attempts.json"), result.attemptRows);
+  await writeCsv(path.join(meetDir, "discipline-results.csv"), result.resultRows, unionHeaders(result.resultRows));
+  await writeCsv(path.join(meetDir, "attempts.csv"), result.attemptRows, unionHeaders(result.attemptRows));
+  await writeCsv(path.join(meetDir, "athlete-mentions.csv"), result.athleteMentions, unionHeaders(result.athleteMentions));
 
   return result;
 }
@@ -709,7 +1329,7 @@ async function collectAuthenticated(outDir, args) {
     const url = `${BASE_URL}/nomination?sportsman=true&sk=${encodeURIComponent(args.sk)}`;
     const response = await fetchText(url);
     const redactedUrl = `${BASE_URL}/nomination?sportsman=true&sk=<redacted>`;
-    await saveText(path.join(outDir, "raw-auth"), "sportsmen", response.text, guessTextExtension(response));
+    await saveRawText(path.join(outDir, "raw-auth"), "sportsmen", response.text, guessTextExtension(response));
     await writeJson(path.join(outDir, "auth-sportsmen-parsed.json"), tryParseJson(response.text));
     results.push({
       key: "sportsmen",
@@ -743,7 +1363,7 @@ async function collectAuthenticated(outDir, args) {
 
       for (const endpoint of endpoints) {
         const response = await fetchText(endpoint.url);
-        await saveText(
+        await saveRawText(
           path.join(outDir, "raw-auth"),
           endpoint.key,
           response.text,
@@ -783,7 +1403,7 @@ async function collectAuthenticated(outDir, args) {
 
     for (const endpoint of liveEndpoints) {
       const response = await fetchText(endpoint.url);
-      await saveText(path.join(outDir, "raw-auth"), endpoint.key, response.text, guessTextExtension(response));
+      await saveRawText(path.join(outDir, "raw-auth"), endpoint.key, response.text, guessTextExtension(response));
       await writeJson(path.join(outDir, `${endpoint.key}-parsed.json`), tryParseJson(response.text));
       results.push({
         key: endpoint.key,
@@ -828,6 +1448,7 @@ async function main() {
     printHelp();
     return;
   }
+  saveRawPayloads = !args.noRaw;
 
   const outDir = normalizeFsPath(args.out);
   await mkdir(outDir, { recursive: true });
@@ -838,15 +1459,19 @@ async function main() {
     mode: args.sk ? "authenticated-plus-public" : "public",
     hasSk: Boolean(args.sk),
     hasUser: Boolean(args.user),
+    savesRawPayloads: saveRawPayloads,
     feds: args.feds,
     explicitMeets: args.meets,
     publicEndpoints: [],
     federationMeetLists: [],
     publicMeetDetails: [],
+    publicReferences: [],
     authenticatedEndpoints: [],
     notes: [
       "PowerTable is an online 1C-backed service; local installer files do not contain the full database.",
       "Public mode collects only public website/API data.",
+      "Public wt pages expose competition result rows and attempt values; judge catalog still requires authenticated data/export.",
+      "PowerTable norm/record/rating pages use public XHR endpoints named norm_in, rec_in, rating_in, and rating_coach_in.",
       "Authenticated endpoints require a federation-owned sk token and may contain PII.",
     ],
   };
@@ -887,16 +1512,26 @@ async function main() {
       : allMeetIds.slice(0, args.limitMeets);
 
   const allAthleteMentions = [];
+  const allResultRows = [];
+  const allAttemptRows = [];
+  const allCompetitionRows = [];
   for (const meetId of meetIdsForDetail) {
     try {
-      const meetResult = await collectMeetPublic(outDir, meetId);
+      const meetResult = await collectMeetPublic(outDir, meetId, args);
       manifest.publicMeetDetails.push({
         meetId,
         title: meetResult.title,
+        competition: meetResult.competition,
         endpoints: meetResult.endpoints,
+        disciplineLinks: meetResult.disciplineLinks.length,
         athleteMentions: meetResult.athleteMentions.length,
+        resultRows: meetResult.resultRows.length,
+        attemptRows: meetResult.attemptRows.length,
       });
+      if (meetResult.competition) allCompetitionRows.push(meetResult.competition);
       allAthleteMentions.push(...meetResult.athleteMentions);
+      allResultRows.push(...meetResult.resultRows);
+      allAttemptRows.push(...meetResult.attemptRows);
       await delay(REQUEST_DELAY_MS);
     } catch (error) {
       manifest.publicMeetDetails.push({
@@ -915,12 +1550,74 @@ async function main() {
     path.join(outDir, "powertable-public-athlete-mentions.json"),
     allAthleteMentions,
   );
+  await writeCsv(
+    path.join(outDir, "powertable-public-competitions.csv"),
+    allCompetitionRows,
+    unionHeaders(allCompetitionRows),
+  );
+  await writeJson(
+    path.join(outDir, "powertable-public-competitions.json"),
+    allCompetitionRows,
+  );
+  await writeCsv(
+    path.join(outDir, "powertable-public-results.csv"),
+    allResultRows,
+    unionHeaders(allResultRows),
+  );
+  await writeJson(
+    path.join(outDir, "powertable-public-results.json"),
+    allResultRows,
+  );
+  await writeCsv(
+    path.join(outDir, "powertable-public-attempts.csv"),
+    allAttemptRows,
+    unionHeaders(allAttemptRows),
+  );
+  await writeJson(
+    path.join(outDir, "powertable-public-attempts.json"),
+    allAttemptRows,
+  );
+
+  if (!args.skipPublicReferences) {
+    for (const fed of args.feds) {
+      try {
+        const references = await collectPublicReferences(outDir, fed, args);
+        manifest.publicReferences.push({
+          fed,
+          pages: references.pages.length,
+          endpoints: references.endpoints.length,
+          normRows: references.normRows.length,
+          recordRows: references.recordRows.length,
+          athleteRatingRows: references.athleteRatingRows.length,
+          coachRatingRows: references.coachRatingRows.length,
+          includeRegionalRecords: args.includeRegionalRecords,
+          ratingBreakdowns: args.ratingBreakdowns,
+        });
+      } catch (error) {
+        manifest.publicReferences.push({
+          fed,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+  }
 
   manifest.authenticatedEndpoints = await collectAuthenticated(outDir, args);
   manifest.summary = {
     discoveredMeetCount: allMeetIds.length,
     downloadedMeetDetailCount: meetIdsForDetail.length,
     publicAthleteMentionCount: allAthleteMentions.length,
+    publicCompetitionCount: allCompetitionRows.length,
+    publicResultRowCount: allResultRows.length,
+    publicResultRowsWithResultCount: allResultRows.filter(hasMeaningfulResult).length,
+    publicAttemptRowCount: allAttemptRows.length,
+    uniquePublicAthleteCount: new Set(
+      allResultRows.map((row) => row.sportsmanId).filter(Boolean),
+    ).size,
+    publicDisciplinePageCount: manifest.publicMeetDetails.reduce(
+      (sum, detail) => sum + (detail.disciplineLinks ?? 0),
+      0,
+    ),
   };
 
   await writeJson(path.join(outDir, "manifest.json"), manifest);
