@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -68,7 +68,10 @@ Options:
   --fed <code>         Federation code for all_sorev. Repeatable. Default: ${DEFAULT_FEDS.join(", ")}
   --meet <id>          Meet/competition id. Repeatable.
   --limit-meets <n>    Limit meet detail downloads per federation. Default: 25.
+  --offset-meets <n>   Skip first n discovered meet ids before detail downloads. Default: 0.
+  --meet-limit <n>     Limit detail downloads after offset. Overrides --limit-meets/--all-meets.
   --all-meets          Download details for all discovered meets.
+  --resume             Skip meet ids that already have structured detail files in --out.
   --skip-meet-details  Only collect directories and event lists.
   --single-wt-page     Fetch only the default working protocol page per meet.
   --skip-public-references
@@ -93,7 +96,10 @@ function parseArgs(argv) {
     feds: [],
     meets: [],
     limitMeets: 25,
+    offsetMeets: 0,
+    meetLimit: null,
     allMeets: false,
+    resume: false,
     skipMeetDetails: false,
     singleWtPage: false,
     skipPublicReferences: false,
@@ -130,8 +136,25 @@ function parseArgs(argv) {
         }
         i += 1;
         break;
+      case "--offset-meets":
+        args.offsetMeets = Number(requireValue(arg, next));
+        if (!Number.isInteger(args.offsetMeets) || args.offsetMeets < 0) {
+          throw new Error("--offset-meets must be a non-negative integer");
+        }
+        i += 1;
+        break;
+      case "--meet-limit":
+        args.meetLimit = Number(requireValue(arg, next));
+        if (!Number.isInteger(args.meetLimit) || args.meetLimit < 0) {
+          throw new Error("--meet-limit must be a non-negative integer");
+        }
+        i += 1;
+        break;
       case "--all-meets":
         args.allMeets = true;
+        break;
+      case "--resume":
+        args.resume = true;
         break;
       case "--skip-meet-details":
         args.skipMeetDetails = true;
@@ -269,6 +292,15 @@ async function writeJson(filePath, value) {
   await writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
 }
 
+async function readJsonIfExists(filePath, fallback) {
+  try {
+    return JSON.parse(await readFile(filePath, "utf8"));
+  } catch (error) {
+    if (error && error.code === "ENOENT") return fallback;
+    throw error;
+  }
+}
+
 async function writeCsv(filePath, rows, headers) {
   await mkdir(path.dirname(filePath), { recursive: true });
   const lines = [headers.map(csvCell).join(",")];
@@ -276,6 +308,54 @@ async function writeCsv(filePath, rows, headers) {
     lines.push(headers.map((header) => csvCell(row[header] ?? "")).join(","));
   }
   await writeFile(filePath, `\uFEFF${lines.join("\n")}\n`, "utf8");
+}
+
+async function writePublicAggregateFiles(outDir, aggregates) {
+  await writeCsv(
+    path.join(outDir, "powertable-public-athlete-mentions.csv"),
+    aggregates.athleteMentions,
+    unionHeaders(aggregates.athleteMentions),
+  );
+  await writeJson(
+    path.join(outDir, "powertable-public-athlete-mentions.json"),
+    aggregates.athleteMentions,
+  );
+  await writeCsv(
+    path.join(outDir, "powertable-public-competitions.csv"),
+    aggregates.competitions,
+    unionHeaders(aggregates.competitions),
+  );
+  await writeJson(
+    path.join(outDir, "powertable-public-competitions.json"),
+    aggregates.competitions,
+  );
+  await writeCsv(
+    path.join(outDir, "powertable-public-results.csv"),
+    aggregates.results,
+    unionHeaders(aggregates.results),
+  );
+  await writeJson(path.join(outDir, "powertable-public-results.json"), aggregates.results);
+  await writeCsv(
+    path.join(outDir, "powertable-public-attempts.csv"),
+    aggregates.attempts,
+    unionHeaders(aggregates.attempts),
+  );
+  await writeJson(path.join(outDir, "powertable-public-attempts.json"), aggregates.attempts);
+}
+
+async function loadPublicAggregates(outDir) {
+  return {
+    athleteMentions: await readJsonIfExists(
+      path.join(outDir, "powertable-public-athlete-mentions.json"),
+      [],
+    ),
+    competitions: await readJsonIfExists(
+      path.join(outDir, "powertable-public-competitions.json"),
+      [],
+    ),
+    results: await readJsonIfExists(path.join(outDir, "powertable-public-results.json"), []),
+    attempts: await readJsonIfExists(path.join(outDir, "powertable-public-attempts.json"), []),
+  };
 }
 
 function csvCell(value) {
@@ -1244,6 +1324,7 @@ async function collectMeetPublic(outDir, meetId, args) {
   const sorevTables = extractTables(sorev.text);
   await writeJson(path.join(meetDir, "sorev-tables.json"), sorevTables);
   result.competition = extractCompetitionMetaFromSorev(meetId, sorev.text);
+  await writeJson(path.join(meetDir, "competition.json"), result.competition);
   result.title = extractTitle(sorev.text);
   result.endpoints.push({
     key: "sorev",
@@ -1505,17 +1586,40 @@ async function main() {
   }
 
   const allMeetIds = [...discoveredMeetIds];
-  const meetIdsForDetail = args.skipMeetDetails
-    ? []
-    : args.allMeets
-      ? allMeetIds
-      : allMeetIds.slice(0, args.limitMeets);
+  const detailCandidates = allMeetIds.slice(args.offsetMeets);
+  const detailLimit = args.meetLimit ?? (args.allMeets ? detailCandidates.length : args.limitMeets);
+  const meetIdsForDetail = args.skipMeetDetails ? [] : detailCandidates.slice(0, detailLimit);
+  manifest.detailSelection = {
+    offset: args.offsetMeets,
+    limit: detailLimit,
+    requested: meetIdsForDetail.length,
+    resume: args.resume,
+  };
 
-  const allAthleteMentions = [];
-  const allResultRows = [];
-  const allAttemptRows = [];
-  const allCompetitionRows = [];
+  const aggregates = args.resume
+    ? await loadPublicAggregates(outDir)
+    : { athleteMentions: [], competitions: [], results: [], attempts: [] };
+  const collectedMeetIds = new Set(
+    [
+      ...aggregates.competitions,
+      ...aggregates.results,
+      ...aggregates.athleteMentions,
+      ...aggregates.attempts,
+    ]
+      .map((row) => String(row.meetId ?? ""))
+      .filter(Boolean),
+  );
+
   for (const meetId of meetIdsForDetail) {
+    if (args.resume && collectedMeetIds.has(String(meetId))) {
+      manifest.publicMeetDetails.push({ meetId, skipped: "resume-existing-aggregate" });
+      continue;
+    }
+
+    for (const key of Object.keys(aggregates)) {
+      aggregates[key] = aggregates[key].filter((row) => String(row.meetId ?? "") !== String(meetId));
+    }
+
     try {
       const meetResult = await collectMeetPublic(outDir, meetId, args);
       manifest.publicMeetDetails.push({
@@ -1528,10 +1632,12 @@ async function main() {
         resultRows: meetResult.resultRows.length,
         attemptRows: meetResult.attemptRows.length,
       });
-      if (meetResult.competition) allCompetitionRows.push(meetResult.competition);
-      allAthleteMentions.push(...meetResult.athleteMentions);
-      allResultRows.push(...meetResult.resultRows);
-      allAttemptRows.push(...meetResult.attemptRows);
+      if (meetResult.competition) aggregates.competitions.push(meetResult.competition);
+      aggregates.athleteMentions.push(...meetResult.athleteMentions);
+      aggregates.results.push(...meetResult.resultRows);
+      aggregates.attempts.push(...meetResult.attemptRows);
+      await writePublicAggregateFiles(outDir, aggregates);
+      await writeJson(path.join(outDir, "manifest.json"), manifest);
       await delay(REQUEST_DELAY_MS);
     } catch (error) {
       manifest.publicMeetDetails.push({
@@ -1540,43 +1646,7 @@ async function main() {
       });
     }
   }
-
-  await writeCsv(
-    path.join(outDir, "powertable-public-athlete-mentions.csv"),
-    allAthleteMentions,
-    unionHeaders(allAthleteMentions),
-  );
-  await writeJson(
-    path.join(outDir, "powertable-public-athlete-mentions.json"),
-    allAthleteMentions,
-  );
-  await writeCsv(
-    path.join(outDir, "powertable-public-competitions.csv"),
-    allCompetitionRows,
-    unionHeaders(allCompetitionRows),
-  );
-  await writeJson(
-    path.join(outDir, "powertable-public-competitions.json"),
-    allCompetitionRows,
-  );
-  await writeCsv(
-    path.join(outDir, "powertable-public-results.csv"),
-    allResultRows,
-    unionHeaders(allResultRows),
-  );
-  await writeJson(
-    path.join(outDir, "powertable-public-results.json"),
-    allResultRows,
-  );
-  await writeCsv(
-    path.join(outDir, "powertable-public-attempts.csv"),
-    allAttemptRows,
-    unionHeaders(allAttemptRows),
-  );
-  await writeJson(
-    path.join(outDir, "powertable-public-attempts.json"),
-    allAttemptRows,
-  );
+  await writePublicAggregateFiles(outDir, aggregates);
 
   if (!args.skipPublicReferences) {
     for (const fed of args.feds) {
@@ -1606,13 +1676,14 @@ async function main() {
   manifest.summary = {
     discoveredMeetCount: allMeetIds.length,
     downloadedMeetDetailCount: meetIdsForDetail.length,
-    publicAthleteMentionCount: allAthleteMentions.length,
-    publicCompetitionCount: allCompetitionRows.length,
-    publicResultRowCount: allResultRows.length,
-    publicResultRowsWithResultCount: allResultRows.filter(hasMeaningfulResult).length,
-    publicAttemptRowCount: allAttemptRows.length,
+    resumedMeetDetailCount: manifest.publicMeetDetails.filter((detail) => detail.skipped).length,
+    publicAthleteMentionCount: aggregates.athleteMentions.length,
+    publicCompetitionCount: aggregates.competitions.length,
+    publicResultRowCount: aggregates.results.length,
+    publicResultRowsWithResultCount: aggregates.results.filter(hasMeaningfulResult).length,
+    publicAttemptRowCount: aggregates.attempts.length,
     uniquePublicAthleteCount: new Set(
-      allResultRows.map((row) => row.sportsmanId).filter(Boolean),
+      aggregates.results.map((row) => row.sportsmanId).filter(Boolean),
     ).size,
     publicDisciplinePageCount: manifest.publicMeetDetails.reduce(
       (sum, detail) => sum + (detail.disciplineLinks ?? 0),
