@@ -67,6 +67,7 @@ Options:
   --out <dir>          Output directory. Default: ${DEFAULT_OUT_DIR}
   --fed <code>         Federation code for all_sorev. Repeatable. Default: ${DEFAULT_FEDS.join(", ")}
   --meet <id>          Meet/competition id. Repeatable.
+  --only-meets         Download details only for explicit --meet ids, without federation discovery.
   --limit-meets <n>    Limit meet detail downloads per federation. Default: 25.
   --offset-meets <n>   Skip first n discovered meet ids before detail downloads. Default: 0.
   --meet-limit <n>     Limit detail downloads after offset. Overrides --limit-meets/--all-meets.
@@ -95,6 +96,7 @@ function parseArgs(argv) {
     out: DEFAULT_OUT_DIR,
     feds: [],
     meets: [],
+    onlyMeets: false,
     limitMeets: 25,
     offsetMeets: 0,
     meetLimit: null,
@@ -128,6 +130,9 @@ function parseArgs(argv) {
       case "--meet":
         args.meets.push(requireValue(arg, next));
         i += 1;
+        break;
+      case "--only-meets":
+        args.onlyMeets = true;
         break;
       case "--limit-meets":
         args.limitMeets = Number(requireValue(arg, next));
@@ -197,7 +202,10 @@ function parseArgs(argv) {
     }
   }
 
-  if (args.feds.length === 0) args.feds = DEFAULT_FEDS;
+  if (args.onlyMeets && args.meets.length === 0) {
+    throw new Error("--only-meets requires at least one --meet value");
+  }
+  if (args.feds.length === 0 && !args.onlyMeets) args.feds = DEFAULT_FEDS;
   return args;
 }
 
@@ -732,12 +740,87 @@ function extractCompetitionMetaFromSorev(meetId, html) {
   const title = extractTitle(html).replace(/^PowerTable\s*\/\s*/i, "").trim();
   const links = extractLinks(html);
   const federationLink = links.find((link) => /(?:^|\/)fed\?fed=/i.test(link.href));
+  const schedule = extractCompetitionScheduleFromSorev(html);
   return {
     meetId: String(meetId),
     title,
     federationName: federationLink?.text ?? "",
     federationHref: federationLink?.href ?? "",
+    ...schedule,
   };
+}
+
+function extractCompetitionScheduleFromSorev(html) {
+  for (const match of html.matchAll(/<h5\b[^>]*>([\s\S]*?)<\/h5>/gi)) {
+    const text = stripTags(match[1]);
+    if (/^(стран|регион|город|countr|regions?|cities)\s*:/i.test(text)) continue;
+
+    const precedingHeaderIndex = html.slice(0, match.index ?? 0).toLowerCase().lastIndexOf("<h3");
+    const fromHeaderToDate = precedingHeaderIndex >= 0
+      ? html.slice(precedingHeaderIndex, match.index ?? 0)
+      : "";
+    if (/<li\b/i.test(fromHeaderToDate)) continue;
+
+    const parsed = parseScheduleText(text);
+    if (parsed) return parsed;
+  }
+  return {};
+}
+
+function parseScheduleText(text) {
+  const source = String(text ?? "").replace(/\s+/g, " ").trim();
+  if (!source) return null;
+
+  const fullRange = source.match(
+    /(\d{1,2})[.-](\d{1,2})[.-](\d{4})\s*[-–—]\s*(\d{1,2})[.-](\d{1,2})[.-](\d{4})/,
+  );
+  if (fullRange) {
+    return scheduleFromMatch(source, fullRange, {
+      startDate: isoDate(fullRange[3], fullRange[2], fullRange[1]),
+      endDate: isoDate(fullRange[6], fullRange[5], fullRange[4]),
+    });
+  }
+
+  const sameMonthRange = source.match(/(\d{1,2})\s*[-–—]\s*(\d{1,2})[.-](\d{1,2})[.-](\d{4})/);
+  if (sameMonthRange) {
+    return scheduleFromMatch(source, sameMonthRange, {
+      startDate: isoDate(sameMonthRange[4], sameMonthRange[3], sameMonthRange[1]),
+      endDate: isoDate(sameMonthRange[4], sameMonthRange[3], sameMonthRange[2]),
+    });
+  }
+
+  const singleDate = source.match(/(\d{1,2})[.-](\d{1,2})[.-](\d{4})/);
+  if (singleDate) {
+    const date = isoDate(singleDate[3], singleDate[2], singleDate[1]);
+    return scheduleFromMatch(source, singleDate, { startDate: date, endDate: date });
+  }
+
+  return null;
+}
+
+function scheduleFromMatch(source, match, dates) {
+  if (!dates.startDate || !dates.endDate) return null;
+  const city = source
+    .slice(0, match.index ?? 0)
+    .replace(/[,/;:\s-]+$/g, "")
+    .trim();
+  if (!city || /\d/.test(city) || /^(стран|регион|город|countr|regions?|cities)\b/i.test(city)) {
+    return null;
+  }
+  return {
+    city,
+    startDate: dates.startDate,
+    endDate: dates.endDate,
+    scheduleText: source,
+  };
+}
+
+function isoDate(year, month, day) {
+  const yyyy = Number(year);
+  const mm = Number(month);
+  const dd = Number(day);
+  if (yyyy < 2000 || yyyy > 2100 || mm < 1 || mm > 12 || dd < 1 || dd > 31) return null;
+  return `${String(yyyy).padStart(4, "0")}-${String(mm).padStart(2, "0")}-${String(dd).padStart(2, "0")}`;
 }
 
 function extractPublicResultsFromWtHtml(meetId, disciplineLink, html) {
@@ -1571,7 +1654,7 @@ async function main() {
   }
 
   const discoveredMeetIds = new Set(args.meets.map(String));
-  for (const fed of args.feds) {
+  for (const fed of args.onlyMeets ? [] : args.feds) {
     try {
       const fedResult = await collectFederationMeetList(outDir, fed);
       manifest.federationMeetLists.push(fedResult);
