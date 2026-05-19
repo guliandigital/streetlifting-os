@@ -22,6 +22,7 @@ import {
   Stack,
   Badge,
   NumberInput,
+  Select,
 } from "@mantine/core";
 import { useAppSelector } from "@store/index";
 import { selectEntries } from "@store/registration-slice";
@@ -471,6 +472,12 @@ export function ResultsPage() {
   const { t } = useTranslation();
   const meet = useAppSelector((s) => s.meet.current);
   const entries = useAppSelector(selectEntries);
+  const [classicCategoryFilter, setClassicCategoryFilter] = useState<
+    string | null
+  >(null);
+  const [multirepCategoryFilter, setMultirepCategoryFilter] = useState<
+    string | null
+  >(null);
 
   const meetDate = meet?.meet.date ?? new Date().toISOString().slice(0, 10);
   const meetName = meet?.meet.name ?? "Meet";
@@ -558,6 +565,49 @@ export function ResultsPage() {
   const showAnyContent =
     hasAttempts || allNonGuestRows.length > 0 || hasMultirepDisciplines;
 
+  const classicCategoryOptions = useMemo(
+    () => [
+      { value: "__all__", label: t("results.allCategories") },
+      ...groups.map((group) => ({ value: group.label, label: group.label })),
+    ],
+    [groups, t],
+  );
+
+  const activeClassicCategory =
+    classicCategoryFilter &&
+    (classicCategoryFilter === "__all__" ||
+      groups.some((group) => group.label === classicCategoryFilter))
+      ? classicCategoryFilter
+      : groups[0]?.label ?? "__all__";
+
+  const visibleClassicGroups =
+    activeClassicCategory === "__all__"
+      ? groups
+      : groups.filter((group) => group.label === activeClassicCategory);
+
+  const multirepCategoryOptions = useMemo(
+    () => [
+      { value: "__all__", label: t("results.allCategories") },
+      ...multirepGroups.map((group) => ({
+        value: group.label,
+        label: group.label,
+      })),
+    ],
+    [multirepGroups, t],
+  );
+
+  const activeMultirepCategory =
+    multirepCategoryFilter &&
+    (multirepCategoryFilter === "__all__" ||
+      multirepGroups.some((group) => group.label === multirepCategoryFilter))
+      ? multirepCategoryFilter
+      : multirepGroups[0]?.label ?? "__all__";
+
+  const visibleMultirepGroups =
+    activeMultirepCategory === "__all__"
+      ? multirepGroups
+      : multirepGroups.filter((group) => group.label === activeMultirepCategory);
+
   return (
     <Container size="xl" py="md">
       <Group justify="space-between" mb="lg">
@@ -590,9 +640,23 @@ export function ResultsPage() {
                 {t("results.noResults")}
               </Text>
             ) : (
-              groups.map((group) => (
-                <CategoryGroupTable key={group.label} group={group} />
-              ))
+              <Stack gap="md">
+                {groups.length > 1 && (
+                  <Group justify="flex-end">
+                    <Select
+                      label={t("results.categoryFilter")}
+                      data={classicCategoryOptions}
+                      value={activeClassicCategory}
+                      onChange={setClassicCategoryFilter}
+                      w={{ base: "100%", sm: 360 }}
+                      size="sm"
+                    />
+                  </Group>
+                )}
+                {visibleClassicGroups.map((group) => (
+                  <CategoryGroupTable key={group.label} group={group} />
+                ))}
+              </Stack>
             )}
           </Tabs.Panel>
 
@@ -618,9 +682,23 @@ export function ResultsPage() {
                   {t("results.noResults")}
                 </Text>
               ) : (
-                multirepGroups.map((group) => (
-                  <MultirepGroupTable key={group.label} group={group} />
-                ))
+                <Stack gap="md">
+                  {multirepGroups.length > 1 && (
+                    <Group justify="flex-end">
+                      <Select
+                        label={t("results.categoryFilter")}
+                        data={multirepCategoryOptions}
+                        value={activeMultirepCategory}
+                        onChange={setMultirepCategoryFilter}
+                        w={{ base: "100%", sm: 360 }}
+                        size="sm"
+                      />
+                    </Group>
+                  )}
+                  {visibleMultirepGroups.map((group) => (
+                    <MultirepGroupTable key={group.label} group={group} />
+                  ))}
+                </Stack>
               )}
             </Tabs.Panel>
           )}

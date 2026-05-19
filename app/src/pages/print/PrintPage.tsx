@@ -14,7 +14,7 @@
  * @media print CSS hides tabs + button and shows only the relevant content.
  */
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Container,
@@ -27,6 +27,7 @@ import {
   Stack,
   Divider,
   Badge,
+  SegmentedControl,
 } from "@mantine/core";
 import { useAppSelector } from "@store/index";
 import { selectEntries } from "@store/registration-slice";
@@ -78,6 +79,23 @@ type DownloadHandlers = {
   onDownloadTeamCsv: () => void;
   onDownloadMedalCsv: () => void;
 };
+
+type PrintGroupValue = "forms" | "summaries" | "exports";
+
+type PrintTabValue =
+  | "reports"
+  | "protocol"
+  | "athleteCards"
+  | "blankSheet"
+  | "diplomas"
+  | "teamProtocol"
+  | "recordCerts"
+  | "weighInOrder"
+  | "medalCount";
+
+function printSectionClass(tab: PrintTabValue, activeTab: PrintTabValue): string {
+  return tab === activeTab ? "print-section print-active" : "print-section";
+}
 
 function ReportsRegistryContent({
   items,
@@ -993,6 +1011,8 @@ export function PrintPage() {
   const { t } = useTranslation();
   const meet = useAppSelector((s) => s.meet.current);
   const entries = useAppSelector(selectEntries);
+  const [activePrintGroup, setActivePrintGroup] = useState<PrintGroupValue>("forms");
+  const [activePrintTab, setActivePrintTab] = useState<PrintTabValue>("protocol");
 
   const meetDate = meet?.meet.date ?? new Date().toISOString().slice(0, 10);
   const meetName = meet?.meet.name ?? "Meet";
@@ -1054,6 +1074,43 @@ export function PrintPage() {
     [entries],
   );
 
+  const printGroups: Array<{
+    value: PrintGroupValue;
+    label: string;
+    tabs: Array<{ value: PrintTabValue; label: string }>;
+  }> = [
+    {
+      value: "forms",
+      label: t("print.groups.forms"),
+      tabs: [
+        { value: "protocol", label: t("print.protocol") },
+        { value: "athleteCards", label: t("print.athleteCards") },
+        { value: "blankSheet", label: t("print.blankSheet") },
+        { value: "diplomas", label: t("print.diplomas") },
+      ],
+    },
+    {
+      value: "summaries",
+      label: t("print.groups.summaries"),
+      tabs: [
+        { value: "teamProtocol", label: t("print.team.tab") },
+        { value: "recordCerts", label: t("print.records.tab") },
+        { value: "weighInOrder", label: t("print.weighInOrder.tab") },
+        { value: "medalCount", label: t("print.medalCount.tab") },
+      ],
+    },
+    {
+      value: "exports",
+      label: t("print.groups.exports"),
+      tabs: [{ value: "reports", label: t("reports.title") }],
+    },
+  ];
+
+  const visiblePrintTabs =
+    printGroups.find((group) => group.value === activePrintGroup)?.tabs ??
+    printGroups[0]?.tabs ??
+    [];
+
   function meetSlug(): string {
     return (
       meetName.replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-|-$/g, "") || "meet"
@@ -1111,20 +1168,42 @@ export function PrintPage() {
           </Button>
         </Group>
 
-        <Tabs defaultValue="protocol">
-          <Tabs.List mb="md" className="no-print">
-            <Tabs.Tab value="reports">{t("reports.title")}</Tabs.Tab>
-            <Tabs.Tab value="protocol">{t("print.protocol")}</Tabs.Tab>
-            <Tabs.Tab value="athleteCards">{t("print.athleteCards")}</Tabs.Tab>
-            <Tabs.Tab value="blankSheet">{t("print.blankSheet")}</Tabs.Tab>
-            <Tabs.Tab value="diplomas">{t("print.diplomas")}</Tabs.Tab>
-            <Tabs.Tab value="teamProtocol">{t("print.team.tab")}</Tabs.Tab>
-            <Tabs.Tab value="recordCerts">{t("print.records.tab")}</Tabs.Tab>
-            <Tabs.Tab value="weighInOrder">{t("print.weighInOrder.tab")}</Tabs.Tab>
-            <Tabs.Tab value="medalCount">{t("print.medalCount.tab")}</Tabs.Tab>
-          </Tabs.List>
+        <Tabs
+          value={activePrintTab}
+          onChange={(value) => value && setActivePrintTab(value as PrintTabValue)}
+        >
+          <Stack gap="xs" mb="md" className="no-print">
+            <SegmentedControl
+              value={activePrintGroup}
+              onChange={(value) => {
+                const nextGroup = value as PrintGroupValue;
+                const nextTabs = printGroups.find(
+                  (group) => group.value === nextGroup,
+                )?.tabs;
+                setActivePrintGroup(nextGroup);
+                if (nextTabs?.[0]) {
+                  setActivePrintTab(nextTabs[0].value);
+                }
+              }}
+              data={printGroups.map((group) => ({
+                value: group.value,
+                label: group.label,
+              }))}
+              fullWidth
+            />
+            <Tabs.List grow>
+              {visiblePrintTabs.map((tab) => (
+                <Tabs.Tab key={tab.value} value={tab.value}>
+                  {tab.label}
+                </Tabs.Tab>
+              ))}
+            </Tabs.List>
+          </Stack>
 
-          <Tabs.Panel value="reports" className="print-section">
+          <Tabs.Panel
+            value="reports"
+            className={printSectionClass("reports", activePrintTab)}
+          >
             <ReportsRegistryContent
               items={reportRegistry}
               handlers={{
@@ -1135,22 +1214,34 @@ export function PrintPage() {
             />
           </Tabs.Panel>
 
-          <Tabs.Panel value="protocol" className="print-section print-active">
+          <Tabs.Panel
+            value="protocol"
+            className={printSectionClass("protocol", activePrintTab)}
+          >
             <ProtocolContent
               classicGroups={classicGroups}
               multirepGroups={multirepGroups}
             />
           </Tabs.Panel>
 
-          <Tabs.Panel value="athleteCards" className="print-section">
+          <Tabs.Panel
+            value="athleteCards"
+            className={printSectionClass("athleteCards", activePrintTab)}
+          >
             <AthleteCardsContent entries={printEntries} />
           </Tabs.Panel>
 
-          <Tabs.Panel value="blankSheet" className="print-section">
+          <Tabs.Panel
+            value="blankSheet"
+            className={printSectionClass("blankSheet", activePrintTab)}
+          >
             <BlankSheetContent />
           </Tabs.Panel>
 
-          <Tabs.Panel value="diplomas" className="print-section">
+          <Tabs.Panel
+            value="diplomas"
+            className={printSectionClass("diplomas", activePrintTab)}
+          >
             <DiplomasContent
               classicGroups={classicGroups}
               multirepGroups={multirepGroups}
@@ -1159,7 +1250,10 @@ export function PrintPage() {
             />
           </Tabs.Panel>
 
-          <Tabs.Panel value="teamProtocol" className="print-section">
+          <Tabs.Panel
+            value="teamProtocol"
+            className={printSectionClass("teamProtocol", activePrintTab)}
+          >
             <TeamProtocolContent
               teamScores={teamScores}
               meetName={meetName}
@@ -1167,7 +1261,10 @@ export function PrintPage() {
             />
           </Tabs.Panel>
 
-          <Tabs.Panel value="recordCerts" className="print-section">
+          <Tabs.Panel
+            value="recordCerts"
+            className={printSectionClass("recordCerts", activePrintTab)}
+          >
             <RecordCertificatesContent
               certificates={recordCertificates}
               meetName={meetName}
@@ -1175,7 +1272,10 @@ export function PrintPage() {
             />
           </Tabs.Panel>
 
-          <Tabs.Panel value="weighInOrder" className="print-section">
+          <Tabs.Panel
+            value="weighInOrder"
+            className={printSectionClass("weighInOrder", activePrintTab)}
+          >
             <WeighInOrderContent
               groups={weighInOrder}
               meetName={meetName}
@@ -1183,7 +1283,10 @@ export function PrintPage() {
             />
           </Tabs.Panel>
 
-          <Tabs.Panel value="medalCount" className="print-section">
+          <Tabs.Panel
+            value="medalCount"
+            className={printSectionClass("medalCount", activePrintTab)}
+          >
             <MedalCountContent
               report={medalCount}
               meetName={meetName}
