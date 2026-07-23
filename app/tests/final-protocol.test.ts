@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { aggregateVote } from "@logic/isf/judge-votes";
 import {
   buildFinalProtocol,
+  importEd25519PrivateKeyPem,
   signFinalProtocol,
   verifySignedFinalProtocol,
 } from "@logic/isf/final-protocol";
@@ -119,5 +120,25 @@ describe("final protocol", () => {
     expect(await verifySignedFinalProtocol(signed, keys.publicKey, cryptoApi)).toBe(true);
     signed.protocol.meet.name = "Tampered";
     expect(await verifySignedFinalProtocol(signed, keys.publicKey, cryptoApi)).toBe(false);
+  });
+
+  it("imports an Ed25519 PKCS#8 signer without persisting it", async () => {
+    const keys = await cryptoApi.subtle.generateKey("Ed25519", true, ["sign", "verify"]);
+    if (!("privateKey" in keys) || !("publicKey" in keys)) throw new Error("Expected key pair");
+    const pkcs8 = new Uint8Array(await cryptoApi.subtle.exportKey("pkcs8", keys.privateKey));
+    const pem = [
+      "-----BEGIN PRIVATE KEY-----",
+      Buffer.from(pkcs8).toString("base64").match(/.{1,64}/g)?.join("\n") ?? "",
+      "-----END PRIVATE KEY-----",
+    ].join("\n");
+
+    const imported = await importEd25519PrivateKeyPem(pem, cryptoApi);
+    const signed = await signFinalProtocol(
+      buildFinalProtocol(finalSaveFile(), input),
+      { federationKeyId: "isf-ru-2026-01", sanctioningCertId: "sanction-42", privateKey: imported },
+      cryptoApi,
+    );
+
+    expect(await verifySignedFinalProtocol(signed, keys.publicKey, cryptoApi)).toBe(true);
   });
 });

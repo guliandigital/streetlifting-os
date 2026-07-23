@@ -23,7 +23,13 @@ import {
   Badge,
   NumberInput,
   Select,
+  Modal,
+  TextInput,
+  Textarea,
+  PasswordInput,
+  Alert,
 } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
 import { useAppSelector } from "@store/index";
 import { selectEntries } from "@store/registration-slice";
 import {
@@ -48,6 +54,16 @@ import {
   exportResultsProtocolCsv,
 } from "@logic/isf/csv-export-classic";
 import { ISF_V51_DISCIPLINES } from "@domain/presets";
+import type { SaveFile } from "@domain/models";
+import {
+  buildFinalProtocol,
+  importEd25519PrivateKeyPem,
+  signFinalProtocol,
+} from "@logic/isf/final-protocol";
+import {
+  isTauriRuntime,
+  uploadSignedFinalProtocol,
+} from "@logic/isf/final-protocol-upload";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -97,6 +113,158 @@ function MultirepPlaceCell({ row }: { row: MultirepResultRow }) {
     <Text size="sm" fw={600} style={{ color }}>
       {row.place}
     </Text>
+  );
+}
+
+function FinalProtocolModal({
+  opened,
+  onClose,
+  saveFile,
+}: {
+  opened: boolean;
+  onClose: () => void;
+  saveFile: SaveFile;
+}) {
+  const [competitionId, setCompetitionId] = useState("");
+  const [protocolId, setProtocolId] = useState(() => crypto.randomUUID());
+  const [revision, setRevision] = useState(1);
+  const [supersedesProtocolId, setSupersedesProtocolId] = useState("");
+  const [federationKeyId, setFederationKeyId] = useState("");
+  const [sanctioningCertId, setSanctioningCertId] = useState("");
+  const [serviceToken, setServiceToken] = useState("");
+  const [privateKeyPem, setPrivateKeyPem] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  function closeAndClear() {
+    setServiceToken("");
+    setPrivateKeyPem("");
+    onClose();
+  }
+
+  async function submit() {
+    setBusy(true);
+    try {
+      const protocol = buildFinalProtocol(saveFile, {
+        competitionId: competitionId.trim(),
+        protocolId: protocolId.trim(),
+        revision,
+        supersedesProtocolId: supersedesProtocolId.trim() || null,
+        issuedAt: new Date().toISOString(),
+      });
+      const privateKey = await importEd25519PrivateKeyPem(privateKeyPem);
+      const envelope = await signFinalProtocol(protocol, {
+        federationKeyId: federationKeyId.trim(),
+        sanctioningCertId: sanctioningCertId.trim(),
+        privateKey,
+      });
+      const response = await uploadSignedFinalProtocol(serviceToken, envelope);
+      if (response.status < 200 || response.status >= 300) {
+        throw new Error(`Federation service rejected the protocol (HTTP ${response.status})`);
+      }
+      notifications.show({
+        color: "green",
+        message: "Signed final protocol was accepted by the federation service.",
+      });
+      closeAndClear();
+    } catch (error) {
+      notifications.show({
+        color: "red",
+        message: error instanceof Error ? error.message : "Final protocol upload failed.",
+      });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Modal opened={opened} onClose={closeAndClear} title="Send signed final protocol" size="lg">
+      <Stack gap="sm">
+        {!isTauriRuntime() && (
+          <Alert color="yellow">
+            Protocol upload is available only in Streetlifting OS desktop. The PWA never sends a federation service token.
+          </Alert>
+        )}
+        <TextInput
+          label="Streetlifting App competition ID"
+          value={competitionId}
+          onChange={(event) => setCompetitionId(event.currentTarget.value)}
+          required
+        />
+        <Group grow>
+          <TextInput
+            label="Protocol ID"
+            value={protocolId}
+            onChange={(event) => setProtocolId(event.currentTarget.value)}
+            required
+          />
+          <NumberInput
+            label="Revision"
+            value={revision}
+            min={1}
+            allowDecimal={false}
+            onChange={(value) => setRevision(typeof value === "number" ? value : 1)}
+            required
+          />
+        </Group>
+        {revision > 1 && (
+          <TextInput
+            label="Supersedes protocol ID"
+            value={supersedesProtocolId}
+            onChange={(event) => setSupersedesProtocolId(event.currentTarget.value)}
+            required
+          />
+        )}
+        <Group grow>
+          <TextInput
+            label="Federation key ID"
+            value={federationKeyId}
+            onChange={(event) => setFederationKeyId(event.currentTarget.value)}
+            required
+          />
+          <TextInput
+            label="Sanctioning certificate ID"
+            value={sanctioningCertId}
+            onChange={(event) => setSanctioningCertId(event.currentTarget.value)}
+            required
+          />
+        </Group>
+        <PasswordInput
+          label="One-time ISF service token"
+          value={serviceToken}
+          onChange={(event) => setServiceToken(event.currentTarget.value)}
+          autoComplete="off"
+          required
+        />
+        <Textarea
+          label="Ed25519 private key (PKCS#8 PEM)"
+          value={privateKeyPem}
+          onChange={(event) => setPrivateKeyPem(event.currentTarget.value)}
+          autosize
+          minRows={5}
+          autoComplete="off"
+          required
+        />
+        <Group justify="flex-end">
+          <Button variant="default" onClick={closeAndClear} disabled={busy}>Cancel</Button>
+          <Button
+            onClick={() => void submit()}
+            disabled={
+              busy ||
+              !isTauriRuntime() ||
+              !competitionId.trim() ||
+              !protocolId.trim() ||
+              !federationKeyId.trim() ||
+              !sanctioningCertId.trim() ||
+              !serviceToken.trim() ||
+              !privateKeyPem.trim() ||
+              (revision > 1 && !supersedesProtocolId.trim())
+            }
+          >
+            {busy ? "Sending…" : "Sign and send"}
+          </Button>
+        </Group>
+      </Stack>
+    </Modal>
   );
 }
 
@@ -478,6 +646,7 @@ export function ResultsPage() {
   const [multirepCategoryFilter, setMultirepCategoryFilter] = useState<
     string | null
   >(null);
+  const [protocolOpen, setProtocolOpen] = useState(false);
 
   const meetDate = meet?.meet.date ?? new Date().toISOString().slice(0, 10);
   const meetName = meet?.meet.name ?? "Meet";
@@ -612,10 +781,23 @@ export function ResultsPage() {
     <Container size="xl" py="md">
       <Group justify="space-between" mb="lg">
         <Title order={2}>{t("results.title")}</Title>
-        <Button variant="outline" size="sm" onClick={handleDownloadCsv}>
-          {t("results.downloadCsv")}
-        </Button>
+        <Group>
+          <Button variant="outline" size="sm" onClick={handleDownloadCsv}>
+            {t("results.downloadCsv")}
+          </Button>
+          <Button size="sm" onClick={() => setProtocolOpen(true)}>
+            Send signed protocol
+          </Button>
+        </Group>
       </Group>
+
+      {meet && (
+        <FinalProtocolModal
+          opened={protocolOpen}
+          onClose={() => setProtocolOpen(false)}
+          saveFile={meet}
+        />
+      )}
 
       {!showAnyContent ? (
         <Text c="dimmed" ta="center" py="xl">

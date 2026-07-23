@@ -200,6 +200,25 @@ export async function signFinalProtocol(
   };
 }
 
+/** Import a federation PKCS#8 Ed25519 signing key held only in current memory. */
+export async function importEd25519PrivateKeyPem(
+  pem: string,
+  cryptoApi: WebCrypto = globalThis.crypto,
+): Promise<CryptoKey> {
+  const normalized = pem.trim();
+  const match = normalized.match(
+    /^-----BEGIN PRIVATE KEY-----\s*([A-Za-z0-9+/=\s]+)\s*-----END PRIVATE KEY-----$/,
+  );
+  if (!match) throw new Error("An Ed25519 PKCS#8 private key PEM is required");
+  return cryptoApi.subtle.importKey(
+    "pkcs8",
+    fromBase64(match[1].replace(/\s+/g, "")),
+    { name: "Ed25519" },
+    false,
+    ["sign"],
+  );
+}
+
 /** Verify the envelope before it is accepted by an import endpoint. */
 export async function verifySignedFinalProtocol(
   envelope: SignedFinalProtocol,
