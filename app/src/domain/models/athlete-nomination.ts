@@ -24,6 +24,8 @@ export type Athlete = {
   /** ISO 3166-1 alpha-2 or full country name until federation profiles narrow it. */
   country: string | null;
   memberId?: string;
+  /** Confirmed external ISF person identifier, never inferred from a name. */
+  isfPersonId?: string;
   instagram?: string;
 };
 
@@ -75,6 +77,7 @@ export function splitEntry(entry: Entry): {
     ageOverride: entry.ageOverride,
     country: entry.country,
     ...(entry.memberId ? { memberId: entry.memberId } : {}),
+    ...(entry.isfPersonId ? { isfPersonId: entry.isfPersonId } : {}),
     ...(entry.instagram ? { instagram: entry.instagram } : {}),
   };
 

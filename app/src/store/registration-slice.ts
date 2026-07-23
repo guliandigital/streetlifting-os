@@ -36,6 +36,7 @@ export type EntryDraft = {
   flight?: string;
   team?: string;
   memberId?: string;
+  isfPersonId?: string;
   guest: boolean;
   instagram?: string;
   notes?: string;
@@ -87,6 +88,7 @@ function buildEntry(draft: EntryDraft): Entry {
     division: draft.division,
     ...(draft.team ? { team: draft.team } : {}),
     ...(draft.memberId ? { memberId: draft.memberId } : {}),
+    ...(draft.isfPersonId ? { isfPersonId: draft.isfPersonId } : {}),
     guest: draft.guest,
     ...(draft.instagram ? { instagram: draft.instagram } : {}),
     ...(draft.notes ? { notes: draft.notes } : {}),

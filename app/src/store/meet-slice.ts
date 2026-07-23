@@ -452,6 +452,8 @@ const meetSlice = createSlice({
           team: patch.team !== undefined ? patch.team : prev.team,
           memberId:
             patch.memberId !== undefined ? patch.memberId : prev.memberId,
+          isfPersonId:
+            patch.isfPersonId !== undefined ? patch.isfPersonId : prev.isfPersonId,
           guest: patch.guest ?? prev.guest,
           instagram:
             patch.instagram !== undefined ? patch.instagram : prev.instagram,

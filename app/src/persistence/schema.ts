@@ -116,6 +116,7 @@ const entrySchema = z.object({
   division: divisionEnum,
   team: z.string().optional(),
   memberId: z.string().optional(),
+  isfPersonId: z.string().trim().min(1).optional(),
   guest: z.boolean(),
   instagram: z.string().optional(),
   notes: z.string().optional(),
@@ -140,6 +141,7 @@ const athleteSchema = z.object({
   ageOverride: z.number().int().nullable(),
   country: z.string().nullable(),
   memberId: z.string().optional(),
+  isfPersonId: z.string().trim().min(1).optional(),
   instagram: z.string().optional(),
 });
 

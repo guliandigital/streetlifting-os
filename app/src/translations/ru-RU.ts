@@ -227,6 +227,8 @@ export const ruRU = {
       discipline: "Дисциплина",
       team: "Команда",
       memberId: "Member ID",
+      isfPersonId: "ISF Person ID",
+      isfPersonIdHint: "Укажите только ID, подтверждённый в ISF Passport",
       guest: "Гость / личник",
       instagram: "Instagram",
       notes: "Заметки",
@@ -247,7 +249,7 @@ export const ruRU = {
     csvImport: {
       title: "Импорт CSV",
       bodyHeaders:
-        "Первая строка — заголовки колонок. Минимум: name, sex, division, disciplineCode. Опц.: birthDate (YYYY-MM-DD), country, day, platform, flight, team, memberId, guest, instagram, notes, bodyweightKg, reweighKg.",
+        "Первая строка — заголовки колонок. Минимум: name, sex, division, disciplineCode. Опц.: birthDate (YYYY-MM-DD), country, day, platform, flight, team, memberId, isfPersonId, guest, instagram, notes, bodyweightKg, reweighKg.",
       pickFile: "Выбрать файл…",
       preview: "Предварительный просмотр",
       errors: "Ошибки разбора",

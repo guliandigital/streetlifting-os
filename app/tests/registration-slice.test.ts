@@ -59,7 +59,7 @@ describe("registration-slice CRUD", () => {
   });
 
   it("addEntry appends an Entry with derived event/format", () => {
-    store.dispatch(addEntry(draftA));
+    store.dispatch(addEntry({ ...draftA, isfPersonId: "isf-person-42" }));
     const registration = store.getState().meet.current!.registration;
     const entries = registration.entries;
     expect(entries.length).toBe(1);
@@ -67,11 +67,13 @@ describe("registration-slice CRUD", () => {
     expect(entries[0]?.competitionFormat).toBe("classic");
     expect(entries[0]?.event).toBe("PUDI");
     expect(entries[0]?.id).toBeTruthy();
+    expect(entries[0]?.isfPersonId).toBe("isf-person-42");
     expect(registration.athletes[0]).toMatchObject({
       id: `ath_${entries[0]!.id}`,
       name: "Alice",
       sex: "F",
       country: "RU",
+      isfPersonId: "isf-person-42",
     });
     expect(registration.nominations[0]).toMatchObject({
       id: `nom_${entries[0]!.id}`,

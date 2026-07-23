@@ -3,7 +3,7 @@
  *
  * Format (header row REQUIRED, columns may be in any order):
  *   name, sex, birthDate, country, division, disciplineCode,
- *   team, memberId, guest, instagram, notes,
+ *   team, memberId, isfPersonId, guest, instagram, notes,
  *   day, platform, flight, bodyweightKg, reweighKg
  *
  * - `sex`: M / F (case-insensitive). Required.
@@ -65,6 +65,8 @@ const HEADER_ALIASES: Record<string, string> = {
   team: "team",
   memberid: "memberId",
   member_id: "memberId",
+  isfpersonid: "isfPersonId",
+  isf_person_id: "isfPersonId",
   guest: "guest",
   instagram: "instagram",
   notes: "notes",
@@ -249,6 +251,7 @@ export function parseRegistrationCsv(
     const country = (row.country ?? "").trim();
     const team = (row.team ?? "").trim();
     const memberId = (row.memberId ?? "").trim();
+    const isfPersonId = (row.isfPersonId ?? "").trim();
     // Default missing/blank flight to "A" so downstream grouping
     // (weigh-in order, schedule plan) always has a non-empty key.
     // The flight field carries no semantic when empty — most federations
@@ -271,6 +274,7 @@ export function parseRegistrationCsv(
       division: division as Division,
       ...(team ? { team } : {}),
       ...(memberId ? { memberId } : {}),
+      ...(isfPersonId ? { isfPersonId } : {}),
       guest,
       ...(instagram ? { instagram } : {}),
       ...(notes ? { notes } : {}),

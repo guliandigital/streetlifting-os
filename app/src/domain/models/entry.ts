@@ -32,6 +32,8 @@ export type Entry = {
   division: Division;
   team?: string;
   memberId?: string;
+  /** Confirmed external ISF person identifier, never inferred from a name. */
+  isfPersonId?: string;
   guest: boolean;
   instagram?: string;
   notes?: string;

@@ -255,6 +255,11 @@ export function EntryFormModal(props: EntryFormModalProps) {
               {...register("memberId")}
             />
             <TextInput
+              label={t("registration.form.isfPersonId")}
+              description={t("registration.form.isfPersonIdHint")}
+              {...register("isfPersonId")}
+            />
+            <TextInput
               label={t("registration.form.instagram")}
               {...register("instagram")}
             />

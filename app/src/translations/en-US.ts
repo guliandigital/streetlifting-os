@@ -228,6 +228,8 @@ export const enUS = {
       discipline: "Discipline",
       team: "Team",
       memberId: "Member ID",
+      isfPersonId: "ISF Person ID",
+      isfPersonIdHint: "Use only an ID confirmed in ISF Passport",
       guest: "Guest entrant",
       instagram: "Instagram",
       notes: "Notes",
@@ -248,7 +250,7 @@ export const enUS = {
     csvImport: {
       title: "Import CSV",
       bodyHeaders:
-        "Header row required. Required: name, sex, division, disciplineCode. Optional: birthDate (YYYY-MM-DD), country, day, platform, flight, team, memberId, guest, instagram, notes, bodyweightKg, reweighKg.",
+        "Header row required. Required: name, sex, division, disciplineCode. Optional: birthDate (YYYY-MM-DD), country, day, platform, flight, team, memberId, isfPersonId, guest, instagram, notes, bodyweightKg, reweighKg.",
       pickFile: "Pick file…",
       preview: "Preview",
       errors: "Parse errors",

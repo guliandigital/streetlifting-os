@@ -29,6 +29,7 @@ describe("CSV export → import round-trip", () => {
         division: "pro",
         team: "Team Atlas",
         memberId: "RU-1234",
+        isfPersonId: "isf-person-42",
         guest: false,
         notes: "left-handed grip",
         bodyweightKg: 58.4,
@@ -67,6 +68,7 @@ describe("CSV export → import round-trip", () => {
     expect(a?.division).toBe("pro");
     expect(a?.team).toBe("Team Atlas");
     expect(a?.memberId).toBe("RU-1234");
+    expect(a?.isfPersonId).toBe("isf-person-42");
     expect(a?.bodyweightKg).toBe(58.4);
     expect(a?.reweighKg).toBe(58.6);
     expect(a?.disciplineCode).toBe("classic_pu");

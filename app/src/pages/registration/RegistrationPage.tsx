@@ -66,6 +66,7 @@ function entryToFormValues(e: Entry): EntryFormValues {
     flight: e.flight,
     team: e.team ?? "",
     memberId: e.memberId ?? "",
+    isfPersonId: e.isfPersonId ?? "",
     guest: e.guest,
     instagram: e.instagram ?? "",
     notes: e.notes ?? "",
@@ -89,6 +90,9 @@ function formValuesToDraft(v: EntryFormValues): EntryDraft {
     ...(v.team && v.team.trim() !== "" ? { team: v.team.trim() } : {}),
     ...(v.memberId && v.memberId.trim() !== ""
       ? { memberId: v.memberId.trim() }
+      : {}),
+    ...(v.isfPersonId && v.isfPersonId.trim() !== ""
+      ? { isfPersonId: v.isfPersonId.trim() }
       : {}),
     guest: v.guest,
     ...(v.instagram && v.instagram.trim() !== ""
@@ -148,7 +152,8 @@ export function RegistrationPage() {
         e.name.toLowerCase().includes(q) ||
         (e.team ?? "").toLowerCase().includes(q) ||
         (e.country ?? "").toLowerCase().includes(q) ||
-        (e.memberId ?? "").toLowerCase().includes(q),
+        (e.memberId ?? "").toLowerCase().includes(q) ||
+        (e.isfPersonId ?? "").toLowerCase().includes(q),
     );
   }, [entries, search]);
 
